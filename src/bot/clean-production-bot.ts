@@ -458,6 +458,24 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
                 }
               }
             );
+          } else {
+            // Если модель не найдена, используем fallback
+            userStates.set(userId, { 
+              state: 'waiting_image_prompt', 
+              service: 'freepik', 
+              model: 'flux-dev' // fallback модель
+            });
+            
+            await ctx.editMessageText(
+              `🎨 Генерация изображения\n\n💰 Стоимость: 5 токенов\n\nВведите описание изображения:`,
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+                  ]
+                }
+              }
+            );
           }
         }
         
@@ -475,6 +493,24 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
             
             await ctx.editMessageText(
               `🎬 ${model.name}\n${model.description}\n\n💰 Стоимость: 10 токенов\n\nВведите описание видео:`,
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+                  ]
+                }
+              }
+            );
+          } else {
+            // Если модель не найдена, используем fallback
+            userStates.set(userId, { 
+              state: 'waiting_video_prompt', 
+              service: 'freepik', 
+              model: 'kling-v2-5-pro' // fallback модель для видео
+            });
+            
+            await ctx.editMessageText(
+              `🎬 Генерация видео\n\n💰 Стоимость: 10 токенов\n\nВведите описание видео:`,
               {
                 reply_markup: {
                   inline_keyboard: [
