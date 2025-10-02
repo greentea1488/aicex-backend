@@ -30,6 +30,11 @@ model User {
   tokenHistory    TokenHistory[] 
   tasks           Task[]
   auditLogs       AuditLog[]
+  chatHistory     ChatHistory[]
+  freepikTasks    FreepikTask[]
+  runwayTasks     RunwayTask[]
+  midjourneyTasks MidjourneyTask[]
+  generationHistory GenerationHistory[]
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
