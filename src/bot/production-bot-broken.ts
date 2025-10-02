@@ -352,9 +352,9 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string) 
     let result;
     
     if (service === 'freepik') {
-      result = await aiManager.generateImage(prompt, 'freepik', userContext);
+      result = await aiManager.generateImage(prompt, 'freepik', userContext, 'flux-dev');
     } else if (service === 'dalle') {
-      result = await aiManager.generateImage(prompt, 'dalle', userContext);
+      result = await aiManager.generateImage(prompt, 'dalle', userContext, undefined);
     } else {
       result = { success: false, error: 'Неизвестный сервис' };
     }

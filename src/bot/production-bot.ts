@@ -535,12 +535,15 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
     let result;
     
     if (service === 'freepik') {
-      result = await aiManager.generateImage(prompt, 'freepik', userContext, {
-        model: data?.model || 'seedream-v4',
-        aspect_ratio: 'square_1_1'
-      });
+      result = await aiManager.generateImage(
+        prompt, 
+        'freepik', 
+        userContext, 
+        data?.model || 'flux-dev',
+        { aspect_ratio: 'square_1_1' }
+      );
     } else if (service === 'dalle') {
-      result = await aiManager.generateImage(prompt, 'dalle', userContext);
+      result = await aiManager.generateImage(prompt, 'dalle', userContext, undefined);
     } else {
       result = { success: false, error: 'Неизвестный сервис' };
     }
