@@ -468,6 +468,25 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
         break;
 
       default:
+        // 🔄 ПОВТОРИТЬ ЧАТ
+        if (data?.startsWith('repeat_chat_')) {
+          const model = data.replace('repeat_chat_', '');
+          userStates.set(userId, { 
+            state: 'chatting', 
+            model: model 
+          });
+          
+          await ctx.editMessageText(
+            `🔄 Продолжаем чат с ${model}\n\nОтправьте новое сообщение:`,
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+                ]
+              }
+            }
+          );
+        }
         // 🎨 ОБРАБОТКА ВЫБОРА МОДЕЛИ ИЗОБРАЖЕНИЙ
         if (data?.startsWith('freepik_img_')) {
           const modelId = data.replace('freepik_img_', '');
@@ -688,8 +707,11 @@ bot.on("message:text", async (ctx) => {
         reply_markup: {
           inline_keyboard: [
             [
-              { text: '🛑 Стоп', callback_data: 'stop_chat' },
+              { text: '🔄 Повторить запрос', callback_data: `repeat_chat_${userState.model}` },
               { text: '🏠 Главная', callback_data: 'back_to_main' }
+            ],
+            [
+              { text: '🛑 Стоп чат', callback_data: 'stop_chat' }
             ]
           ]
         }
