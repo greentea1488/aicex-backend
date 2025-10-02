@@ -331,7 +331,7 @@ bot.command("start", async ctx => {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
-          [{ text: "🌐 Веб-приложение", web_app: { url: "https://aicexonefrontend-production.up.railway.app/home" } }],
+          [{ text: "🌐 Веб-приложение", web_app: { url: "https://aicexonefrontend-production.up.railway.app/" } }],
           [{ text: "💬 ChatGPT", callback_data: "chatgpt" }, { text: "🎨 Midjourney", callback_data: "midjourney" }],
           [{ text: "🖼️ Freepik", callback_data: "freepik" }, { text: "🎬 Runway", callback_data: "runway" }],
           [{ text: "⚙️ Настройки", callback_data: "settings" }, { text: "❓ Помощь", callback_data: "help" }]

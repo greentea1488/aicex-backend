@@ -211,7 +211,7 @@ export class WebhookController {
                     [{ text: "📸 Генерация фотографий", callback_data: "photo_generation" }],
                     [{ text: "🎬 Генерация видео", callback_data: "video_generation" }],
                     [{ text: "💬 ChatGPT", callback_data: "chatgpt" }],
-                    [{ text: "👤 Профиль", web_app: { url: "https://aicexonefrontend-production.up.railway.app/home" } }]
+                    [{ text: "👤 Профиль", web_app: { url: "https://aicexonefrontend-production.up.railway.app/" } }]
                   ]
                 }
               });

@@ -17,50 +17,37 @@ export interface FreepikVideoModel {
   resolution?: string;
 }
 
-// 🎨 МОДЕЛИ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ
 export const FREEPIK_IMAGE_MODELS: FreepikImageModel[] = [
   {
     id: 'mystic',
-    name: 'Mystic',
-    description: 'Фотореалистичная генерация 1K-4K качества',
+    name: 'Freepik Mystic',
+    description: 'Высококачественная генерация 1K-4K',
     endpoint: '/v1/ai/mystic'
   },
   {
-    id: 'classic-fast',
-    name: 'Classic Fast',
-    description: 'Быстрая генерация классических изображений',
-    endpoint: '/v1/ai/text-to-image/classic-fast'
-  },
-  {
-    id: 'gemini-flash',
-    name: 'Gemini 2.5 Flash',
-    description: 'Быстрая генерация от Google',
-    endpoint: '/v1/ai/text-to-image/gemini-2-5-flash'
-  },
-  {
-    id: 'google-imagen3',
-    name: 'Google Imagen 3',
-    description: 'Продвинутая модель от Google',
-    endpoint: '/v1/ai/text-to-image/google-imagen-3'
-  },
-  {
     id: 'flux-dev',
-    name: 'Flux dev',
-    description: 'Разработческая версия Flux',
+    name: 'Flux Dev',
+    description: 'Быстрая разработческая версия Flux',
     endpoint: '/v1/ai/text-to-image/flux-dev'
   },
   {
-    id: 'flux-pro',
-    name: 'Flux pro v1.1',
+    id: 'flux-pro-v1-1',
+    name: 'Flux Pro v1.1',
     description: 'Профессиональная версия Flux',
     endpoint: '/v1/ai/text-to-image/flux-pro-v1-1',
     isNew: true
   },
   {
     id: 'hyperflux',
-    name: 'Hyperflux',
-    description: 'Сверхбыстрая генерация',
+    name: 'HyperFlux',
+    description: 'Самая быстрая модель Flux',
     endpoint: '/v1/ai/text-to-image/hyperflux'
+  },
+  {
+    id: 'seedream-v4',
+    name: 'Seedream 4',
+    description: 'Новейшая версия Seedream для текста в изображение',
+    endpoint: '/v1/ai/text-to-image/seedream-v4'
   },
   {
     id: 'seedream',
@@ -69,22 +56,27 @@ export const FREEPIK_IMAGE_MODELS: FreepikImageModel[] = [
     endpoint: '/v1/ai/text-to-image/seedream'
   },
   {
-    id: 'seedream-v4',
-    name: 'Seedream 4',
-    description: 'Новейшая версия Seedream',
-    endpoint: '/v1/ai/text-to-image/seedream-v4'
+    id: 'imagen3',
+    name: 'Google Imagen 3',
+    description: 'Продвинутая модель от Google',
+    endpoint: '/v1/ai/text-to-image/imagen3'
   },
   {
-    id: 'seedream-v4-edit',
-    name: 'Seedream 4 Edit',
-    description: 'Редактирование изображений',
-    endpoint: '/v1/ai/text-to-image/seedream-v4-edit'
+    id: 'gemini-2-5-flash',
+    name: 'Gemini 2.5 Flash',
+    description: 'Быстрая генерация от Google (Nano Banana)',
+    endpoint: '/v1/ai/gemini-2-5-flash-image-preview'
+  },
+  {
+    id: 'classic-fast',
+    name: 'Classic Fast',
+    description: 'Быстрая генерация классических изображений',
+    endpoint: '/v1/ai/text-to-image'
   }
 ];
 
 // 🎬 МОДЕЛИ ГЕНЕРАЦИИ ВИДЕО
 export const FREEPIK_VIDEO_MODELS: FreepikVideoModel[] = [
-  {
     id: 'kling-v2-5-pro',
     name: 'Kling v2.5 Pro',
     description: 'Новейшая модель для видео',
