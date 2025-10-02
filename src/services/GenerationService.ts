@@ -159,7 +159,7 @@ export class GenerationService {
 
       const response = await axios.post(endpoint, payload, {
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'x-freepik-api-key': apiKey,
           'Content-Type': 'application/json'
         }
       });
