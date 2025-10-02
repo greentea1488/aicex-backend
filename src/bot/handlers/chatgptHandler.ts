@@ -286,7 +286,8 @@ export class ChatGPTHandler extends BaseAIHandler {
       where: { telegramId: parseInt(userId) },
     });
 
-    const modelName = this.getModelDisplayName(user?.gptSettings?.model || "gpt-4o-mini");
+    const gptSettings = user?.gptSettings as any;
+    const modelName = this.getModelDisplayName(gptSettings?.model || "gpt-4o-mini");
 
     await ctx.editMessageText(
       `💬 ChatGPT Текстовый чат\n\nМодель: ${modelName}\n\nТеперь отправьте любое сообщение для начала диалога:`,

@@ -27,8 +27,9 @@ export class ChatGPTService extends BaseAIService {
         where: { telegramId: parseInt(userId) },
       });
 
+      const gptSettings = user?.gptSettings as any;
       const completion = await this.client.chat.completions.create({
-        model: user?.gptSettings?.model || "gpt-4.1-mini",
+        model: gptSettings?.model || "gpt-4o-mini",
         messages: messages,
         temperature: 0.4,
         max_tokens: 2000,

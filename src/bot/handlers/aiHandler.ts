@@ -51,17 +51,18 @@ export class AIHandler {
         session = this.sessionManager.createSession(userId, aiProvider);
 
         // Add system prompt to new session
-        if (user.gptSettings?.systemPrompt) {
+        const gptSettings = user.gptSettings as any;
+        if (gptSettings?.systemPrompt) {
           session.messages.push({
             role: "system",
-            content: user.gptSettings?.systemPrompt,
+            content: gptSettings.systemPrompt,
           });
         }
 
-        if (user.gptSettings?.userPrompt) {
+        if (gptSettings?.userPrompt) {
           session.messages.push({
             role: "system",
-            content: user.gptSettings?.userPrompt,
+            content: gptSettings.userPrompt,
           });
         }
       }
