@@ -255,7 +255,11 @@ app.listen(PORT, "0.0.0.0", async () => {
       logger.info("🤖 Starting Telegram bot...");
       logger.info(`🔑 BOT_TOKEN available: ${process.env.BOT_TOKEN ? 'YES' : 'NO'}`);
       
-      startBot()
+      // Импортируем и запускаем чистого бота
+      import('./bot/clean-production-bot')
+        .then(({ startCleanBot }) => {
+          return startCleanBot();
+        })
         .then(() => {
           logger.info("✅ Telegram bot started successfully!");
         })
