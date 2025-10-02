@@ -584,14 +584,25 @@ bot.on("message:text", async (ctx) => {
   }
 
   try {
-    // 🎨 ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЯ
+    // Получаем пользователя для контекста
+    const user = await prisma.user.findUnique({
+      where: { telegramId: userId }
+    });
+    
+    // 🎨 ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ
     if (userState.state === 'waiting_image_prompt') {
-      await ctx.reply("⏳ Генерирую изображение...");
+      await ctx.reply("🎨 Генерирую изображение...");
+      
+      // Создаем правильный UserContext
+      const userContext = {
+        telegramId: userId,
+        currentTokens: user?.tokens || 0
+      };
       
       const result = await aiManager.generateImage(
         text, 
-        userState.service, 
-        userState
+        userState.service || 'freepik',
+        userContext
       );
       
       if (result.success && result.data?.url) {
@@ -626,10 +637,16 @@ bot.on("message:text", async (ctx) => {
     else if (userState.state === 'waiting_video_prompt') {
       await ctx.reply("⏳ Генерирую видео... Это может занять несколько минут.");
       
+      // Создаем правильный UserContext
+      const userContext = {
+        telegramId: userId,
+        currentTokens: user?.tokens || 0
+      };
+      
       const result = await aiManager.generateVideo(
         text, 
         'freepik', 
-        userState
+        userContext
       );
       
       if (result.success && result.data?.url) {
