@@ -555,19 +555,18 @@ bot.on("message:text", async (ctx) => {
         telegramId: userId,
         currentTokens: user?.tokens || 0
       };
-      
-      const result = await aiManager.generateImage(
-        text, 
-        userState.service || 'freepik',
-        userContext
-      );
-      
+            const result = await aiManager.generateImage(
+              text, 
+              userState.service || 'freepik',
+              userContext,
+              userState.model // Передаем модель из состояния пользователя
+            );   
       if (result.success && result.data?.url) {
         const model = userState.model ? getImageModelById(userState.model) : null;
         const modelName = model ? model.name : userState.service.toUpperCase();
         
         const caption = `✅ Изображение готово!
-
+{{ ... }}
 📝 Промпт: "${text}"
 🎨 Модель: ${modelName}
 💰 Использовано токенов: ${result.tokensUsed || 1}`;

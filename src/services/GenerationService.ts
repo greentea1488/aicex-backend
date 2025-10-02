@@ -5,13 +5,13 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
 import { prisma } from '../utils/prismaClient';
-
 export interface GenerationRequest {
   userId: number;
   service: 'freepik' | 'midjourney' | 'runway' | 'kling' | 'chatgpt';
   type: 'image' | 'video' | 'text';
   prompt: string;
-  imageUrl?: string; // для редактирования изображений
+  model?: string;
+  imageUrl?: string;
   options?: {
     style?: string;
     size?: string;
@@ -149,13 +149,35 @@ export class GenerationService {
       
       console.log(`🚀 FREEPIK DEBUG: Starting generation with API key: ${apiKey.substring(0, 10)}...`);
 
-      const endpoint = request.type === 'image' 
-        ? 'https://api.freepik.com/v1/ai/text-to-image'
-        : 'https://api.freepik.com/v1/ai/text-to-video';
+      // Определяем endpoint на основе модели
+      let endpoint: string;
+      if (request.type === 'image') {
+        const model = request.model || 'flux-dev';
+        switch (model) {
+          case 'flux-dev':
+            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/flux-dev';
+            break;
+          case 'flux-pro':
+            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/flux-pro-v1-1';
+            break;
+          case 'seedream-v4':
+            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/seedream-v4';
+            break;
+          case 'imagen3':
+            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/imagen3';
+            break;
+          case 'mystic':
+            endpoint = 'https://api.freepik.com/v1/ai/mystic';
+            break;
+          default:
+            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/flux-dev';
+        }
+      } else {
+        endpoint = 'https://api.freepik.com/v1/ai/text-to-video';
+      }
 
       const payload = {
         prompt: request.prompt,
-        model: 'flux-dev', // Указываем модель в payload
         ...(request.imageUrl && { image: request.imageUrl }),
         ...(request.options?.style && { style: request.options.style }),
         ...(request.options?.size && { size: request.options.size })

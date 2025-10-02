@@ -58,6 +58,7 @@ export class AIServiceManager {
     prompt: string, 
     service: 'freepik' | 'dalle' | 'midjourney',
     userContext: UserContext,
+    model?: string,
     options?: any
   ): Promise<GenerationResult> {
     try {
@@ -75,7 +76,7 @@ export class AIServiceManager {
 
       switch (service) {
         case 'freepik':
-          result = await this.generateFreepikImage(prompt, options);
+          result = await this.generateFreepikImage(prompt, model, options);
           break;
           
         case 'dalle':
@@ -293,11 +294,11 @@ export class AIServiceManager {
   /**
    * Генерация изображения через Freepik
    */
-  private async generateFreepikImage(prompt: string, options?: any): Promise<GenerationResult> {
+  private async generateFreepikImage(prompt: string, model?: string, options?: any): Promise<GenerationResult> {
     const request: FreepikImageRequest = {
       prompt,
       aspect_ratio: options?.size || 'square_1_1',
-      model: 'seedream_v4'
+      model: (model as any) || 'flux_dev' // Используем переданную модель или flux_dev по умолчанию
     };
 
     const response = await this.freepik.generateImage(request);
