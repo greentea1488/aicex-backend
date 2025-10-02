@@ -28,15 +28,14 @@ export class WebhookController {
         logger.info(`Creating new user: ${telegramId} (@${telegramUser.username})`);
         
         try {
-          // Создаем нового пользователя
+          // Создаем нового пользователя (без связей для избежания транзакций)
           await prisma.user.create({
             data: {
               telegramId,
               username: telegramUser.username || `user_${telegramId}`,
               firstName: telegramUser.first_name || '',
               lastName: telegramUser.last_name || '',
-              tokens: 10, // Стартовые токены
-              subscription: null
+              tokens: 10 // Стартовые токены
             }
           });
           

@@ -23,7 +23,7 @@ model User {
   referral        String?        @db.ObjectId
   tokens          Int            @default(0)
   friendsReferred Int            @default(0)
-  subscription    Subscription?
+  subscription    String?
   
   // Связи с другими моделями
   dialogs         ChatHistory[]
@@ -176,11 +176,7 @@ model BotChatSession {
   @@unique([telegramId, aiProvider])
 }
 
-enum Subscription {
-  base
-  pro
-  premium
-}
+// Subscription теперь простая строка для избежания сложностей
 
 model FreepikTask {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
