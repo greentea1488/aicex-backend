@@ -16,16 +16,19 @@ export interface GenerationRequest {
     style?: string;
     size?: string;
     quality?: string;
-    duration?: number; // для видео
   };
 }
 
 export interface GenerationResult {
   success: boolean;
+  data?: {
+    url?: string;
+    content?: string;
+  };
   resultUrl?: string;
   taskId?: string;
   error?: string;
-  tokensUsed: number;
+  tokensUsed?: number;
 }
 
 // Стоимость токенов для каждого сервиса
@@ -173,10 +176,12 @@ export class GenerationService {
       // Freepik API возвращает массив data с base64 изображениями
       if (response.data.data && response.data.data.length > 0) {
         const imageData = response.data.data[0];
+        const url = `data:image/jpeg;base64,${imageData.base64}`;
         return {
           success: true,
-          resultUrl: `data:image/jpeg;base64,${imageData.base64}`,
-          taskId: Date.now().toString(), // Генерируем ID
+          data: { url }, // Новый формат для clean-production-bot
+          resultUrl: url, // Старый формат для совместимости
+          taskId: Date.now().toString(),
           tokensUsed: 1
         };
       } else {

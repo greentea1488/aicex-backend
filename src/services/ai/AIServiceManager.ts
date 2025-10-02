@@ -7,12 +7,13 @@ import { prisma } from '../../utils/prismaClient';
 export interface GenerationResult {
   success: boolean;
   data?: {
-    type: 'image' | 'video' | 'text';
+    type?: 'image' | 'video' | 'text';
     url?: string;
-    urls?: string[];
     content?: string;
     metadata?: any;
   };
+  resultUrl?: string; // Для совместимости со старым кодом
+  taskId?: string;
   error?: string;
   tokensUsed?: number;
 }
