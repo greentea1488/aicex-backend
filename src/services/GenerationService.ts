@@ -136,9 +136,15 @@ export class GenerationService {
   private async generateWithFreepik(request: GenerationRequest): Promise<GenerationResult> {
     try {
       const apiKey = process.env.FREEPIK_API_KEY;
+      console.log(`🔍 FREEPIK DEBUG: API Key check - ${apiKey ? `EXISTS (${apiKey.substring(0, 10)}...)` : 'NOT FOUND'}`);
+      console.log(`🔍 FREEPIK DEBUG: Full env check - FREEPIK_API_KEY in process.env: ${!!process.env.FREEPIK_API_KEY}`);
+      
       if (!apiKey) {
+        console.log('❌ FREEPIK DEBUG: API Key is empty or undefined');
         return { success: false, error: 'Freepik API ключ не настроен', tokensUsed: 0 };
       }
+      
+      console.log(`🚀 FREEPIK DEBUG: Starting generation with API key: ${apiKey.substring(0, 10)}...`);
 
       const endpoint = request.type === 'image' 
         ? 'https://api.freepik.com/v1/ai/text-to-image'

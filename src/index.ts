@@ -87,7 +87,17 @@ try {
   app.use("/api/admin", adminRoutes);
   app.use("/api/webhooks", webhookRoutes);
   logger.info("✅ All routes loaded successfully");
-  logger.info(`🔑 FREEPIK_API_KEY available: ${process.env.FREEPIK_API_KEY ? 'YES' : 'NO'}`);
+  
+  // Детальная диагностика переменных окружения
+  logger.info("🔍 Environment Variables Diagnostic:");
+  logger.info(`🔑 FREEPIK_API_KEY: ${process.env.FREEPIK_API_KEY ? `EXISTS (${process.env.FREEPIK_API_KEY.substring(0, 10)}...)` : 'NOT FOUND'}`);
+  logger.info(`🤖 OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? `EXISTS (${process.env.OPENAI_API_KEY.substring(0, 10)}...)` : 'NOT FOUND'}`);
+  logger.info(`🎨 GEN_API_KEY: ${process.env.GEN_API_KEY ? `EXISTS (${process.env.GEN_API_KEY.substring(0, 10)}...)` : 'NOT FOUND'}`);
+  logger.info(`🎬 RUNWAY_API_KEY: ${process.env.RUNWAY_API_KEY ? `EXISTS (${process.env.RUNWAY_API_KEY.substring(0, 10)}...)` : 'NOT FOUND'}`);
+  logger.info(`💳 LAVA_API_KEY: ${process.env.LAVA_API_KEY ? `EXISTS (${process.env.LAVA_API_KEY.substring(0, 10)}...)` : 'NOT FOUND'}`);
+  logger.info(`🗄️ DATABASE_URL: ${process.env.DATABASE_URL ? `EXISTS (${process.env.DATABASE_URL.substring(0, 20)}...)` : 'NOT FOUND'}`);
+  logger.info(`🤖 BOT_TOKEN: ${process.env.BOT_TOKEN ? `EXISTS (${process.env.BOT_TOKEN.substring(0, 10)}...)` : 'NOT FOUND'}`);
+  logger.info("🔍 End Environment Variables Diagnostic");
 } catch (error) {
   throw error;
 }
