@@ -136,7 +136,7 @@ export class FreepikService {
 
       let requestData: any = {
         prompt: request.prompt,
-        webhook_url: `${process.env.BACKEND_URL}/api/webhooks/freepik`
+        webhook_url: `${process.env.BACKEND_URL || 'https://aicex-ai-bot-backend-production.up.railway.app'}/api/webhooks/freepik`
       };
 
       // Настройки для разных моделей
@@ -204,7 +204,7 @@ export class FreepikService {
 
       const requestData: any = {
         image: imageUrl,
-        webhook_url: `${process.env.BACKEND_URL}/api/webhooks/freepik`
+        webhook_url: `${process.env.BACKEND_URL || 'https://aicex-ai-bot-backend-production.up.railway.app'}/api/webhooks/freepik`
       };
 
       // Добавляем prompt если есть

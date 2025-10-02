@@ -376,7 +376,7 @@ export async function startBot() {
     logger.info(`✅ Bot verified: @${me.username} (${me.first_name})`);
     
     // ИСПОЛЬЗУЕМ WEBHOOK ВМЕСТО POLLING для Railway
-    const webhookUrl = `${process.env.BACKEND_URL || 'https://aicexaibot-production.up.railway.app'}/api/webhooks/telegram`;
+    const webhookUrl = `${process.env.BACKEND_URL || 'https://aicex-ai-bot-backend-production.up.railway.app'}/api/webhooks/telegram`;
     
     try {
       await bot.api.setWebhook(webhookUrl, {
