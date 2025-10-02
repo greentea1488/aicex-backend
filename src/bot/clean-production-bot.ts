@@ -86,10 +86,10 @@ function getFreepikImageModelsMenu() {
   return { inline_keyboard: keyboard };
 }
 
-// 🎬 МЕНЮ МОДЕЛЕЙ FREEPIK ВИДЕО (все модели кроме Kling и Runway)
+// 🎬 МЕНЮ МОДЕЛЕЙ FREEPIK ВИДЕО (включая MiniMax, исключая только Kling)
 function getFreepikVideoModelsMenu() {
   const freepikModels = FREEPIK_VIDEO_MODELS.filter(model => 
-    !model.id.includes('kling') && !model.id.includes('minimax')
+    !model.id.includes('kling')
   );
   
   const keyboard = freepikModels.map(model => [{
@@ -104,20 +104,12 @@ function getFreepikVideoModelsMenu() {
   return { inline_keyboard: keyboard };
 }
 
-// 🚀 МЕНЮ МОДЕЛЕЙ RUNWAY (MiniMax модели из Freepik)
+// 🚀 МЕНЮ МОДЕЛЕЙ RUNWAY (пока пустое - интеграция в разработке)
 function getRunwayVideoModelsMenu() {
-  const runwayModels = FREEPIK_VIDEO_MODELS.filter(model => 
-    model.id.includes('minimax')
-  );
-  
-  const keyboard = runwayModels.map(model => [{
-    text: `${model.isNew ? '🆕 ' : ''}${model.name} ${model.resolution ? `(${model.resolution})` : ''}`,
-    callback_data: `runway_vid_${model.id}`
-  }]);
-  
-  keyboard.push([
-    { text: '⬅️ Назад', callback_data: 'generate_video' }
-  ]);
+  const keyboard = [
+    [{ text: '🚧 В разработке', callback_data: 'runway_coming_soon' }],
+    [{ text: '⬅️ Назад', callback_data: 'generate_video' }]
+  ];
   
   return { inline_keyboard: keyboard };
 }
@@ -342,9 +334,10 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
       case 'video_freepik':
         const freepikVideoText = `🎬 Freepik Video - Генерация видео
 
-Модели Freepik:
+Доступные модели:
 • PixVerse V5 - новая модель с переходами
 • Seedance Pro - профессиональное качество
+• MiniMax Hailuo - высокое качество видео
 
 Выберите модель:`;
         
@@ -356,11 +349,10 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
       case 'video_runway':
         const runwayVideoText = `🚀 Runway ML - Генерация видео
 
-Модели Runway (через Freepik API):
-• MiniMax Hailuo 02 1080p - высокое качество
-• MiniMax Hailuo 02 768p - быстрая генерация
+Интеграция с Runway ML находится в разработке.
+Скоро будут доступны новые модели!
 
-Выберите модель:`;
+Пока используйте другие сервисы.`;
         
         await ctx.editMessageText(runwayVideoText, { 
           reply_markup: getRunwayVideoModelsMenu() 
@@ -370,7 +362,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
       case 'video_kling':
         const klingVideoText = `🔥 Kling AI - Генерация видео
 
-Модели Kling (через Freepik API):
+Доступные модели:
 • Kling v2.5 Pro - новейшая версия
 • Kling Pro v2.1 - профессиональная
 • Kling Master - мастер версия
@@ -537,29 +529,10 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
           }
         }
         
-        // 🚀 ОБРАБОТКА ВЫБОРА МОДЕЛИ ВИДЕО - RUNWAY
-        if (data?.startsWith('runway_vid_')) {
-          const modelId = data.replace('runway_vid_', '');
-          const model = getVideoModelById(modelId);
-          
-          if (model) {
-            userStates.set(userId, { 
-              state: 'waiting_video_prompt', 
-              service: 'runway', 
-              model: modelId 
-            });
-            
-            await ctx.editMessageText(
-              `🚀 ${model.name}\n${model.description}\n\nВведите описание видео:`,
-              {
-                reply_markup: {
-                  inline_keyboard: [
-                    [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
-                  ]
-                }
-              }
-            );
-          }
+        // 🚧 ОБРАБОТКА "В РАЗРАБОТКЕ"
+        if (data === 'runway_coming_soon') {
+          await ctx.answerCallbackQuery("🚧 Runway ML интеграция в разработке. Скоро будет доступна!");
+          return;
         }
         
         // 🔥 ОБРАБОТКА ВЫБОРА МОДЕЛИ ВИДЕО - KLING
