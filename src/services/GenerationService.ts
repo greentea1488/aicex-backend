@@ -157,12 +157,18 @@ export class GenerationService {
         ...(request.options?.size && { size: request.options.size })
       };
 
+      console.log('🚀 FREEPIK DEBUG: Sending payload:', JSON.stringify(payload, null, 2));
+      console.log('🚀 FREEPIK DEBUG: Endpoint:', endpoint);
+
       const response = await axios.post(endpoint, payload, {
         headers: {
           'x-freepik-api-key': apiKey,
           'Content-Type': 'application/json'
         }
       });
+
+      console.log('✅ FREEPIK DEBUG: Response status:', response.status);
+      console.log('✅ FREEPIK DEBUG: Response data:', JSON.stringify(response.data, null, 2));
 
       if (response.data.success) {
         return {
