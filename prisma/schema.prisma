@@ -25,20 +25,8 @@ model User {
   friendsReferred Int            @default(0)
   subscription    String?
   
-  // Связи с другими моделями
-  dialogs         ChatHistory[]
-  payments        Payment[] 
-  tokenHistory    TokenHistory[] 
-  freepikTasks    FreepikTask[]
-  runwayTasks     RunwayTask[]
-  midjourneyTasks MidjourneyTask[]
-  auditLogs       AuditLog[]
-  generationHistory GenerationHistory[]
-
-  appSettings     AppSettings? 
-  gptSettings     GptSettings?
-  midjourneySettings MidjourneySettings?
-  runwaySettings RunwaySettings?
+  // Связи убраны для избежания транзакций MongoDB
+  // appSettings, gptSettings и другие настройки будут храниться как JSON поля
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -97,7 +85,7 @@ model Payment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id])
+  // user        User     @relation(fields: [userId], references: [id]) // Убрано для избежания транзакций
   
   @@index([userId])
   @@index([status])
@@ -129,7 +117,7 @@ model TokenHistory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id])
+  // user        User     @relation(fields: [userId], references: [id]) // Убрано для избежания транзакций
   
   @@index([userId])
   @@index([type])
@@ -176,7 +164,22 @@ model BotChatSession {
   @@unique([telegramId, aiProvider])
 }
 
-// Subscription теперь простая строка для избежания сложностей
+// Простая модель Task для замены сложных связей
+model Task {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  service   String   // 'freepik', 'midjourney', 'runway', etc.
+  type      String   // 'image', 'video', 'text'
+  prompt    String
+  status    String   @default("pending")
+  result    String?  // URL результата
+  error     String?
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([service])
+  @@index([status])
+}
 
 model FreepikTask {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -246,7 +249,7 @@ model MidjourneyTask {
   updatedAt   DateTime @updatedAt
 
   // Связь с пользователем
-  user        User     @relation(fields: [userId], references: [id])
+  // user        User     @relation(fields: [userId], references: [id]) // Убрано для избежания транзакций
 
   // Индексы для производительности
   @@index([userId])
