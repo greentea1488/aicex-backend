@@ -87,6 +87,7 @@ try {
   app.use("/api/admin", adminRoutes);
   app.use("/api/webhooks", webhookRoutes);
   logger.info("✅ All routes loaded successfully");
+  logger.info(`🔑 FREEPIK_API_KEY available: ${process.env.FREEPIK_API_KEY ? 'YES' : 'NO'}`);
 } catch (error) {
   throw error;
 }
