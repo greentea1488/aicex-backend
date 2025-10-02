@@ -563,7 +563,7 @@ bot.on("message:text", async (ctx) => {
             );   
       if (result.success && result.data?.url) {
         const model = userState.model ? getImageModelById(userState.model) : null;
-        const modelName = model ? model.name : userState.service.toUpperCase();
+        const modelName = model?.name || userState.service?.toUpperCase() || 'AI';
         
         const caption = `✅ Изображение готово!
 {{ ... }}
@@ -607,7 +607,7 @@ bot.on("message:text", async (ctx) => {
       
       if (result.success && result.data?.url) {
         const model = userState.model ? getVideoModelById(userState.model) : null;
-        const modelName = model ? model.name : 'Freepik Video';
+        const modelName = model?.name || 'Freepik Video';
         
         const caption = `✅ Видео готово!
 
