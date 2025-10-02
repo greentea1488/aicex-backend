@@ -23,7 +23,7 @@ const mainMenu = {
       { text: '💬 Чат с AI', callback_data: 'chat_ai' }
     ],
     [
-      { text: '👤 Профиль', web_app: { url: process.env.FRONTEND_URL || 'http://localhost:3000' } }
+      { text: '👤 Профиль', web_app: { url: process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/home' } }
     ]
   ]
 };

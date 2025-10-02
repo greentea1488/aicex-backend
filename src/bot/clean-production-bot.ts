@@ -26,7 +26,7 @@ const mainMenu = {
     [{ text: '🎨 Генерация фото', callback_data: 'generate_image' }],
     [{ text: '🎬 Генерация видео', callback_data: 'generate_video' }],
     [{ text: '💬 Чат с AI', callback_data: 'chat_ai' }],
-    [{ text: '👤 Профиль', web_app: { url: process.env.FRONTEND_URL || 'http://localhost:3000' } }]
+    [{ text: '👤 Профиль', web_app: { url: process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/home' } }]
   ]
 };
 
