@@ -25,8 +25,11 @@ model User {
   friendsReferred Int            @default(0)
   subscription    String?
   
-  // Связи убраны для избежания транзакций MongoDB
-  // appSettings, gptSettings и другие настройки будут храниться как JSON поля
+  // Связи с другими моделями (восстановлены для Atlas)
+  payments        Payment[] 
+  tokenHistory    TokenHistory[] 
+  tasks           Task[]
+  auditLogs       AuditLog[]
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -85,7 +88,7 @@ model Payment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // user        User     @relation(fields: [userId], references: [id]) // Убрано для избежания транзакций
+  user        User     @relation(fields: [userId], references: [id])
   
   @@index([userId])
   @@index([status])
@@ -117,7 +120,7 @@ model TokenHistory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // user        User     @relation(fields: [userId], references: [id]) // Убрано для избежания транзакций
+  user        User     @relation(fields: [userId], references: [id])
   
   @@index([userId])
   @@index([type])
@@ -164,7 +167,7 @@ model BotChatSession {
   @@unique([telegramId, aiProvider])
 }
 
-// Простая модель Task для замены сложных связей
+// Основная модель Task для всех генераций
 model Task {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @db.ObjectId
@@ -174,11 +177,15 @@ model Task {
   status    String   @default("pending")
   result    String?  // URL результата
   error     String?
+  tokensUsed Int     @default(0)
   createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id])
   
   @@index([userId])
   @@index([service])
   @@index([status])
+  @@index([createdAt])
 }
 
 model FreepikTask {
@@ -249,7 +256,7 @@ model MidjourneyTask {
   updatedAt   DateTime @updatedAt
 
   // Связь с пользователем
-  // user        User     @relation(fields: [userId], references: [id]) // Убрано для избежания транзакций
+  user        User     @relation(fields: [userId], references: [id])
 
   // Индексы для производительности
   @@index([userId])
