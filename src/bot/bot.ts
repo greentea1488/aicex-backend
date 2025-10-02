@@ -304,22 +304,25 @@ bot.command("start", async ctx => {
   try {
     logger.info("🔄 Creating/updating user in database...");
     
-    // Простое создание пользователя
-    const user = await prisma.user.upsert({
-      where: { telegramId: userId },
-      update: { 
-        username: ctx.from?.username || "",
-        firstName: ctx.from?.first_name || "",
-        lastName: ctx.from?.last_name || ""
-      },
-      create: {
-        telegramId: userId,
-        username: ctx.from?.username || "",
-        firstName: ctx.from?.first_name || "",
-        lastName: ctx.from?.last_name || "",
-        tokens: 10
-      }
+    // Простое создание пользователя БЕЗ ТРАНЗАКЦИЙ
+    let user = await prisma.user.findUnique({
+      where: { telegramId: userId }
     });
+    
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          telegramId: userId,
+          username: ctx.from?.username || "",
+          firstName: ctx.from?.first_name || "",
+          lastName: ctx.from?.last_name || "",
+          tokens: 10
+        }
+      });
+      logger.info(`✅ New user created: ${user.id}`);
+    } else {
+      logger.info(`✅ Existing user found: ${user.id}`);
+    }
 
     logger.info(`✅ User created/updated: ${user.id}`);
     logger.info("📤 Sending start menu...");
