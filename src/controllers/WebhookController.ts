@@ -481,15 +481,23 @@ export class WebhookController {
       const { bot } = await import('../bot/bot');
       
       if (!bot) {
-        logger.error('Bot not initialized for webhook');
-        res.status(500).json({ error: 'Bot not initialized' });
+        logger.error('Bot not available for webhook processing');
+        res.status(500).json({ error: 'Bot not available' });
         return;
       }
 
       logger.info('Processing update with grammY...');
-      const callback = webhookCallback(bot, 'express');
-      await callback(req, res);
-      logger.info('Webhook processed successfully');
+      logger.info('Update data:', JSON.stringify(req.body, null, 2));
+      
+      try {
+        const callback = webhookCallback(bot, 'express');
+        await callback(req, res);
+        logger.info('Webhook processed successfully');
+      } catch (error) {
+        logger.error('Error processing webhook with grammY:', error);
+        logger.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Webhook processing failed' });
+      }
       
     } catch (error) {
       logger.error('Error handling Telegram webhook:', error);
