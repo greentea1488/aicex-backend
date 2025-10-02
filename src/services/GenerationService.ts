@@ -170,15 +170,17 @@ export class GenerationService {
       console.log('✅ FREEPIK DEBUG: Response status:', response.status);
       console.log('✅ FREEPIK DEBUG: Response data:', JSON.stringify(response.data, null, 2));
 
-      if (response.data.success) {
+      // Freepik API возвращает массив data с base64 изображениями
+      if (response.data.data && response.data.data.length > 0) {
+        const imageData = response.data.data[0];
         return {
           success: true,
-          resultUrl: response.data.data.url,
-          taskId: response.data.data.id,
-          tokensUsed: 0
+          resultUrl: `data:image/jpeg;base64,${imageData.base64}`,
+          taskId: Date.now().toString(), // Генерируем ID
+          tokensUsed: 1
         };
       } else {
-        return { success: false, error: response.data.message, tokensUsed: 0 };
+        return { success: false, error: 'No image data received', tokensUsed: 0 };
       }
 
     } catch (error: any) {
