@@ -45,6 +45,8 @@ const imageMenu = {
 const videoMenu = {
   inline_keyboard: [
     [{ text: '🎬 Freepik Video', callback_data: 'video_freepik' }],
+    [{ text: '🚀 Runway ML', callback_data: 'video_runway' }],
+    [{ text: '🔥 Kling AI', callback_data: 'video_kling' }],
     [{ text: '⬅️ Назад', callback_data: 'back_to_main' }]
   ]
 };
@@ -84,17 +86,59 @@ function getFreepikImageModelsMenu() {
   return { inline_keyboard: keyboard };
 }
 
-// 🎬 МЕНЮ МОДЕЛЕЙ FREEPIK ВИДЕО
+// 🎬 МЕНЮ МОДЕЛЕЙ FREEPIK ВИДЕО (только Freepik модели)
 function getFreepikVideoModelsMenu() {
-  const popularModels = getPopularVideoModels();
+  const freepikModels = FREEPIK_VIDEO_MODELS.filter(model => 
+    model.id.includes('seedance') || model.id.includes('pixverse')
+  );
   
-  const keyboard = popularModels.map(model => [{
+  const keyboard = freepikModels.slice(0, 4).map(model => [{
     text: `${model.isNew ? '🆕 ' : ''}${model.name} ${model.resolution ? `(${model.resolution})` : ''}`,
     callback_data: `freepik_vid_${model.id}`
   }]);
   
   keyboard.push([
-    { text: '📋 Все модели', callback_data: 'freepik_all_videos' }
+    { text: '📋 Все Freepik модели', callback_data: 'freepik_all_videos' }
+  ]);
+  
+  keyboard.push([
+    { text: '⬅️ Назад', callback_data: 'generate_video' }
+  ]);
+  
+  return { inline_keyboard: keyboard };
+}
+
+// 🚀 МЕНЮ МОДЕЛЕЙ RUNWAY (MiniMax модели)
+function getRunwayVideoModelsMenu() {
+  const runwayModels = FREEPIK_VIDEO_MODELS.filter(model => 
+    model.id.includes('minimax')
+  );
+  
+  const keyboard = runwayModels.map(model => [{
+    text: `${model.isNew ? '🆕 ' : ''}${model.name} ${model.resolution ? `(${model.resolution})` : ''}`,
+    callback_data: `runway_vid_${model.id}`
+  }]);
+  
+  keyboard.push([
+    { text: '⬅️ Назад', callback_data: 'generate_video' }
+  ]);
+  
+  return { inline_keyboard: keyboard };
+}
+
+// 🔥 МЕНЮ МОДЕЛЕЙ KLING
+function getKlingVideoModelsMenu() {
+  const klingModels = FREEPIK_VIDEO_MODELS.filter(model => 
+    model.id.includes('kling')
+  );
+  
+  const keyboard = klingModels.slice(0, 6).map(model => [{
+    text: `${model.isNew ? '🆕 ' : ''}${model.name}`,
+    callback_data: `kling_vid_${model.id}`
+  }]);
+  
+  keyboard.push([
+    { text: '📋 Все Kling модели', callback_data: 'kling_all_videos' }
   ]);
   
   keyboard.push([
@@ -284,7 +328,14 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
         });
         
         await ctx.editMessageText(
-          "🖼️ DALL-E 3\n\nВведите описание изображения:"
+          "🖼️ DALL-E 3\n\nВведите описание изображения:",
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+              ]
+            }
+          }
         );
         break;
 
@@ -297,15 +348,45 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
         break;
 
       case 'video_freepik':
-        const videoModelsText = `🎬 Freepik Video - Генерация видео
+        const freepikVideoText = `🎬 Freepik Video - Генерация видео
 
-Популярные модели:
-${getPopularVideoModels().map(m => `• ${m.name} - ${m.description}`).join('\n')}
+Собственные модели Freepik:
+• PixVerse V5 - новая модель с переходами
+• Seedance Pro - профессиональное качество
 
 Выберите модель:`;
         
-        await ctx.editMessageText(videoModelsText, { 
+        await ctx.editMessageText(freepikVideoText, { 
           reply_markup: getFreepikVideoModelsMenu() 
+        });
+        break;
+
+      case 'video_runway':
+        const runwayVideoText = `🚀 Runway ML - Генерация видео
+
+Модели MiniMax Hailuo:
+• MiniMax Hailuo 02 1080p - высокое качество
+• MiniMax Hailuo 02 768p - быстрая генерация
+
+Выберите модель:`;
+        
+        await ctx.editMessageText(runwayVideoText, { 
+          reply_markup: getRunwayVideoModelsMenu() 
+        });
+        break;
+
+      case 'video_kling':
+        const klingVideoText = `🔥 Kling AI - Генерация видео
+
+Модели Kling:
+• Kling v2.5 Pro - новейшая версия
+• Kling Pro v2.1 - профессиональная
+• Kling Master - мастер версия
+
+Выберите модель:`;
+        
+        await ctx.editMessageText(klingVideoText, { 
+          reply_markup: getKlingVideoModelsMenu() 
         });
         break;
 
@@ -334,7 +415,14 @@ ${getPopularVideoModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
         });
         
         await ctx.editMessageText(
-          "🤖 ChatGPT-4\n\nНачните диалог. Отправьте сообщение:"
+          "🤖 ChatGPT-4\n\nНачните диалог. Отправьте сообщение:",
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+              ]
+            }
+          }
         );
         break;
 
@@ -345,7 +433,14 @@ ${getPopularVideoModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
         });
         
         await ctx.editMessageText(
-          "🧠 Claude-3\n\nНачните диалог. Отправьте сообщение:"
+          "🧠 Claude-3\n\nНачните диалог. Отправьте сообщение:",
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+              ]
+            }
+          }
         );
         break;
 
@@ -356,7 +451,14 @@ ${getPopularVideoModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
         });
         
         await ctx.editMessageText(
-          "🔮 ChatGPT-4 Vision\n\nОтправьте изображение с описанием:"
+          "🔮 ChatGPT-4 Vision\n\nОтправьте изображение с описанием:",
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+              ]
+            }
+          }
         );
         break;
 
@@ -387,12 +489,19 @@ ${getPopularVideoModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
             });
             
             await ctx.editMessageText(
-              `🎨 ${model.name}\n${model.description}\n\nВведите описание изображения:`
+              `🎨 ${model.name}\n${model.description}\n\nВведите описание изображения:`,
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+                  ]
+                }
+              }
             );
           }
         }
         
-        // 🎬 ОБРАБОТКА ВЫБОРА МОДЕЛИ ВИДЕО
+        // 🎬 ОБРАБОТКА ВЫБОРА МОДЕЛИ ВИДЕО - FREEPIK
         if (data?.startsWith('freepik_vid_')) {
           const modelId = data.replace('freepik_vid_', '');
           const model = getVideoModelById(modelId);
@@ -405,7 +514,64 @@ ${getPopularVideoModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
             });
             
             await ctx.editMessageText(
-              `🎬 ${model.name}\n${model.description}\n\nВведите описание видео:`
+              `🎬 ${model.name}\n${model.description}\n\nВведите описание видео:`,
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+                  ]
+                }
+              }
+            );
+          }
+        }
+        
+        // 🚀 ОБРАБОТКА ВЫБОРА МОДЕЛИ ВИДЕО - RUNWAY
+        if (data?.startsWith('runway_vid_')) {
+          const modelId = data.replace('runway_vid_', '');
+          const model = getVideoModelById(modelId);
+          
+          if (model) {
+            userStates.set(userId, { 
+              state: 'waiting_video_prompt', 
+              service: 'runway', 
+              model: modelId 
+            });
+            
+            await ctx.editMessageText(
+              `🚀 ${model.name}\n${model.description}\n\nВведите описание видео:`,
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+                  ]
+                }
+              }
+            );
+          }
+        }
+        
+        // 🔥 ОБРАБОТКА ВЫБОРА МОДЕЛИ ВИДЕО - KLING
+        if (data?.startsWith('kling_vid_')) {
+          const modelId = data.replace('kling_vid_', '');
+          const model = getVideoModelById(modelId);
+          
+          if (model) {
+            userStates.set(userId, { 
+              state: 'waiting_video_prompt', 
+              service: 'kling', 
+              model: modelId 
+            });
+            
+            await ctx.editMessageText(
+              `🔥 ${model.name}\n${model.description}\n\nВведите описание видео:`,
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
+                  ]
+                }
+              }
             );
           }
         }
