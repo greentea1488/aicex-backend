@@ -11,13 +11,15 @@ export interface GenerationResult {
     url?: string;
     content?: string;
     metadata?: any;
+    task_id?: string;
+    status?: string;
+    message?: string;
   };
   resultUrl?: string; // Для совместимости со старым кодом
   taskId?: string;
   error?: string;
   tokensUsed?: number;
 }
-
 export interface UserContext {
   telegramId: number;
   currentTokens: number;
@@ -310,20 +312,15 @@ export class AIServiceManager {
       };
     }
 
-    const imageUrl = response.data?.images?.[0]?.url;
-    if (!imageUrl) {
-      return {
-        success: false,
-        error: 'No image URL received from Freepik'
-      };
-    }
-
+    // Freepik API работает асинхронно - возвращаем task_id
+    // Результат придет через webhook
     return {
       success: true,
       data: {
         type: 'image',
-        url: imageUrl,
-        metadata: response.data
+        task_id: response.data?.id,
+        status: 'processing',
+        message: 'Изображение генерируется, результат придет через несколько секунд'
       }
     };
   }
