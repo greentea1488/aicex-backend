@@ -279,52 +279,50 @@ bot.on("message:video", async ctx => {
   }
 });
 
-// 🚀 ТЕСТ: Обработка всех сообщений
-bot.on("message", async ctx => {
-  logger.info(`📨 Message received: "${ctx.message.text}" from user ${ctx.from?.id} (@${ctx.from?.username})`);
+// 🚀 ТЕСТ: Обработка всех сообщений (кроме команд)
+bot.on("message:text", async ctx => {
+  logger.info(`📨 Text message received: "${ctx.message.text}" from user ${ctx.from?.id} (@${ctx.from?.username})`);
   
-  // Простой тест ответа
-  if (ctx.message.text === "/start") {
-    logger.info("🔥 Detected /start command, sending simple reply...");
-    try {
-      await ctx.reply("✅ Бот работает! Webhook получен и обработан.");
-      logger.info("✅ Simple reply sent successfully");
-    } catch (error) {
-      logger.error("❌ Failed to send simple reply:", error);
-    }
+  // Не обрабатываем команды здесь, они обрабатываются отдельно
+  if (ctx.message.text?.startsWith('/')) {
+    return;
   }
+  
+  await ctx.reply("Получил ваше сообщение! Используйте /start для главного меню.");
 });
 
 // 🚀 START COMMAND
 bot.command("start", async ctx => {
   const userId = ctx.from?.id;
-  logger.info(`📨 /start command from user ${userId} (@${ctx.from?.username})`);
+  logger.info(`🎯 /start command from user ${userId} (@${ctx.from?.username})`);
   
   if (!userId) {
-    logger.error("No user ID in start command");
+    logger.error("❌ No user ID in start command");
     return;
   }
 
   try {
-    logger.info("Creating/updating user in database...");
+    logger.info("🔄 Creating/updating user in database...");
     
-    // Создаем или обновляем пользователя
-    await prisma.user.upsert({
+    // Простое создание пользователя
+    const user = await prisma.user.upsert({
       where: { telegramId: userId },
       update: { 
-        username: ctx.from?.username || undefined,
-        firstName: ctx.from?.first_name || undefined,
-        lastName: ctx.from?.last_name || undefined
+        username: ctx.from?.username || "",
+        firstName: ctx.from?.first_name || "",
+        lastName: ctx.from?.last_name || ""
       },
       create: {
         telegramId: userId,
         username: ctx.from?.username || "",
         firstName: ctx.from?.first_name || "",
-        lastName: ctx.from?.last_name || ""
+        lastName: ctx.from?.last_name || "",
+        tokens: 10
       }
     });
 
-    logger.info("Sending start menu...");
+    logger.info(`✅ User created/updated: ${user.id}`);
+    logger.info("📤 Sending start menu...");
     
     await ctx.reply("🤖 **AICEX AI Bot** - Выберите AI сервис:", {
       parse_mode: 'Markdown',
