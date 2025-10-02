@@ -829,6 +829,7 @@ export class WebhookController {
       status: 'ok',
       timestamp: new Date().toISOString(),
       endpoints: {
+        telegram: '/api/webhooks/telegram',
         lava: '/api/webhooks/lava',
         freepik: '/api/webhooks/freepik',
         midjourney: '/api/webhooks/midjourney',

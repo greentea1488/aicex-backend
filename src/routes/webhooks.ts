@@ -59,6 +59,7 @@ router.use((req, res, next) => {
   res.status(404).json({
     error: 'Webhook endpoint not found',
     availableEndpoints: [
+      'POST /api/webhooks/telegram',
       'POST /api/webhooks/lava',
       'POST /api/webhooks/freepik',
       'POST /api/webhooks/midjourney',
