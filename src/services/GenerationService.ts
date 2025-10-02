@@ -176,10 +176,15 @@ export class GenerationService {
       }
 
     } catch (error: any) {
+      console.log('❌ FREEPIK DEBUG: Full error object:', error);
+      console.log('❌ FREEPIK DEBUG: Error response:', error.response?.data);
+      console.log('❌ FREEPIK DEBUG: Error status:', error.response?.status);
+      console.log('❌ FREEPIK DEBUG: Error message:', error.message);
+      
       logger.error('Freepik API error:', error);
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Ошибка Freepik API', 
+        error: error.response?.data?.message || error.message || 'Ошибка Freepik API', 
         tokensUsed: 0 
       };
     }
