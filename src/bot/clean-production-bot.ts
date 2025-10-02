@@ -86,20 +86,16 @@ function getFreepikImageModelsMenu() {
   return { inline_keyboard: keyboard };
 }
 
-// 🎬 МЕНЮ МОДЕЛЕЙ FREEPIK ВИДЕО (только Freepik модели)
+// 🎬 МЕНЮ МОДЕЛЕЙ FREEPIK ВИДЕО (все модели кроме Kling и Runway)
 function getFreepikVideoModelsMenu() {
   const freepikModels = FREEPIK_VIDEO_MODELS.filter(model => 
-    model.id.includes('seedance') || model.id.includes('pixverse')
+    !model.id.includes('kling') && !model.id.includes('minimax')
   );
   
-  const keyboard = freepikModels.slice(0, 4).map(model => [{
+  const keyboard = freepikModels.map(model => [{
     text: `${model.isNew ? '🆕 ' : ''}${model.name} ${model.resolution ? `(${model.resolution})` : ''}`,
     callback_data: `freepik_vid_${model.id}`
   }]);
-  
-  keyboard.push([
-    { text: '📋 Все Freepik модели', callback_data: 'freepik_all_videos' }
-  ]);
   
   keyboard.push([
     { text: '⬅️ Назад', callback_data: 'generate_video' }
@@ -108,7 +104,7 @@ function getFreepikVideoModelsMenu() {
   return { inline_keyboard: keyboard };
 }
 
-// 🚀 МЕНЮ МОДЕЛЕЙ RUNWAY (MiniMax модели)
+// 🚀 МЕНЮ МОДЕЛЕЙ RUNWAY (MiniMax модели из Freepik)
 function getRunwayVideoModelsMenu() {
   const runwayModels = FREEPIK_VIDEO_MODELS.filter(model => 
     model.id.includes('minimax')
@@ -126,20 +122,16 @@ function getRunwayVideoModelsMenu() {
   return { inline_keyboard: keyboard };
 }
 
-// 🔥 МЕНЮ МОДЕЛЕЙ KLING
+// 🔥 МЕНЮ МОДЕЛЕЙ KLING (Kling модели из Freepik)
 function getKlingVideoModelsMenu() {
   const klingModels = FREEPIK_VIDEO_MODELS.filter(model => 
     model.id.includes('kling')
   );
   
-  const keyboard = klingModels.slice(0, 6).map(model => [{
+  const keyboard = klingModels.map(model => [{
     text: `${model.isNew ? '🆕 ' : ''}${model.name}`,
     callback_data: `kling_vid_${model.id}`
   }]);
-  
-  keyboard.push([
-    { text: '📋 Все Kling модели', callback_data: 'kling_all_videos' }
-  ]);
   
   keyboard.push([
     { text: '⬅️ Назад', callback_data: 'generate_video' }
@@ -350,7 +342,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
       case 'video_freepik':
         const freepikVideoText = `🎬 Freepik Video - Генерация видео
 
-Собственные модели Freepik:
+Модели Freepik:
 • PixVerse V5 - новая модель с переходами
 • Seedance Pro - профессиональное качество
 
@@ -364,7 +356,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
       case 'video_runway':
         const runwayVideoText = `🚀 Runway ML - Генерация видео
 
-Модели MiniMax Hailuo:
+Модели Runway (через Freepik API):
 • MiniMax Hailuo 02 1080p - высокое качество
 • MiniMax Hailuo 02 768p - быстрая генерация
 
@@ -378,7 +370,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
       case 'video_kling':
         const klingVideoText = `🔥 Kling AI - Генерация видео
 
-Модели Kling:
+Модели Kling (через Freepik API):
 • Kling v2.5 Pro - новейшая версия
 • Kling Pro v2.1 - профессиональная
 • Kling Master - мастер версия
