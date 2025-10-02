@@ -150,7 +150,7 @@ export class GenerationService {
       console.log(`🚀 FREEPIK DEBUG: Starting generation with API key: ${apiKey.substring(0, 10)}...`);
 
       const endpoint = request.type === 'image' 
-        ? 'https://api.freepik.com/v1/ai/text-to-image'
+        ? 'https://api.freepik.com/v1/ai/text-to-image/flux-dev'
         : 'https://api.freepik.com/v1/ai/text-to-video';
 
       const payload = {

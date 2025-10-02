@@ -45,24 +45,16 @@ const imageMenu = {
 const videoMenu = {
   inline_keyboard: [
     [{ text: '🎬 Freepik Video', callback_data: 'video_freepik' }],
-    [{ text: '🚀 Runway ML', callback_data: 'video_runway' }],
     [{ text: '🔥 Kling AI', callback_data: 'video_kling' }],
     [{ text: '⬅️ Назад', callback_data: 'back_to_main' }]
   ]
 };
 
-// 💬 МЕНЮ ЧАТА С AI
+// 💬 МЕНЮ ЧАТА
 const chatMenu = {
   inline_keyboard: [
-    [
-      { text: '🤖 ChatGPT-4', callback_data: 'chat_gpt4' },
-      { text: '🧠 Claude-3', callback_data: 'chat_claude' }
-    ],
-    [{ text: '🔮 ChatGPT Vision', callback_data: 'chat_vision' }],
-    [
-      { text: '🛑 СТОП', callback_data: 'stop_chat' },
-      { text: '⬅️ Назад', callback_data: 'back_to_main' }
-    ]
+    [{ text: '🤖 ChatGPT-4', callback_data: 'chat_gpt4' }],
+    [{ text: '⬅️ Назад', callback_data: 'back_to_main' }]
   ]
 };
 
@@ -410,41 +402,6 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
         );
         break;
 
-      case 'chat_claude':
-        userStates.set(userId, { 
-          state: 'chatting', 
-          model: 'claude-3' 
-        });
-        
-        await ctx.editMessageText(
-          "🧠 Claude-3\n\nНачните диалог. Отправьте сообщение:",
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
-              ]
-            }
-          }
-        );
-        break;
-
-      case 'chat_vision':
-        userStates.set(userId, { 
-          state: 'chatting', 
-          model: 'gpt-4-vision' 
-        });
-        
-        await ctx.editMessageText(
-          "🔮 ChatGPT-4 Vision\n\nОтправьте изображение с описанием:",
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: '🛑 Отмена', callback_data: 'back_to_main' }]
-              ]
-            }
-          }
-        );
-        break;
 
       // 🛑 СТОП ЧАТ
       case 'stop_chat':
@@ -492,7 +449,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
             });
             
             await ctx.editMessageText(
-              `🎨 ${model.name}\n${model.description}\n\nВведите описание изображения:`,
+              `🎨 ${model.name}\n${model.description}\n\n💰 Стоимость: 5 токенов\n\nВведите описание изображения:`,
               {
                 reply_markup: {
                   inline_keyboard: [
@@ -517,7 +474,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
             });
             
             await ctx.editMessageText(
-              `🎬 ${model.name}\n${model.description}\n\nВведите описание видео:`,
+              `🎬 ${model.name}\n${model.description}\n\n💰 Стоимость: 10 токенов\n\nВведите описание видео:`,
               {
                 reply_markup: {
                   inline_keyboard: [
