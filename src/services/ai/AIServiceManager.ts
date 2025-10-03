@@ -32,7 +32,7 @@ export class AIServiceManager {
 
   // Стоимость в токенах для разных операций
   private readonly TOKEN_COSTS = {
-    freepik_image: 8,
+    freepik_image: 5,
     freepik_video: 25,
     midjourney_image: 10,
     runway_video: 50,
