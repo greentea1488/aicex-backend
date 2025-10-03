@@ -148,55 +148,19 @@ bot.command("start", async (ctx) => {
         telegramId,
         username: ctx.from?.username || undefined,
         firstName: ctx.from?.first_name || undefined,
-        lastName: ctx.from?.last_name || undefined
+        lastName: ctx.from?.last_name || undefined,
+        lastActive: new Date()
       },
       update: {
         username: ctx.from?.username || undefined,
         firstName: ctx.from?.first_name || undefined,
-        lastName: ctx.from?.last_name || undefined
+        lastName: ctx.from?.last_name || undefined,
+        lastActive: new Date()
       }
     });
 
-    // Проверим контекст перед отправкой
-    logger.info("Checking context...");
-    logger.info("ctx exists:", !!ctx);
-    logger.info("ctx.reply exists:", !!ctx.reply);
-    logger.info("ctx.from exists:", !!ctx.from);
-    logger.info("ctx.chat exists:", !!ctx.chat);
-    
-    // Попробуем сначала простое сообщение без меню
-    logger.info("Sending simple welcome message...");
-    try {
-      const result = await ctx.reply("👋 Добро пожаловать в AICEX AI Bot!\n\n🤖 Бот успешно запущен и готов к работе!");
-      logger.info("Reply result:", result);
-      logger.info("✅ Simple /start completed successfully");
-    } catch (replyError) {
-      logger.error("Error in ctx.reply:", replyError);
-      logger.error("Reply error type:", typeof replyError);
-      logger.error("Reply error message:", replyError?.message);
-      logger.error("Reply error stack:", replyError?.stack);
-      throw replyError;
-    }
-    
-    // Если простое сообщение работает, попробуем с меню
-    /*
-    try {
-      logger.info("Getting welcome text...");
-      const welcomeText = MainMenu.getText('start');
-      logger.info("Welcome text received, length:", welcomeText?.length);
-      
-      logger.info("Getting menu...");
-      const menu = MainMenu.getMenu('start');
-      logger.info("Menu created successfully");
-      
-      logger.info("Sending reply...");
-      await ctx.reply(welcomeText, { reply_markup: menu });
-      logger.info("✅ /start completed successfully");
-    } catch (innerError) {
-      logger.error("Inner error occurred:", innerError);
-      throw innerError; // Re-throw to be caught by outer catch
-    }
-    */
+    const welcomeText = MainMenu.getText('start');
+    await ctx.reply(welcomeText, { reply_markup: MainMenu.getMenu('start') });
   } catch (error) {
     console.log("=== CONSOLE ERROR DEBUG ===");
     console.log("Error:", error);

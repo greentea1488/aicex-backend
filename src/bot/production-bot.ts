@@ -198,13 +198,15 @@ bot.command("start", async (ctx) => {
       update: { 
         username: ctx.from?.username || undefined,
         firstName: ctx.from?.first_name || undefined,
-        lastName: ctx.from?.last_name || undefined
+        lastName: ctx.from?.last_name || undefined,
+        lastActive: new Date()
       },
       create: {
         telegramId: userId,
         username: ctx.from?.username || undefined,
         firstName: ctx.from?.first_name || undefined,
         lastName: ctx.from?.last_name || undefined,
+        lastActive: new Date(),
         tokens: 50 // Стартовые токены
       }
     });
