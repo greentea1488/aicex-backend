@@ -323,9 +323,9 @@ bot.command("start", async ctx => {
       },
       create: {
         telegramId: userId,
-        username: ctx.from?.username || "",
-        firstName: ctx.from?.first_name || "",
-        lastName: ctx.from?.last_name || ""
+        username: ctx.from?.username || undefined,
+        firstName: ctx.from?.first_name || undefined,
+        lastName: ctx.from?.last_name || undefined
       }
     });
 
