@@ -157,10 +157,26 @@ bot.command("start", async (ctx) => {
       }
     });
 
+    // Проверим контекст перед отправкой
+    logger.info("Checking context...");
+    logger.info("ctx exists:", !!ctx);
+    logger.info("ctx.reply exists:", !!ctx.reply);
+    logger.info("ctx.from exists:", !!ctx.from);
+    logger.info("ctx.chat exists:", !!ctx.chat);
+    
     // Попробуем сначала простое сообщение без меню
     logger.info("Sending simple welcome message...");
-    await ctx.reply("👋 Добро пожаловать в AICEX AI Bot!\n\n🤖 Бот успешно запущен и готов к работе!");
-    logger.info("✅ Simple /start completed successfully");
+    try {
+      const result = await ctx.reply("👋 Добро пожаловать в AICEX AI Bot!\n\n🤖 Бот успешно запущен и готов к работе!");
+      logger.info("Reply result:", result);
+      logger.info("✅ Simple /start completed successfully");
+    } catch (replyError) {
+      logger.error("Error in ctx.reply:", replyError);
+      logger.error("Reply error type:", typeof replyError);
+      logger.error("Reply error message:", replyError?.message);
+      logger.error("Reply error stack:", replyError?.stack);
+      throw replyError;
+    }
     
     // Если простое сообщение работает, попробуем с меню
     /*
