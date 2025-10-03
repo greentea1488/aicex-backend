@@ -29,7 +29,7 @@ export class RunwayService {
   constructor() {
     this.apiKey = process.env.RUNWAY_API_KEY || '';
     if (!this.apiKey) {
-      throw new Error('RUNWAY_API_KEY is required');
+      console.warn('⚠️ RUNWAY_API_KEY not configured - Runway service will be disabled');
     }
   }
 
@@ -37,6 +37,13 @@ export class RunwayService {
    * Генерация видео через Runway ML
    */
   async generateVideo(request: RunwayVideoRequest): Promise<RunwayResponse> {
+    if (!this.apiKey) {
+      return {
+        success: false,
+        error: 'Runway API key not configured'
+      };
+    }
+
     try {
       logger.info('Runway video generation started:', { 
         prompt: request.prompt.substring(0, 100),

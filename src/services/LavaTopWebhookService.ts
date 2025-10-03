@@ -110,22 +110,30 @@ export class LavaTopWebhookService {
         throw new Error('Cannot determine user from order ID');
       }
 
+      // Получаем план подписки
+      const subscriptionPlan = await prisma.subscriptionPlan.findFirst({
+        where: { name: planType }
+      });
+
+      if (!subscriptionPlan) {
+        throw new Error(`Subscription plan not found: ${planType}`);
+      }
+
       // Создаем или обновляем подписку
       const subscription = await prisma.subscription.upsert({
         where: { userId },
         update: {
-          plan: planType,
-          status: 'active',
+          planId: subscriptionPlan.id,
+          status: 'ACTIVE',
           endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
           updatedAt: new Date()
         },
         create: {
           userId,
-          plan: planType,
-          status: 'active',
+          planId: subscriptionPlan.id,
+          status: 'ACTIVE',
           startDate: new Date(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
-          features: {}
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 дней
         }
       });
 

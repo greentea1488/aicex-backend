@@ -129,10 +129,14 @@ export class AIHandler {
       if (response.usage && response.usage.totalTokens > 0) {
         const user = await prisma.user.findUnique({
           where: { telegramId: parseInt(userId) },
-          include: { subscription: true }
+          include: { 
+            subscription: {
+              include: { plan: true }
+            }
+          }
         });
 
-        if (user?.subscription?.plan === "pro" || user?.subscription?.plan === "enterprise") {
+        if (user?.subscription?.plan?.name === "pro" || user?.subscription?.plan?.name === "premium") {
           await ctx.reply(`📊 Использовано токенов: ${response.usage.totalTokens}`, { reply_to_message_id: ctx.message?.message_id });
         }
       }

@@ -1,9 +1,9 @@
+import { config } from 'dotenv';
 config(); // Load environment variables first
+
 import fs from "node:fs";
 import path from "node:path";
 import cors from "cors";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import type { NextFunction, Request, Response } from "express";
 import express from 'express';
 import { logger } from './utils/logger';
@@ -26,6 +26,7 @@ const PORT = parseInt(process.env.PORT || "8080", 10);
 app.use(express.json());
 app.use(express.text());
 app.use(express.urlencoded({ extended: true }));
+
 app.use(cors({
   origin: [
     'https://aicexonefrontend-production.up.railway.app',
@@ -35,46 +36,13 @@ app.use(cors({
   credentials: true
 }));
 
-const httpLogger = pinoHttp({
-  logger,
-  // Custom serializers for reduced verbosity
-  serializers: {
-    req: req => ({
-      method: req.method,
-      url: req.url,
-      query: req.query,
-      params: req.params,
-      id: req.id,
-    }),
-    res: res => ({
-      statusCode: res.statusCode,
-    }),
-    err: pino.stdSerializers.err,
-  },
-
-  // Custom log levels
-  customLogLevel: (req, res, err) => {
-    if (err || res.statusCode >= 500) return "error";
-    if (res.statusCode >= 400) return "warn";
-    return "info";
-  },
-
-  // Custom success message
-  customSuccessMessage: (req, res) => {
-    return `Request completed: ${req.method} ${req.url} [${res.statusCode}]`;
-  },
-
-  // Custom error message
-  customErrorMessage: (req, res, err) => {
-    return `Request failed: ${req.method} ${req.url} [${res.statusCode}] - ${err.message}`;
-  },
-
-  // Custom additional properties
-  customProps: (req, res) => ({
-    userAgent: req.headers["user-agent"],
-  }),
+// Простое логирование middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.url !== '/ok' && req.url !== '/' && req.url !== '/health') {
+    logger.info(`${req.method} ${req.url}`);
+  }
+  next();
 });
-app.use(httpLogger);
 
 // Загружаем все маршруты после исправления path-to-regexp ошибки
 try {
@@ -159,7 +127,8 @@ app.get("/ok", async (req: Request, res: Response) => {
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  req.log.error(err);
+  logger.error('Request error:', err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 

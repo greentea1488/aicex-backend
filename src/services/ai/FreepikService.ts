@@ -126,7 +126,7 @@ export class FreepikService {
   constructor() {
     this.apiKey = process.env.FREEPIK_API_KEY || '';
     if (!this.apiKey) {
-      throw new Error('FREEPIK_API_KEY is required');
+      logger.warn('⚠️ FREEPIK_API_KEY not configured - Freepik service will be disabled');
     }
   }
 
@@ -134,6 +134,13 @@ export class FreepikService {
    * Генерация изображения через Freepik AI
    */
   async generateImage(request: FreepikImageRequest): Promise<FreepikResponse> {
+    if (!this.apiKey) {
+      return {
+        success: false,
+        error: 'Freepik API key not configured'
+      };
+    }
+
     try {
       const model = request.model || 'mystic';
       const modelConfig = FREEPIK_IMAGE_MODELS[model];
@@ -202,6 +209,13 @@ export class FreepikService {
    * Генерация видео из изображения через Freepik API
    */
   async generateVideoFromImage(imageUrl: string, prompt?: string, model: keyof typeof FREEPIK_VIDEO_MODELS = 'kling_v2_5_pro'): Promise<FreepikResponse> {
+    if (!this.apiKey) {
+      return {
+        success: false,
+        error: 'Freepik API key not configured'
+      };
+    }
+
     try {
       const modelConfig = FREEPIK_VIDEO_MODELS[model];
       

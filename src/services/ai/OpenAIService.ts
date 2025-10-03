@@ -35,7 +35,9 @@ export class OpenAIService {
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is required');
+      console.warn('⚠️ OPENAI_API_KEY not configured - OpenAI service will be disabled');
+      this.client = null as any;
+      return;
     }
 
     this.client = new OpenAI({
@@ -47,6 +49,13 @@ export class OpenAIService {
    * Чат с GPT-4
    */
   async chat(messages: ChatMessage[], model: string = 'gpt-4'): Promise<ChatResponse> {
+    if (!this.client) {
+      return {
+        success: false,
+        error: 'OpenAI API key not configured'
+      };
+    }
+
     try {
       logger.info('OpenAI chat request:', { 
         model: 'gpt-4',

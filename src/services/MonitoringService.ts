@@ -62,7 +62,7 @@ export class MonitoringService {
 
       // Проверка базы данных
       try {
-        await prisma.$queryRaw`SELECT 1`;
+        await prisma.user.findFirst();
         health.database = true;
       } catch (error) {
         health.database = false;
