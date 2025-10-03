@@ -90,7 +90,7 @@ export class TelegramAuthService {
     // Создаем или обновляем пользователя в БД
     const user = await prisma.user.upsert({
       where: { 
-        telegramId: userData.id.toString() 
+        telegramId: parseInt(userData.id) 
       },
       update: {
         username: userData.username || null,
@@ -102,7 +102,7 @@ export class TelegramAuthService {
         lastActive: new Date()
       },
       create: {
-        telegramId: userData.id.toString(),
+        telegramId: parseInt(userData.id),
         username: userData.username || null,
         firstName: userData.first_name,
         lastName: userData.last_name || null,

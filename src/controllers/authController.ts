@@ -43,8 +43,13 @@ export const authUser = async (req: Request, res: Response) => {
       where: { telegramId: userData.id },
     });
 
-    // Если нет — создаём
-    if (!user) {
+    // Если пользователь существует, обновляем lastActive
+    if (user) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { lastActive: new Date() }
+      });
+    } else {
       let referralUserId: string | null = null;
       
       // Проверяем реферальный код, если он есть
@@ -76,9 +81,10 @@ export const authUser = async (req: Request, res: Response) => {
           referral: referralUserId,
           tokens: 1000, // Starting tokens
           friendsReferred: 0,
+          lastActive: new Date(),
           runwaySettings: {},
           midjourneySettings: {},
-              gptSettings: { model: "gpt-4.1-mini" }, // Set correct default model
+          gptSettings: { model: "gpt-4.1-mini" }, // Set correct default model
           appSettings: {},
         },
       });
