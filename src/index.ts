@@ -19,6 +19,7 @@ import generationRoutes from './routes/generation';
 import webhookRoutes from './routes/webhooks';
 import lavaTopRoutes from './routes/lavaTop';
 import freepikRoutes from './routes/freepik';
+import monitoringRoutes from './routes/monitoring';
 const app = express();
 const PORT = parseInt(process.env.PORT || "8080", 10);
 
@@ -78,15 +79,12 @@ app.use(httpLogger);
 // Загружаем все маршруты после исправления path-to-regexp ошибки
 try {
   app.use("/api/auth", authRoutes);
-  app.use("/api/chat", chatRoutes);
   app.use("/api/user", userRoutes);
+  app.use("/api/generation", generationRoutes);
   app.use("/api/freepik", freepikRoutes);
-  app.use("/api/payment", paymentRoutes);
   app.use("/api/lava-top", lavaTopRoutes);
-  app.use("/api/v1", apiRoutes);
-  app.use("/api/admin", adminRoutes);
+  app.use("/api/monitoring", monitoringRoutes);
   app.use("/api/webhooks", webhookRoutes);
-  app.use("/api/miniapp", miniappRoutes); // Mini App API routes
   logger.info("✅ All routes loaded successfully");
   
   // Детальная диагностика переменных окружения
@@ -272,10 +270,10 @@ app.listen(PORT, "0.0.0.0", async () => {
       logger.info("🤖 Starting Telegram bot...");
       logger.info(`🔑 BOT_TOKEN available: ${process.env.BOT_TOKEN ? 'YES' : 'NO'}`);
       
-      // Импортируем и запускаем чистого бота
-      import('./bot/clean-production-bot')
-        .then(({ startCleanBot }) => {
-          return startCleanBot();
+      // Импортируем и запускаем production bot v2
+      import('./bot/production-bot-v2')
+        .then(({ startProductionBotV2 }) => {
+          return startProductionBotV2();
         })
         .then(() => {
           logger.info("✅ Telegram bot started successfully!");
