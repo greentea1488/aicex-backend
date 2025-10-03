@@ -13,13 +13,15 @@ import { setupCronJobs } from './utils/cronJobs';
 import { startBot } from './bot/bot';
 
 // Import routes
-import authRoutes from './routes/auth';
-import userRoutes from './routes/user';
-import generationRoutes from './routes/generation';
-import webhookRoutes from './routes/webhooks';
-import lavaTopRoutes from './routes/lavaTop';
-import freepikRoutes from './routes/freepik';
-import monitoringRoutes from './routes/monitoring';
+import {
+  authRoutes,
+  userRoutes,
+  generationRoutes,
+  webhookRoutes,
+  lavaTopRoutes,
+  freepikRoutes,
+  monitoringRoutes
+} from './routes';
 const app = express();
 const PORT = parseInt(process.env.PORT || "8080", 10);
 
