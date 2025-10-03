@@ -7,10 +7,22 @@ import { prisma } from '../utils/prismaClient';
  * Контроллер для обработки webhook'ов от Lava Top
  */
 export class LavaTopController {
-  private webhookService: LavaTopWebhookService;
+  private webhookService: LavaTopWebhookService | null = null;
 
   constructor() {
-    this.webhookService = new LavaTopWebhookService();
+    // Создаем сервис только если есть секретный ключ
+    if (process.env.LAVA_TOP_SECRET_KEY) {
+      this.webhookService = new LavaTopWebhookService();
+    } else {
+      console.warn('⚠️ LAVA_TOP_SECRET_KEY not configured - LavaTop webhooks disabled');
+    }
+  }
+
+  private getWebhookService(): LavaTopWebhookService {
+    if (!this.webhookService) {
+      throw new Error('LavaTop service is not configured');
+    }
+    return this.webhookService;
   }
 
   /**
@@ -19,6 +31,12 @@ export class LavaTopController {
    */
   async handleWebhook(req: Request, res: Response) {
     try {
+      // Проверяем, что сервис доступен
+      if (!this.webhookService) {
+        res.status(503).json({ error: 'LavaTop service not configured' });
+        return;
+      }
+
       const webhookData = req.body;
       
       logger.info('Received Lava Top webhook:', {
@@ -34,11 +52,13 @@ export class LavaTopController {
         return;
       }
 
+      const service = this.getWebhookService();
+      
       // Обрабатываем в зависимости от статуса
       if (webhookData.status === 'success') {
-        await this.webhookService.handleSuccessfulPayment(webhookData);
+        await service.handleSuccessfulPayment(webhookData);
       } else if (webhookData.status === 'fail') {
-        await this.webhookService.handleFailedPayment(webhookData);
+        await service.handleFailedPayment(webhookData);
       } else {
         logger.warn('Unknown payment status:', webhookData.status);
       }

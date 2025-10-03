@@ -11,7 +11,7 @@ export class TelegramAuthService {
   constructor() {
     this.botToken = process.env.BOT_TOKEN || '';
     if (!this.botToken) {
-      throw new Error('BOT_TOKEN is not configured');
+      console.warn('⚠️ BOT_TOKEN is not configured - Telegram auth will be disabled');
     }
   }
 
@@ -20,6 +20,11 @@ export class TelegramAuthService {
    */
   validateWebAppData(initData: string): boolean {
     try {
+      if (!this.botToken) {
+        logger.warn('Cannot validate WebApp data - BOT_TOKEN not configured');
+        return false;
+      }
+
       const urlParams = new URLSearchParams(initData);
       const hash = urlParams.get('hash');
       

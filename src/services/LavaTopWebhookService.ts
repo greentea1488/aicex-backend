@@ -11,7 +11,7 @@ export class LavaTopWebhookService {
   constructor() {
     this.secretKey = process.env.LAVA_TOP_SECRET_KEY || '';
     if (!this.secretKey) {
-      throw new Error('LAVA_TOP_SECRET_KEY is not configured');
+      console.warn('⚠️ LAVA_TOP_SECRET_KEY is not configured - LavaTop payments will be disabled');
     }
   }
 
