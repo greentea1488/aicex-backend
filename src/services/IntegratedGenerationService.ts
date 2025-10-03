@@ -219,14 +219,24 @@ export class IntegratedGenerationService {
    */
   private async generateFreepikImage(request: GenerationRequest): Promise<any> {
     try {
-      // Здесь будет вызов реального Freepik API
-      // Пока заглушка для демонстрации
+      const freepikService = aiManager.getFreepikService();
+      
+      const result = await freepikService.generateImage({
+        prompt: request.prompt,
+        model: request.model as any || 'mystic',
+        aspect_ratio: request.settings?.aspect_ratio || 'square_1_1',
+        resolution: request.settings?.resolution || '1k'
+      });
+
       return {
-        success: true,
-        resultUrl: 'https://example.com/generated-image.jpg',
+        success: result.success,
+        resultUrl: result.data?.images?.[0]?.url || null,
+        error: result.error,
         metadata: {
-          model: request.model || 'flux-dev',
-          prompt: request.prompt
+          model: request.model || 'mystic',
+          prompt: request.prompt,
+          settings: request.settings,
+          taskId: result.data?.id
         }
       };
     } catch (error) {
@@ -243,13 +253,37 @@ export class IntegratedGenerationService {
    */
   private async generateFreepikVideo(request: GenerationRequest): Promise<any> {
     try {
-      // Здесь будет вызов реального Freepik API для видео
+      const freepikService = aiManager.getFreepikService();
+      
+      // Для видео нужно изображение, если его нет - генерируем сначала изображение
+      let imageUrl = request.settings?.imageUrl;
+      if (!imageUrl) {
+        const imageResult = await this.generateFreepikImage(request);
+        if (!imageResult.success || !imageResult.resultUrl) {
+          return {
+            success: false,
+            error: 'Не удалось создать изображение для генерации видео'
+          };
+        }
+        imageUrl = imageResult.resultUrl;
+      }
+
+      const result = await freepikService.generateVideoFromImage(
+        imageUrl,
+        request.prompt,
+        request.model as any || 'kling_v2_5_pro'
+      );
+
       return {
-        success: true,
-        resultUrl: 'https://example.com/generated-video.mp4',
+        success: result.success,
+        resultUrl: result.data?.videos?.[0]?.url || null,
+        error: result.error,
         metadata: {
           model: request.model || 'kling-v2-5-pro',
-          prompt: request.prompt
+          prompt: request.prompt,
+          settings: request.settings,
+          taskId: result.data?.id,
+          sourceImage: imageUrl
         }
       };
     } catch (error) {
@@ -266,14 +300,10 @@ export class IntegratedGenerationService {
    */
   private async generateMidjourneyImage(request: GenerationRequest): Promise<any> {
     try {
-      // Здесь будет вызов реального Midjourney API
+      // Midjourney API пока недоступен, возвращаем ошибку
       return {
-        success: true,
-        resultUrl: 'https://example.com/midjourney-image.jpg',
-        metadata: {
-          model: request.model || '7.0',
-          prompt: request.prompt
-        }
+        success: false,
+        error: 'Midjourney API временно недоступен. Используйте Freepik для генерации изображений.'
       };
     } catch (error) {
       logger.error('Midjourney generation error:', error);
@@ -289,13 +319,22 @@ export class IntegratedGenerationService {
    */
   private async generateRunwayVideo(request: GenerationRequest): Promise<any> {
     try {
-      // Здесь будет вызов реального Runway API
+      const runwayService = aiManager.getRunwayService();
+      
+      const result = await runwayService.generateVideo({
+        prompt: request.prompt,
+        model: (request.model as any) || 'gen3a_turbo',
+        duration: request.settings?.duration || 5
+      });
+
       return {
-        success: true,
-        resultUrl: 'https://example.com/runway-video.mp4',
+        success: result.success,
+        resultUrl: result.data?.output?.[0] || null,
+        error: result.error,
         metadata: {
-          model: request.model || 'gen3',
-          prompt: request.prompt
+          model: request.model || 'gen3a_turbo',
+          prompt: request.prompt,
+          settings: request.settings
         }
       };
     } catch (error) {
@@ -312,13 +351,21 @@ export class IntegratedGenerationService {
    */
   private async generateChatGPTResponse(request: GenerationRequest): Promise<any> {
     try {
-      // Здесь будет вызов реального OpenAI API
+      const openaiService = aiManager.getOpenAIService();
+      
+      const result = await openaiService.chat([{
+        role: 'user',
+        content: request.prompt
+      }], request.model || 'gpt-4');
+
       return {
-        success: true,
-        resultUrl: request.prompt, // Для текста "URL" это сам текст
+        success: result.success,
+        resultUrl: result.content, // Для текста используем content как resultUrl
+        error: result.error,
         metadata: {
           model: request.model || 'gpt-4',
-          prompt: request.prompt
+          prompt: request.prompt,
+          usage: result.usage
         }
       };
     } catch (error) {

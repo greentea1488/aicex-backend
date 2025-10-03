@@ -553,4 +553,25 @@ export class AIServiceManager {
 
     return results;
   }
+
+  /**
+   * Получить сервис Freepik
+   */
+  getFreepikService(): FreepikService {
+    return this.freepik;
+  }
+
+  /**
+   * Получить сервис OpenAI
+   */
+  getOpenAIService(): OpenAIService {
+    return this.openai;
+  }
+
+  /**
+   * Получить сервис Runway
+   */
+  getRunwayService(): RunwayService {
+    return this.runway;
+  }
 }
