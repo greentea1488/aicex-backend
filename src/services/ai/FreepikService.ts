@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { logger } from '../../utils/logger';
 
-// Модели для генерации изображений
+// Модели для генерации изображений (согласно документации Freepik)
 export const FREEPIK_IMAGE_MODELS = {
   mystic: {
     name: 'Freepik Mystic',
@@ -12,66 +12,71 @@ export const FREEPIK_IMAGE_MODELS = {
   flux_dev: {
     name: 'Flux Dev',
     description: 'Быстрая генерация изображений',
-    endpoint: '/ai/flux-dev'
+    endpoint: '/ai/text-to-image/flux-dev'
   },
   flux_pro: {
     name: 'Flux Pro 1.1',
     description: 'Профессиональная генерация изображений',
-    endpoint: '/ai/flux-pro-1-1'
+    endpoint: '/ai/text-to-image/flux-pro-v1-1'
   },
   seedream_v4: {
     name: 'Seedream v4',
     description: 'Креативная генерация изображений',
-    endpoint: '/ai/seedream-v4'
+    endpoint: '/ai/text-to-image/seedream-v4'
   },
   imagen3: {
     name: 'Google Imagen 3',
     description: 'Google AI модель для изображений',
-    endpoint: '/ai/imagen3'
+    endpoint: '/ai/text-to-image/google-imagen-3'
+  },
+  hyperflux: {
+    name: 'Hyperflux',
+    description: 'Сверхбыстрая генерация',
+    endpoint: '/ai/text-to-image/hyperflux'
   }
 };
 
-// Модели для генерации видео (из Freepik API - заменяют Runway и Kling)
+// Модели для генерации видео (согласно документации Freepik)
 export const FREEPIK_VIDEO_MODELS = {
-  kling_v2_1_pro: {
-    name: 'Kling 2.1 Pro',
-    description: 'Премиум генерация видео из изображений',
-    endpoint: '/ai/image-to-video/kling-v2-1-pro',
+  kling_v2_5_pro: {
+    name: 'Kling 2.5 Pro',
+    description: 'Новейшая модель для видео',
+    endpoint: '/ai/text-to-video/kling-v2-5-pro',
     maxDuration: 10,
     resolution: '1080p'
   },
-  kling_v2_1_std: {
-    name: 'Kling 2.1 Standard',
-    description: 'Стандартная генерация видео из изображений',
-    endpoint: '/ai/image-to-video/kling-v2-1-std',
-    maxDuration: 5,
-    resolution: '720p'
+  kling_v2_1_master: {
+    name: 'Kling 2.1 Master',
+    description: 'Мастер версия Kling v2.1',
+    endpoint: '/ai/text-to-video/kling-v2-1-master',
+    maxDuration: 10,
+    resolution: '1080p'
   },
-  kling_v2_5_pro: {
-    name: 'Kling 2.5 Turbo Pro',
-    description: 'Быстрая премиум генерация видео',
-    endpoint: '/ai/image-to-video/kling-v2-5-pro',
+  kling_pro_v2_1: {
+    name: 'Kling Pro v2.1',
+    description: 'Профессиональная версия Kling',
+    endpoint: '/ai/text-to-video/kling-pro-v2-1',
     maxDuration: 10,
     resolution: '1080p'
   },
   minimax_hailuo_1080p: {
     name: 'MiniMax Hailuo 1080p',
-    description: 'Высококачественное видео из текста/изображения',
-    endpoint: '/ai/text-image-to-video/minimax-hailuo-02-1080p',
+    description: 'Высококачественное видео из текста',
+    endpoint: '/ai/text-to-video/minimax-hailuo-02-1080p',
     maxDuration: 6,
     resolution: '1080p'
   },
   pixverse_v5: {
     name: 'PixVerse V5',
-    description: 'Универсальная генерация видео',
-    endpoint: '/ai/image-to-video/pixverse-v5',
+    description: 'Новая модель PixVerse',
+    endpoint: '/ai/text-to-video/pixverse-v5',
     maxDuration: 4,
     resolution: '720p'
   },
   seedance_pro_1080p: {
     name: 'Seedance Pro 1080p',
     description: 'Профессиональная генерация видео',
-    endpoint: '/ai/image-to-video/seedance-pro-1080p',
+    endpoint: '/ai/text-to-video/seedance-pro-1080p',
     maxDuration: 4,
     resolution: '1080p'
   }
@@ -136,7 +141,7 @@ export class FreepikService {
 
       let requestData: any = {
         prompt: request.prompt,
-        webhook_url: `${process.env.BACKEND_URL || 'https://aicexaibot-production.up.railway.app'}/api/webhooks/freepik`
+        webhook_url: `${process.env.BACKEND_URL}/api/webhooks/freepik`
       };
 
       // Настройки для разных моделей
@@ -192,7 +197,7 @@ export class FreepikService {
   /**
    * Генерация видео из изображения через Freepik API
    */
-  async generateVideoFromImage(imageUrl: string, prompt?: string, model: keyof typeof FREEPIK_VIDEO_MODELS = 'kling_v2_1_std'): Promise<FreepikResponse> {
+  async generateVideoFromImage(imageUrl: string, prompt?: string, model: keyof typeof FREEPIK_VIDEO_MODELS = 'kling_v2_5_pro'): Promise<FreepikResponse> {
     try {
       const modelConfig = FREEPIK_VIDEO_MODELS[model];
       
@@ -204,7 +209,7 @@ export class FreepikService {
 
       const requestData: any = {
         image: imageUrl,
-        webhook_url: `${process.env.BACKEND_URL || 'https://aicexaibot-production.up.railway.app'}/api/webhooks/freepik`
+        webhook_url: `${process.env.BACKEND_URL}/api/webhooks/freepik`
       };
 
       // Добавляем prompt если есть
@@ -257,7 +262,7 @@ export class FreepikService {
     return await this.generateVideoFromImage(
       request.image,
       request.prompt,
-      request.model || 'kling_v2_1_std'
+      request.model || 'kling_v2_5_pro'
     );
   }
 
@@ -295,7 +300,7 @@ export class FreepikService {
       
       // Для видео используем Kling endpoint по умолчанию
       if (type === 'video') {
-        endpoint = `/ai/image-to-video/kling-v2-1-std/${taskId}`;
+        endpoint = `/ai/text-to-video/kling-v2-5-pro/${taskId}`;
       }
 
       const response = await axios.get(

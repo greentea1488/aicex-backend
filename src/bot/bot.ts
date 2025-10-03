@@ -1,4 +1,5 @@
-import { Bot } from "grammy";
+import { Bot, InlineKeyboard, session } from "grammy";
+import { Context, SessionData } from './types';
 import { startMenu, aiHandler, universalControlKeyboard, helpKeyboard, settingsKeyboard, backToMainMenu } from "./keyboards/startKeyboard";
 import { FreepikHandler } from "./handlers/freepikHandler";
 import { RunwayHandler } from "./handlers/runwayHandler";
@@ -6,7 +7,7 @@ import { ChatGPTHandler } from "./handlers/chatgptHandler";
 import { MidjourneyHandler } from "./handlers/midjourneyHandler";
 import { SessionManager } from "./services/SessionManager";
 import { SecurityService } from "../services/SecurityService";
-import { FreepikRouter } from "./routers/FreepikRouter";
+import { FreepikMenuRouter } from "./routers/FreepikMenuRouter";
 import { RunwayRouter } from "./routers/RunwayRouter";
 import { ChatGPTRouter } from "./routers/ChatGPTRouter";
 import { MidjourneyRouter } from "./routers/MidjourneyRouter";
@@ -14,27 +15,31 @@ import { logger } from "../utils/logger";
 import { prisma } from "../utils/prismaClient";
 
 // Создаем бота только если токен доступен
-let bot: Bot | null = null;
+let bot: Bot<Context> | null = null;
 if (process.env.BOT_TOKEN) {
-  bot = new Bot(process.env.BOT_TOKEN);
+  bot = new Bot<Context>(process.env.BOT_TOKEN);
+  
+  // Добавляем сессию
+  bot.use(session({
+    initial: (): SessionData => ({})
+  }));
 } else {
   logger.warn("BOT_TOKEN not provided, bot functionality will be disabled");
 }
 
-// Экспортируем бота для webhook
 export { bot };
 
 const sessionManager = new SessionManager();
 const securityService = new SecurityService();
 
-// Инициализация handlers
+// Создаем handlers для AI сервисов
 const freepikHandler = new FreepikHandler();
 const runwayHandler = new RunwayHandler(sessionManager);
 const chatgptHandler = new ChatGPTHandler(sessionManager);
 const midjourneyHandler = new MidjourneyHandler(sessionManager);
 
-// Инициализация routers
-const freepikRouter = new FreepikRouter(freepikHandler);
+// Создаем routers для AI сервисов
+const freepikMenuRouter = new FreepikMenuRouter();
 const runwayRouter = new RunwayRouter(runwayHandler);
 const chatgptRouter = new ChatGPTRouter(chatgptHandler);
 const midjourneyRouter = new MidjourneyRouter(midjourneyHandler);
@@ -116,9 +121,9 @@ bot.on("callback_query:data", async ctx => {
   let handled = false;
   
   try {
-    // Freepik router
-    if (data.startsWith("freepik_")) {
-      handled = await freepikRouter.handleCallback(ctx);
+    // Freepik router с новым меню
+    if (data.startsWith("freepik")) {
+      handled = await freepikMenuRouter.handleCallback(ctx as Context);
     }
     // Runway router  
     else if (data.startsWith("runway_")) {
@@ -279,64 +284,68 @@ bot.on("message:video", async ctx => {
   }
 });
 
-// 🚀 ТЕСТ: Обработка всех сообщений (кроме команд)
-bot.on("message:text", async ctx => {
-  logger.info(`📨 Text message received: "${ctx.message.text}" from user ${ctx.from?.id} (@${ctx.from?.username})`);
+// 🚀 ТЕСТ: Обработка всех сообщений
+bot.on("message", async ctx => {
+  logger.info(`📨 Message received: "${ctx.message.text}" from user ${ctx.from?.id} (@${ctx.from?.username})`);
   
-  // Не обрабатываем команды здесь, они обрабатываются отдельно
-  if (ctx.message.text?.startsWith('/')) {
-    return;
+  // Простой тест ответа
+  if (ctx.message.text === "/start") {
+    logger.info("🔥 Detected /start command, sending simple reply...");
+    try {
+      await ctx.reply("✅ Бот работает! Webhook получен и обработан.");
+      logger.info("✅ Simple reply sent successfully");
+    } catch (error) {
+      logger.error("❌ Failed to send simple reply:", error);
+    }
   }
-  
-  await ctx.reply("Получил ваше сообщение! Используйте /start для главного меню.");
 });
 
 // 🚀 START COMMAND
 bot.command("start", async ctx => {
   const userId = ctx.from?.id;
-  logger.info(`🎯 /start command from user ${userId} (@${ctx.from?.username})`);
+  logger.info(`📨 /start command from user ${userId} (@${ctx.from?.username})`);
   
   if (!userId) {
-    logger.error("❌ No user ID in start command");
+    logger.error("No user ID in start command");
     return;
   }
 
   try {
-    logger.info("🔄 Creating/updating user in database...");
+    logger.info("Creating/updating user in database...");
     
-    // Простое создание пользователя БЕЗ ТРАНЗАКЦИЙ
-    let user = await prisma.user.findUnique({
-      where: { telegramId: userId }
+    // Создаем или обновляем пользователя
+    await prisma.user.upsert({
+      where: { telegramId: userId },
+      update: { 
+        username: ctx.from?.username || undefined,
+        firstName: ctx.from?.first_name || undefined,
+        lastName: ctx.from?.last_name || undefined
+      },
+      create: {
+        telegramId: userId,
+        username: ctx.from?.username || "",
+        firstName: ctx.from?.first_name || "",
+        lastName: ctx.from?.last_name || ""
+      }
     });
-    
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          telegramId: userId,
-          username: ctx.from?.username || "",
-          firstName: ctx.from?.first_name || "",
-          lastName: ctx.from?.last_name || "",
-          tokens: 10
-        }
-      });
-      logger.info(`✅ New user created: ${user.id}`);
-    } else {
-      logger.info(`✅ Existing user found: ${user.id}`);
-    }
 
-    logger.info(`✅ User created/updated: ${user.id}`);
-    logger.info("📤 Sending start menu...");
+    logger.info("Sending start menu...");
+    
+    const keyboard = new InlineKeyboard()
+      .webApp("🌐 Веб-приложение", "https://aicexonefrontend-production.up.railway.app/home")
+      .row()
+      .text("💬 ChatGPT", "chatgpt")
+      .text("🎨 Midjourney", "midjourney")
+      .row()
+      .text("🖼️ Freepik", "freepik")
+      .text("🎬 Runway", "runway")
+      .row()
+      .text("⚙️ Настройки", "settings")
+      .text("❓ Помощь", "help");
     
     await ctx.reply("🤖 **AICEX AI Bot** - Выберите AI сервис:", {
       parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🌐 Веб-приложение", web_app: { url: "https://aicexonefrontend-production.up.railway.app/" } }],
-          [{ text: "💬 ChatGPT", callback_data: "chatgpt" }, { text: "🎨 Midjourney", callback_data: "midjourney" }],
-          [{ text: "🖼️ Freepik", callback_data: "freepik" }, { text: "🎬 Runway", callback_data: "runway" }],
-          [{ text: "⚙️ Настройки", callback_data: "settings" }, { text: "❓ Помощь", callback_data: "help" }]
-        ]
-      }
+      reply_markup: keyboard
     });
     
     logger.info("✅ Start command completed successfully");

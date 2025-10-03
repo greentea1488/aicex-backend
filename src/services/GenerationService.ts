@@ -5,30 +5,28 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
 import { prisma } from '../utils/prismaClient';
+
 export interface GenerationRequest {
   userId: number;
   service: 'freepik' | 'midjourney' | 'runway' | 'kling' | 'chatgpt';
   type: 'image' | 'video' | 'text';
   prompt: string;
-  model?: string;
-  imageUrl?: string;
+  imageUrl?: string; // для редактирования изображений
   options?: {
+    model?: string; // модель для генерации
     style?: string;
     size?: string;
     quality?: string;
+    duration?: number; // для видео
   };
 }
 
 export interface GenerationResult {
   success: boolean;
-  data?: {
-    url?: string;
-    content?: string;
-  };
   resultUrl?: string;
   taskId?: string;
   error?: string;
-  tokensUsed?: number;
+  tokensUsed: number;
 }
 
 // Стоимость токенов для каждого сервиса
@@ -139,41 +137,39 @@ export class GenerationService {
   private async generateWithFreepik(request: GenerationRequest): Promise<GenerationResult> {
     try {
       const apiKey = process.env.FREEPIK_API_KEY;
-      console.log(`🔍 FREEPIK DEBUG: API Key check - ${apiKey ? `EXISTS (${apiKey.substring(0, 10)}...)` : 'NOT FOUND'}`);
-      console.log(`🔍 FREEPIK DEBUG: Full env check - FREEPIK_API_KEY in process.env: ${!!process.env.FREEPIK_API_KEY}`);
-      
       if (!apiKey) {
-        console.log('❌ FREEPIK DEBUG: API Key is empty or undefined');
         return { success: false, error: 'Freepik API ключ не настроен', tokensUsed: 0 };
       }
-      
-      console.log(`🚀 FREEPIK DEBUG: Starting generation with API key: ${apiKey.substring(0, 10)}...`);
 
-      // Определяем endpoint на основе модели
-      let endpoint: string;
+      // Определяем правильный endpoint на основе модели
+      let endpoint = 'https://api.freepik.com/v1';
+      
       if (request.type === 'image') {
-        const model = request.model || 'flux-dev';
-        switch (model) {
+        // Используем модель из options или по умолчанию
+        const model = request.options?.model || 'flux-dev';
+        switch(model) {
+          case 'mystic':
+            endpoint += '/ai/mystic';
+            break;
           case 'flux-dev':
-            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/flux-dev';
+            endpoint += '/ai/text-to-image/flux-dev';
             break;
           case 'flux-pro':
-            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/flux-pro-v1-1';
+            endpoint += '/ai/text-to-image/flux-pro-v1-1';
             break;
           case 'seedream-v4':
-            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/seedream-v4';
+            endpoint += '/ai/text-to-image/seedream-v4';
             break;
           case 'imagen3':
-            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/imagen3';
-            break;
-          case 'mystic':
-            endpoint = 'https://api.freepik.com/v1/ai/mystic';
+            endpoint += '/ai/text-to-image/google-imagen-3';
             break;
           default:
-            endpoint = 'https://api.freepik.com/v1/ai/text-to-image/flux-dev';
+            endpoint += '/ai/text-to-image/flux-dev';
         }
       } else {
-        endpoint = 'https://api.freepik.com/v1/ai/text-to-video';
+        // Для видео используем модель из options
+        const model = request.options?.model || 'kling-v2-5-pro';
+        endpoint += `/ai/text-to-video/${model}`;
       }
 
       const payload = {
@@ -183,9 +179,6 @@ export class GenerationService {
         ...(request.options?.size && { size: request.options.size })
       };
 
-      console.log('🚀 FREEPIK DEBUG: Sending payload:', JSON.stringify(payload, null, 2));
-      console.log('🚀 FREEPIK DEBUG: Endpoint:', endpoint);
-
       const response = await axios.post(endpoint, payload, {
         headers: {
           'x-freepik-api-key': apiKey,
@@ -193,34 +186,22 @@ export class GenerationService {
         }
       });
 
-      console.log('✅ FREEPIK DEBUG: Response status:', response.status);
-      console.log('✅ FREEPIK DEBUG: Response data:', JSON.stringify(response.data, null, 2));
-
-      // Freepik API возвращает массив data с base64 изображениями
-      if (response.data.data && response.data.data.length > 0) {
-        const imageData = response.data.data[0];
-        const url = `data:image/jpeg;base64,${imageData.base64}`;
+      if (response.data.success) {
         return {
           success: true,
-          data: { url }, // Новый формат для clean-production-bot
-          resultUrl: url, // Старый формат для совместимости
-          taskId: Date.now().toString(),
-          tokensUsed: 1
+          resultUrl: response.data.data.url,
+          taskId: response.data.data.id,
+          tokensUsed: 0
         };
       } else {
-        return { success: false, error: 'No image data received', tokensUsed: 0 };
+        return { success: false, error: response.data.message, tokensUsed: 0 };
       }
 
     } catch (error: any) {
-      console.log('❌ FREEPIK DEBUG: Full error object:', error);
-      console.log('❌ FREEPIK DEBUG: Error response:', error.response?.data);
-      console.log('❌ FREEPIK DEBUG: Error status:', error.response?.status);
-      console.log('❌ FREEPIK DEBUG: Error message:', error.message);
-      
       logger.error('Freepik API error:', error);
       return { 
         success: false, 
-        error: error.response?.data?.message || error.message || 'Ошибка Freepik API', 
+        error: error.response?.data?.message || 'Ошибка Freepik API', 
         tokensUsed: 0 
       };
     }
