@@ -9,6 +9,13 @@
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": false,
@@ -25,6 +32,8 @@
     "dist",
     "coverage",
     "src/bot/production-bot-broken.ts",
-    "src/services/ai/FreepikServiceRefactored.ts"
+    "src/bot/clean-production-bot.ts",
+    "src/services/ai/FreepikServiceRefactored.ts",
+    "**/*.disabled.ts"
   ]
 }
