@@ -72,11 +72,13 @@ export class LavaTopWebhookService {
       // Сохраняем информацию о платеже
       await prisma.payment.create({
         data: {
-          externalId: webhookData.id,
+          userId: await this.extractUserIdFromOrder(webhookData.orderId) || '',
+          providerId: webhookData.id,
           amount: webhookData.amount,
           currency: webhookData.currency,
-          status: 'completed',
+          status: 'COMPLETED',
           provider: 'lava_top',
+          description: `Payment for order ${webhookData.orderId}`,
           metadata: {
             orderId: webhookData.orderId,
             webhookData
@@ -114,15 +116,16 @@ export class LavaTopWebhookService {
         update: {
           plan: planType,
           status: 'active',
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
           updatedAt: new Date()
         },
         create: {
           userId,
           plan: planType,
           status: 'active',
-          startedAt: new Date(),
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
+          features: {}
         }
       });
 
@@ -157,12 +160,14 @@ export class LavaTopWebhookService {
       });
 
       // Создаем запись в истории токенов
-      await prisma.tokenTransaction.create({
+      await prisma.tokenHistory.create({
         data: {
           userId,
           amount: tokenAmount,
           type: 'PURCHASE',
           description: `Покупка ${tokenAmount} токенов через Lava Top`,
+          balanceBefore: user.tokens - tokenAmount,
+          balanceAfter: user.tokens,
           metadata: {
             paymentId: webhookData.id,
             orderId: webhookData.orderId
@@ -211,11 +216,13 @@ export class LavaTopWebhookService {
       // Сохраняем информацию о неуспешном платеже
       await prisma.payment.create({
         data: {
-          externalId: webhookData.id,
+          userId: await this.extractUserIdFromOrder(webhookData.orderId) || '',
+          providerId: webhookData.id,
           amount: webhookData.amount,
           currency: webhookData.currency,
-          status: 'failed',
+          status: 'FAILED',
           provider: 'lava_top',
+          description: `Failed payment for order ${webhookData.orderId}`,
           metadata: {
             orderId: webhookData.orderId,
             webhookData

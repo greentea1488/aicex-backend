@@ -179,7 +179,7 @@ export class LavaTopController {
 
       // Ищем платеж в базе данных
       const payment = await prisma.payment.findFirst({
-        where: { externalId: paymentId }
+        where: { providerId: paymentId }
       });
 
       if (!payment) {
@@ -188,7 +188,7 @@ export class LavaTopController {
       }
 
       res.json({
-        id: payment.externalId,
+        id: payment.providerId,
         status: payment.status,
         amount: payment.amount,
         currency: payment.currency,
