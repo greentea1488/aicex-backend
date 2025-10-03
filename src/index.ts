@@ -17,6 +17,7 @@ import adminRoutes from "./routes/admin";
 import webhookRoutes from "./routes/webhooks";
 import freepikRoutes from "./routes/freepik";
 import miniappRoutes from "./routes/miniapp";
+import lavaTopRoutes from "./routes/lavaTop";
 import { logger } from "./utils/logger";
 import { prisma } from "./utils/prismaClient";
 import { startBot } from "./bot/bot";
@@ -84,6 +85,7 @@ try {
   app.use("/api/user", userRoutes);
   app.use("/api/freepik", freepikRoutes);
   app.use("/api/payment", paymentRoutes);
+  app.use("/api/lava-top", lavaTopRoutes);
   app.use("/api/v1", apiRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/webhooks", webhookRoutes);
