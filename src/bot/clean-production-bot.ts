@@ -159,15 +159,22 @@ bot.command("start", async (ctx) => {
 
     logger.info("Getting welcome text...");
     const welcomeText = MainMenu.getText('start');
+    logger.info("Welcome text:", welcomeText);
+    
     logger.info("Getting menu...");
     const menu = MainMenu.getMenu('start');
+    logger.info("Menu created successfully");
+    
     logger.info("Sending reply...");
     await ctx.reply(welcomeText, { reply_markup: menu });
     logger.info("✅ /start completed successfully");
   } catch (error) {
     logger.error("Error in /start:", error);
-    logger.error("Error details:", error.message);
-    logger.error("Error stack:", error.stack);
+    logger.error("Error type:", typeof error);
+    logger.error("Error constructor:", error?.constructor?.name);
+    logger.error("Error message:", error?.message);
+    logger.error("Error stack:", error?.stack);
+    logger.error("Full error object:", JSON.stringify(error, null, 2));
     try {
       await ctx.reply("❌ Произошла ошибка. Попробуйте позже.");
     } catch (replyError) {

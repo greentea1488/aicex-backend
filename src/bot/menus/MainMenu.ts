@@ -32,6 +32,9 @@ export class MainMenu {
       return keyboard;
     } catch (error) {
       console.error('Error creating menu:', error);
+      console.error('Menu error type:', typeof error);
+      console.error('Menu error message:', error?.message);
+      console.error('Menu error stack:', error?.stack);
       // Возвращаем простое меню без webApp в случае ошибки
       return new InlineKeyboard()
         .text('🎨 Генерация фото', 'generate_image').row()
