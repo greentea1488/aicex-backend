@@ -157,6 +157,13 @@ bot.command("start", async (ctx) => {
       }
     });
 
+    // Попробуем сначала простое сообщение без меню
+    logger.info("Sending simple welcome message...");
+    await ctx.reply("👋 Добро пожаловать в AICEX AI Bot!\n\n🤖 Бот успешно запущен и готов к работе!");
+    logger.info("✅ Simple /start completed successfully");
+    
+    // Если простое сообщение работает, попробуем с меню
+    /*
     try {
       logger.info("Getting welcome text...");
       const welcomeText = MainMenu.getText('start');
@@ -173,34 +180,25 @@ bot.command("start", async (ctx) => {
       logger.error("Inner error occurred:", innerError);
       throw innerError; // Re-throw to be caught by outer catch
     }
+    */
   } catch (error) {
-    logger.error("=== ERROR CAUGHT ===");
-    logger.error("Error is null/undefined:", error === null || error === undefined);
-    logger.error("Error value:", error);
-    logger.error("Error type:", typeof error);
+    console.log("=== CONSOLE ERROR DEBUG ===");
+    console.log("Error:", error);
+    console.log("Error type:", typeof error);
+    console.log("Error is null:", error === null);
+    console.log("Error is undefined:", error === undefined);
+    console.log("Error truthy:", !!error);
     
-    if (error) {
-      logger.error("Error constructor:", error?.constructor?.name);
-      logger.error("Error message:", error?.message);
-      logger.error("Error stack:", error?.stack);
-      logger.error("Error toString:", error.toString());
-      
-      // Попробуем получить все свойства объекта
-      try {
-        logger.error("Error keys:", Object.keys(error));
-        logger.error("Full error object:", JSON.stringify(error, null, 2));
-      } catch (jsonError) {
-        logger.error("Failed to stringify error:", jsonError);
-      }
-    }
-    
-    logger.error("=== END ERROR INFO ===");
-    
+    // Попробуем простой способ отправки сообщения без меню
     try {
-      await ctx.reply("❌ Произошла ошибка. Попробуйте позже.");
+      await ctx.reply("❌ Произошла ошибка при запуске бота. Попробуйте команду /start еще раз.");
+      console.log("Error reply sent successfully");
     } catch (replyError) {
-      logger.error("Failed to send error message:", replyError);
+      console.log("Failed to send error reply:", replyError);
     }
+    
+    // Также логируем через logger
+    logger.error("Error in /start command - see console for details");
   }
 });
 
