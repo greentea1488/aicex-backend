@@ -146,7 +146,7 @@ export class FreepikAPIService {
     this.apiKey = process.env.FREEPIK_API_KEY || '';
     
     if (!this.apiKey) {
-      throw new Error('FREEPIK_API_KEY is not configured');
+      console.warn('⚠️ FREEPIK_API_KEY is not configured - Freepik API will be disabled');
     }
 
     // Создаем axios клиент с базовой конфигурацией
@@ -198,6 +198,10 @@ export class FreepikAPIService {
    */
   async generateImage(request: FreepikImageGenerationRequest): Promise<FreepikTaskResponse> {
     try {
+      if (!this.apiKey) {
+        throw new Error('Freepik API key is not configured');
+      }
+      
       const modelKey = request.model || 'flux-dev';
       const modelConfig = IMAGE_MODELS[modelKey as keyof typeof IMAGE_MODELS];
       
@@ -246,6 +250,10 @@ export class FreepikAPIService {
    */
   async generateVideoFromImage(request: FreepikVideoGenerationRequest): Promise<FreepikTaskResponse> {
     try {
+      if (!this.apiKey) {
+        throw new Error('Freepik API key is not configured');
+      }
+      
       if (!request.image) {
         throw new Error('Image URL is required for video generation');
       }

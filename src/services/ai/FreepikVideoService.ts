@@ -174,7 +174,7 @@ export class FreepikVideoService {
     this.apiKey = process.env.FREEPIK_API_KEY || '';
     
     if (!this.apiKey) {
-      throw new Error('FREEPIK_API_KEY is not configured');
+      console.warn('⚠️ FREEPIK_API_KEY is not configured - Freepik Video API will be disabled');
     }
 
     this.client = axios.create({
@@ -192,6 +192,10 @@ export class FreepikVideoService {
    */
   async generateVideoFromImage(request: VideoGenerationRequest): Promise<VideoGenerationResponse> {
     try {
+      if (!this.apiKey) {
+        throw new Error('Freepik API key is not configured');
+      }
+      
       const modelKey = request.model || 'kling-v2-5-pro';
       const modelConfig = VIDEO_MODELS[modelKey as keyof typeof VIDEO_MODELS];
       
@@ -290,6 +294,10 @@ export class FreepikVideoService {
    */
   async generateVideoFromText(request: VideoGenerationRequest): Promise<VideoGenerationResponse> {
     try {
+      if (!this.apiKey) {
+        throw new Error('Freepik API key is not configured');
+      }
+      
       // Пока только Minimax поддерживает text-to-video
       const modelKey = request.model || 'minimax-hailuo-1080p';
       const modelConfig = VIDEO_MODELS[modelKey as keyof typeof VIDEO_MODELS];
