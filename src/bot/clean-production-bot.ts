@@ -11,6 +11,7 @@ import {
   getImageModelById, 
   getVideoModelById 
 } from "../services/ai/FreepikModels";
+import { MainMenu } from "./menus/MainMenu";
 
 const bot = new Bot(process.env.BOT_TOKEN!);
 const aiManager = new AIServiceManager();
@@ -20,44 +21,20 @@ console.log("🤖 Starting AICEX Clean Production Bot...");
 // Состояния пользователей
 const userStates = new Map<number, any>();
 
-const mainMenu = new InlineKeyboard()
-  .text('🎨 Генерация фото', 'generate_image').row()
-  .text('🎬 Генерация видео', 'generate_video').row()
-  .text('💬 Чат с AI', 'chat_ai').row()
-  .webApp('👤 Профиль', process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/');
+const mainMenu = MainMenu.getMenu('main');
 
 // 🎨 МЕНЮ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ
-const imageMenu = {
-  inline_keyboard: [
-    [
-      { text: '🎨 Freepik AI', callback_data: 'image_freepik' },
-      { text: '🖼️ DALL-E', callback_data: 'image_dalle' }
-    ],
-    [{ text: '⬅️ Назад', callback_data: 'back_to_main' }]
-  ]
-};
+const imageMenu = MainMenu.getImageMenu();
 
-// 🎬 МЕНЮ ГЕНЕРАЦИИ ВИДЕО  
-const videoMenu = {
-  inline_keyboard: [
-    [{ text: '🎬 Freepik Video', callback_data: 'video_freepik' }],
-    [{ text: '🔥 Kling AI', callback_data: 'video_kling' }],
-    [{ text: '⬅️ Назад', callback_data: 'back_to_main' }]
-  ]
-};
+// 🎬 МЕНЮ ГЕНЕРАЦИИ ВИДЕО
+const videoMenu = MainMenu.getVideoMenu();
 
-// 💬 МЕНЮ ЧАТА
-const chatMenu = {
-  inline_keyboard: [
-    [{ text: '🤖 ChatGPT-4', callback_data: 'chat_gpt4' }],
-    [{ text: '⬅️ Назад', callback_data: 'back_to_main' }]
-  ]
-};
+// 💬 МЕНЮ ЧАТА С AI
+const chatMenu = MainMenu.getChatMenu();
 
 // 🎨 МЕНЮ МОДЕЛЕЙ FREEPIK ИЗОБРАЖЕНИЙ
 function getFreepikImageModelsMenu() {
   const popularModels = getPopularImageModels();
-  
   const keyboard = popularModels.map(model => [{
     text: `${model.isNew ? '🆕 ' : ''}${model?.name || 'Модель'}`,
     callback_data: `freepik_img_${model.id}`
@@ -150,17 +127,9 @@ function getAllFreepikVideoModelsMenu() {
 
 // 🎯 ПОКАЗАТЬ ГЛАВНОЕ МЕНЮ
 async function showMainMenu(ctx: Context) {
-  const text = `🎯 Главное меню
-
-Выберите действие:
-
-🎨 Генерация фото - создание изображений
-🎬 Генерация видео - создание видео
-💬 Чат с AI - общение с нейросетями
-👤 Профиль - ваши настройки и баланс`;
-
+  const text = MainMenu.getText('main');
   try {
-    await ctx.editMessageText(text, { reply_markup: mainMenu });
+    await ctx.editMessageText(text, { reply_markup: MainMenu.getMenu('main') });
   } catch {
     await ctx.reply(text, { reply_markup: mainMenu });
   }
@@ -188,25 +157,8 @@ bot.command("start", async (ctx) => {
       }
     });
 
-    const welcomeText = `👋 Добро пожаловать в AICEX AI Bot!
-
-🤖 27 AI моделей в одном боте:
-
-Генерация изображений:
-• Freepik AI (10+ моделей)
-• DALL-E 3
-
-Генерация видео:
-• Freepik Video (17+ моделей)
-
-Чат с AI:
-• ChatGPT-4
-• Claude-3
-• GPT-4 Vision
-
-Выберите действие:`;
-
-    await ctx.reply(welcomeText, { reply_markup: mainMenu });
+    const welcomeText = MainMenu.getText('start');
+    await ctx.reply(welcomeText, { reply_markup: MainMenu.getMenu('start') });
   } catch (error) {
     logger.error("Error in /start:", error);
     await ctx.reply("❌ Произошла ошибка. Попробуйте позже.");
