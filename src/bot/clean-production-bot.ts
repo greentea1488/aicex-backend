@@ -59,7 +59,7 @@ function getFreepikImageModelsMenu() {
   const popularModels = getPopularImageModels();
   
   const keyboard = popularModels.map(model => [{
-    text: `${model.isNew ? '🆕 ' : ''}${model.name}`,
+    text: `${model.isNew ? '🆕 ' : ''}${model?.name || 'Модель'}`,
     callback_data: `freepik_img_${model.id}`
   }]);
   
@@ -81,7 +81,7 @@ function getFreepikVideoModelsMenu() {
   );
   
   const keyboard = freepikModels.map(model => [{
-    text: `${model.isNew ? '🆕 ' : ''}${model.name} ${model.resolution ? `(${model.resolution})` : ''}`,
+    text: `${model.isNew ? '🆕 ' : ''}${model?.name || 'Модель'} ${model.resolution ? `(${model.resolution})` : ''}`,
     callback_data: `freepik_vid_${model.id}`
   }]);
   
@@ -109,7 +109,7 @@ function getKlingVideoModelsMenu() {
   );
   
   const keyboard = klingModels.map(model => [{
-    text: `${model.isNew ? '🆕 ' : ''}${model.name}`,
+    text: `${model.isNew ? '🆕 ' : ''}${model?.name || 'Модель'}`,
     callback_data: `kling_vid_${model.id}`
   }]);
   
@@ -123,7 +123,7 @@ function getKlingVideoModelsMenu() {
 // 📋 ВСЕ МОДЕЛИ ИЗОБРАЖЕНИЙ
 function getAllFreepikImageModelsMenu() {
   const keyboard = FREEPIK_IMAGE_MODELS.map(model => [{
-    text: `${model.isNew ? '🆕 ' : ''}${model.name}`,
+    text: `${model.isNew ? '🆕 ' : ''}${model?.name || 'Модель'}`,
     callback_data: `freepik_img_${model.id}`
   }]);
   
@@ -137,7 +137,7 @@ function getAllFreepikImageModelsMenu() {
 // 📋 ВСЕ МОДЕЛИ ВИДЕО
 function getAllFreepikVideoModelsMenu() {
   const keyboard = FREEPIK_VIDEO_MODELS.map(model => [{
-    text: `${model.isNew ? '🆕 ' : ''}${model.name} ${model.resolution ? `(${model.resolution})` : ''}`,
+    text: `${model.isNew ? '🆕 ' : ''}${model?.name || 'Модель'} ${model.resolution ? `(${model.resolution})` : ''}`,
     callback_data: `freepik_vid_${model.id}`
   }]);
   
