@@ -1,5 +1,9 @@
 import axios from 'axios';
 import { logger } from '../../utils/logger';
+import { accessControlService } from '../AccessControlService';
+import { generationLogService } from '../GenerationLogService';
+import { TokenService } from '../TokenService';
+import { prisma } from '../../utils/prismaClient';
 
 // Модели для генерации изображений (согласно документации Freepik)
 export const FREEPIK_IMAGE_MODELS = {
