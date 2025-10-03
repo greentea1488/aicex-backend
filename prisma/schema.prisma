@@ -10,7 +10,7 @@ datasource db {
 
 model User {
   id              String         @id @default(auto()) @map("_id") @db.ObjectId
-  telegramId      String         @unique // Changed to String for larger IDs
+  telegramId      Int            @unique
   username        String?
   firstName       String?
   lastName        String?
@@ -209,7 +209,7 @@ model ChatHistory {
 
 model BotChatSession {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  telegramId  String   // Changed to String for consistency
+  telegramId  Int
   aiProvider  String   // 'chatgpt', 'midjourney', etc.
   messages    Json[]
   isActive    Boolean  @default(true)
@@ -296,7 +296,7 @@ model MidjourneyTask {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   taskId      String   @unique  // GenAPI task ID
   userId      String   @db.ObjectId  // Правильная связь с User
-  telegramId  String              // Telegram user ID (changed to String)
+  telegramId  Int                 // Telegram user ID
   prompt      String              // User's original prompt
   model       String              // Midjourney model used (5.0, 6.0, 7.0, etc.)
   style       String              // Style used (photorealistic, artistic, etc.)

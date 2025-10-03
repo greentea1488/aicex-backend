@@ -141,7 +141,7 @@ export class BalanceService {
         data: {
           userId,
           amount: -amount, // Отрицательное значение для списания
-          type: typeMap[service.toLowerCase()] || 'SPEND_FREEPIK',
+          type: (typeMap[service.toLowerCase()] || 'SPEND_FREEPIK') as any,
           description: description || `${service}: -${amount} tokens`,
           service,
           taskId,

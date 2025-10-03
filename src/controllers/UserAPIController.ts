@@ -42,7 +42,8 @@ export class UserAPIController {
 
       // Находим или создаем пользователя
       let user = await prisma.user.findUnique({
-        where: { telegramId: userData.id }
+        where: { telegramId: userData.id },
+        include: { subscription: true }
       });
 
       if (!user) {
@@ -53,7 +54,8 @@ export class UserAPIController {
             firstName: userData.first_name,
             lastName: userData.last_name,
             tokens: 10 // Стартовые токены
-          }
+          },
+          include: { subscription: true }
         });
 
         logger.info('New user registered', {

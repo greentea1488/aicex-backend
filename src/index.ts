@@ -212,7 +212,7 @@ app.listen(PORT, "0.0.0.0", async () => {
           if (userCount === 0) {
             await prisma.user.create({
               data: {
-                telegramId: "123456789",
+                telegramId: 123456789,
                 username: "test_user",
                 firstName: "Test",
                 lastName: "User",
@@ -231,7 +231,7 @@ app.listen(PORT, "0.0.0.0", async () => {
             if (userCount === 0) {
               await prisma.user.create({
                 data: {
-                  telegramId: "123456789",
+                  telegramId: 123456789,
                   username: "test_user", 
                   firstName: "Test",
                   lastName: "User",

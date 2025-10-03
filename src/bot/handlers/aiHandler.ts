@@ -123,16 +123,16 @@ export class AIHandler {
       // Save session to database
       await this.sessionManager.saveChatSession(session);
 
-      // Send response to user
       await ctx.reply(response.content);
 
       // Optional: Show token usage for premium users
       if (response.usage && response.usage.totalTokens > 0) {
         const user = await prisma.user.findUnique({
           where: { telegramId: parseInt(userId) },
+          include: { subscription: true }
         });
 
-        if (user?.subscription === "premium") {
+        if (user?.subscription?.plan === "pro" || user?.subscription?.plan === "enterprise") {
           await ctx.reply(`📊 Использовано токенов: ${response.usage.totalTokens}`, { reply_to_message_id: ctx.message?.message_id });
         }
       }
