@@ -157,11 +157,22 @@ bot.command("start", async (ctx) => {
       }
     });
 
+    logger.info("Getting welcome text...");
     const welcomeText = MainMenu.getText('start');
-    await ctx.reply(welcomeText, { reply_markup: MainMenu.getMenu('start') });
+    logger.info("Getting menu...");
+    const menu = MainMenu.getMenu('start');
+    logger.info("Sending reply...");
+    await ctx.reply(welcomeText, { reply_markup: menu });
+    logger.info("✅ /start completed successfully");
   } catch (error) {
     logger.error("Error in /start:", error);
-    await ctx.reply("❌ Произошла ошибка. Попробуйте позже.");
+    logger.error("Error details:", error.message);
+    logger.error("Error stack:", error.stack);
+    try {
+      await ctx.reply("❌ Произошла ошибка. Попробуйте позже.");
+    } catch (replyError) {
+      logger.error("Failed to send error message:", replyError);
+    }
   }
 });
 

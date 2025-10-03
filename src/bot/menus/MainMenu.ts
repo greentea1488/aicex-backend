@@ -10,25 +10,34 @@ export class MainMenu {
    * @param variant - вариант меню (start или main)
    */
   static getMenu(variant: 'start' | 'main' = 'main'): InlineKeyboard {
-    const keyboard = new InlineKeyboard();
-    
-    if (variant === 'start') {
-      // Стартовое меню с описанием
-      keyboard
+    try {
+      const keyboard = new InlineKeyboard();
+      
+      if (variant === 'start') {
+        // Стартовое меню с описанием
+        keyboard
+          .text('🎨 Генерация фото', 'generate_image').row()
+          .text('🎬 Генерация видео', 'generate_video').row()
+          .text('💬 Чат с AI', 'chat_ai').row()
+          .webApp('👤 Профиль', process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/home');
+      } else {
+        // Главное меню (компактное)
+        keyboard
+          .text('🎨 Генерация фото', 'generate_image').row()
+          .text('🎬 Генерация видео', 'generate_video').row()
+          .text('💬 Чат с AI', 'chat_ai').row()
+          .webApp('👤 Профиль', process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/home');
+      }
+      
+      return keyboard;
+    } catch (error) {
+      console.error('Error creating menu:', error);
+      // Возвращаем простое меню без webApp в случае ошибки
+      return new InlineKeyboard()
         .text('🎨 Генерация фото', 'generate_image').row()
         .text('🎬 Генерация видео', 'generate_video').row()
-        .text('💬 Чат с AI', 'chat_ai').row()
-        .webApp('👤 Профиль', process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/');
-    } else {
-      // Главное меню (компактное)
-      keyboard
-        .text('🎨 Генерация фото', 'generate_image').row()
-        .text('🎬 Генерация видео', 'generate_video').row()
-        .text('💬 Чат с AI', 'chat_ai').row()
-        .webApp('👤 Профиль', process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/');
+        .text('💬 Чат с AI', 'chat_ai');
     }
-    
-    return keyboard;
   }
 
   /**
