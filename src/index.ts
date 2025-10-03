@@ -16,6 +16,7 @@ import apiRoutes from "./routes/api";
 import adminRoutes from "./routes/admin";
 import webhookRoutes from "./routes/webhooks";
 import freepikRoutes from "./routes/freepik";
+import miniappRoutes from "./routes/miniapp";
 import { logger } from "./utils/logger";
 import { prisma } from "./utils/prismaClient";
 import { startBot } from "./bot/bot";
@@ -86,6 +87,7 @@ try {
   app.use("/api/v1", apiRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/webhooks", webhookRoutes);
+  app.use("/api/miniapp", miniappRoutes); // Mini App API routes
   logger.info("✅ All routes loaded successfully");
   
   // Детальная диагностика переменных окружения
@@ -210,7 +212,7 @@ app.listen(PORT, "0.0.0.0", async () => {
           if (userCount === 0) {
             await prisma.user.create({
               data: {
-                telegramId: 123456789,
+                telegramId: "123456789",
                 username: "test_user",
                 firstName: "Test",
                 lastName: "User",
@@ -229,7 +231,7 @@ app.listen(PORT, "0.0.0.0", async () => {
             if (userCount === 0) {
               await prisma.user.create({
                 data: {
-                  telegramId: 123456789,
+                  telegramId: "123456789",
                   username: "test_user", 
                   firstName: "Test",
                   lastName: "User",

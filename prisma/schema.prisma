@@ -10,20 +10,23 @@ datasource db {
 
 model User {
   id              String         @id @default(auto()) @map("_id") @db.ObjectId
-  telegramId      Int            @unique
-  username        String
+  telegramId      String         @unique // Changed to String for larger IDs
+  username        String?
   firstName       String?
   lastName        String?
   email           String?
   phone           String?
-  avatar          String?
+  photoUrl        String?        // Telegram avatar URL
+  languageCode    String         @default("en")
+  isPremium       Boolean        @default(false) // Telegram Premium status
   bio             String?
   location        String?
   website         String?
   referral        String?        @db.ObjectId
-  tokens          Int            @default(0)
+  tokens          Int            @default(0) // Deprecated - use balance
   friendsReferred Int            @default(0)
-  subscription    String?
+  subscription    Subscription?
+  lastActive      DateTime       @default(now())
   
   // Настройки пользователя как JSON поля
   appSettings     Json?
@@ -32,6 +35,8 @@ model User {
   runwaySettings  Json?
   
   // Связи с другими моделями (восстановлены для Atlas)
+  balance         Balance?
+  profile         UserProfile?
   payments        Payment[] 
   tokenHistory    TokenHistory[] 
   tasks           Task[]
@@ -41,15 +46,84 @@ model User {
   runwayTasks     RunwayTask[]
   midjourneyTasks MidjourneyTask[]
   generationHistory GenerationHistory[]
+  activityLogs    ActivityLog[]
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   
   // Критически важные индексы для производительности
   @@index([tokens])
-  @@index([subscription])
   @@index([createdAt])
   @@index([updatedAt])
+  @@index([lastActive])
+}
+
+// Баланс пользователя
+model Balance {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  tokens      Int      @default(100) // Общий баланс токенов
+  freeTokens  Int      @default(100) // Бесплатные токены
+  paidTokens  Int      @default(0)  // Купленные токены
+  totalSpent  Int      @default(0)  // Всего потрачено токенов
+  
+  user        User     @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Профиль пользователя
+model UserProfile {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  level       Int      @default(1)
+  experience  Int      @default(0)
+  achievements Json[]  @default([])
+  preferences Json     @default("{}")
+  
+  user        User     @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Подписка пользователя
+model Subscription {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  plan        String   // 'free', 'basic', 'pro', 'enterprise'
+  status      String   // 'active', 'cancelled', 'expired'
+  startDate   DateTime
+  endDate     DateTime?
+  features    Json     // Список доступных функций
+  
+  user        User     @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([status])
+  @@index([endDate])
+}
+
+// Логи активности
+model ActivityLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  action      String   // 'LOGIN', 'GENERATE_IMAGE', 'PURCHASE_TOKENS', etc.
+  details     Json?
+  ip          String?
+  userAgent   String?
+  
+  user        User     @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 // Настройки теперь хранятся как JSON поля в User модели
@@ -135,7 +209,7 @@ model ChatHistory {
 
 model BotChatSession {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  telegramId  Int
+  telegramId  String   // Changed to String for consistency
   aiProvider  String   // 'chatgpt', 'midjourney', etc.
   messages    Json[]
   isActive    Boolean  @default(true)
@@ -222,7 +296,7 @@ model MidjourneyTask {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   taskId      String   @unique  // GenAPI task ID
   userId      String   @db.ObjectId  // Правильная связь с User
-  telegramId  Int                // Telegram user ID (для обратной совместимости)
+  telegramId  String              // Telegram user ID (changed to String)
   prompt      String              // User's original prompt
   model       String              // Midjourney model used (5.0, 6.0, 7.0, etc.)
   style       String              // Style used (photorealistic, artistic, etc.)
