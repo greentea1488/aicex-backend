@@ -6,8 +6,21 @@ import { logger } from '../../utils/logger';
  * Поддерживает image-to-video и потенциально text-to-video
  */
 
+// Типы для видео моделей
+interface VideoModelConfig {
+  endpoint: string;
+  name: string;
+  description: string;
+  type: string;
+  durations: number[];
+  working: boolean;
+  requiresPaidPlan?: boolean;
+  requiresImageUrl?: boolean;
+  requiresResolution?: boolean;
+}
+
 // Конфигурация видео моделей на основе тестирования
-export const VIDEO_MODELS = {
+export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
   // ✅ РАБОТАЮЩИЕ IMAGE-TO-VIDEO МОДЕЛИ
   'kling-v2-5-pro': {
     endpoint: '/v1/ai/image-to-video/kling-v2-5-pro',
