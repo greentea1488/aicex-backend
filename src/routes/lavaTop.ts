@@ -19,28 +19,16 @@ const getLavaTopController = () => {
  */
 router.post('/webhook', (req, res) => getLavaTopController().handleWebhook(req, res));
 
-/**
- * Создание платежа для подписки
- * Требует авторизации
- */
 router.post('/subscription', authenticateToken, (req, res) => 
   getLavaTopController().createSubscriptionPayment(req, res)
 );
 
-/**
- * Создание платежа для токенов
- * Требует авторизации
- */
-router.post('/tokens', authenticateToken, (req, res) => 
-  getLavaTopController().createTokenPayment(req, res)
+router.get('/plans', (req, res) => 
+  getLavaTopController().getSubscriptionPlans(req, res)
 );
 
-/**
- * Получение статуса платежа
- * Требует авторизации
- */
-router.get('/status/:paymentId', authenticateToken, (req, res) => 
-  getLavaTopController().getPaymentStatus(req, res)
+router.get('/status/:invoiceId', authenticateToken, (req, res) => 
+  getLavaTopController().getInvoiceStatus(req, res)
 );
 
 export default router;
