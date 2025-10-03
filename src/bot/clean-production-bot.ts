@@ -1,4 +1,4 @@
-import { Bot, Context } from "grammy";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import { logger } from "../utils/logger";
 import { prisma } from "../utils/prismaClient";
 import { AIServiceManager } from "../services/ai/AIServiceManager";
@@ -20,14 +20,11 @@ console.log("🤖 Starting AICEX Clean Production Bot...");
 // Состояния пользователей
 const userStates = new Map<number, any>();
 
-const mainMenu = {
-  inline_keyboard: [
-    [{ text: '🎨 Генерация фото', callback_data: 'generate_image' }],
-    [{ text: '🎬 Генерация видео', callback_data: 'generate_video' }],
-    [{ text: '💬 Чат с AI', callback_data: 'chat_ai' }],
-    [{ text: '👤 Профиль', web_app: { url: process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/' } }]
-  ]
-};
+const mainMenu = new InlineKeyboard()
+  .text('🎨 Генерация фото', 'generate_image').row()
+  .text('🎬 Генерация видео', 'generate_video').row()
+  .text('💬 Чат с AI', 'chat_ai').row()
+  .webApp('👤 Профиль', process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/');
 
 // 🎨 МЕНЮ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ
 const imageMenu = {
@@ -448,7 +445,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
             });
             
             await ctx.editMessageText(
-              `🎨 ${model.name}\n${model.description}\n\n💰 Стоимость: 5 токенов\n\nВведите описание изображения:`,
+              `🎨 ${model?.name || 'Неизвестная модель'}\n${model?.description || 'Описание недоступно'}\n\n💰 Стоимость: 5 токенов\n\nВведите описание изображения:`,
               {
                 reply_markup: {
                   inline_keyboard: [
@@ -491,7 +488,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
             });
             
             await ctx.editMessageText(
-              `🎬 ${model.name}\n${model.description}\n\n💰 Стоимость: 10 токенов\n\nВведите описание видео:`,
+              `🎬 ${model?.name || 'Неизвестная модель'}\n${model?.description || 'Описание недоступно'}\n\n💰 Стоимость: 10 токенов\n\nВведите описание видео:`,
               {
                 reply_markup: {
                   inline_keyboard: [
@@ -540,7 +537,7 @@ ${getPopularImageModels().map(m => `• ${m.name} - ${m.description}`).join('\n'
             });
             
             await ctx.editMessageText(
-              `🔥 ${model.name}\n${model.description}\n\nВведите описание видео:`,
+              `🔥 ${model?.name || 'Неизвестная модель'}\n${model?.description || 'Описание недоступно'}\n\nВведите описание видео:`,
               {
                 reply_markup: {
                   inline_keyboard: [
