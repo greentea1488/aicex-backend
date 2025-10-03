@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { LavaTopWebhookService } from '../services/LavaTopWebhookService';
 import { lavaTopAPI } from '../services/LavaTopAPIService';
+import { subscriptionService } from '../services/SubscriptionService';
 import { logger } from '../utils/logger';
 import { prisma } from '../utils/prismaClient';
 
@@ -57,13 +58,8 @@ export class LavaTopController {
    */
   private async handleSubscriptionActivation(webhookData: any) {
     try {
-      const { buyer, product, amount, currency } = webhookData;
+      const { buyer, product, contractId } = webhookData;
       
-      // Определяем план подписки по названию продукта
-      let plan = 'basic';
-      if (product.name.includes('Pro')) plan = 'pro';
-      if (product.name.includes('Premium')) plan = 'premium';
-
       // Находим пользователя по email
       const user = await prisma.user.findFirst({
         where: { email: buyer.email }
@@ -74,35 +70,22 @@ export class LavaTopController {
         return;
       }
 
-      // Активируем подписку
-      await prisma.subscription.upsert({
-        where: { userId: user.id },
-        update: {
-          plan: plan,
-          status: 'active',
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
-          updatedAt: new Date()
-        },
-        create: {
-          userId: user.id,
-          plan: plan,
-          status: 'active',
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
-          features: {}
-        }
+      // Находим план по offerId из продукта
+      const plan = await subscriptionService.getPlanByOfferId(product.id);
+      
+      if (!plan) {
+        logger.error('Plan not found for offerId:', product.id);
+        return;
+      }
+
+      // Активируем подписку через сервис
+      await subscriptionService.activateSubscription(user.id, plan.id, contractId);
+
+      logger.info('Subscription activated via webhook:', { 
+        userId: user.id, 
+        planName: plan.name, 
+        contractId 
       });
-
-      // Начисляем токены согласно плану
-      const tokenAmounts = { basic: 1000, pro: 5000, premium: 15000 };
-      const tokens = tokenAmounts[plan as keyof typeof tokenAmounts];
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { tokens: { increment: tokens } }
-      });
-
-      logger.info('Subscription activated:', { userId: user.id, plan, tokens });
     } catch (error) {
       logger.error('Error activating subscription:', error);
     }
@@ -125,16 +108,10 @@ export class LavaTopController {
         return;
       }
 
-      // Продлеваем подписку на месяц
-      await prisma.subscription.update({
-        where: { userId: user.id },
-        data: {
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 дней
-          updatedAt: new Date()
-        }
-      });
+      // Продлеваем подписку через сервис
+      await subscriptionService.renewSubscription(user.id);
 
-      logger.info('Subscription renewed:', { userId: user.id });
+      logger.info('Subscription renewed via webhook:', { userId: user.id });
     } catch (error) {
       logger.error('Error renewing subscription:', error);
     }
@@ -201,7 +178,7 @@ export class LavaTopController {
    */
   async getSubscriptionPlans(req: Request, res: Response) {
     try {
-      const plans = lavaTopAPI.getAvailablePlans();
+      const plans = await subscriptionService.getSubscriptionPlans();
       res.json({ success: true, plans });
     } catch (error) {
       logger.error('Error getting subscription plans:', error);

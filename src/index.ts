@@ -1,27 +1,24 @@
-import { config } from "dotenv";
 config(); // Load environment variables first
 import fs from "node:fs";
 import path from "node:path";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import type { NextFunction, Request, Response } from "express";
-import express from "express";
-import pino from "pino";
-import pinoHttp from "pino-http";
-// Импортируем все маршруты после исправления
-import authRoutes from "./routes/auth";
-import chatRoutes from "./routes/chat";
-import userRoutes from "./routes/user";
-import paymentRoutes from "./routes/payment";
-import apiRoutes from "./routes/api";
-import adminRoutes from "./routes/admin";
-import webhookRoutes from "./routes/webhooks";
-import freepikRoutes from "./routes/freepik";
-import miniappRoutes from "./routes/miniapp";
-import lavaTopRoutes from "./routes/lavaTop";
-import { logger } from "./utils/logger";
-import { prisma } from "./utils/prismaClient";
-import { startBot } from "./bot/bot";
+import express from 'express';
+import { logger } from './utils/logger';
+import { prisma } from './utils/prismaClient';
+import { subscriptionService } from './services/SubscriptionService';
+import { setupCronJobs } from './utils/cronJobs';
+import { startBot } from './bot/bot';
 
+// Import routes
+import authRoutes from './routes/auth';
+import userRoutes from './routes/user';
+import generationRoutes from './routes/generation';
+import webhookRoutes from './routes/webhooks';
+import lavaTopRoutes from './routes/lavaTop';
+import freepikRoutes from './routes/freepik';
 const app = express();
 const PORT = parseInt(process.env.PORT || "8080", 10);
 
@@ -222,6 +219,22 @@ app.listen(PORT, "0.0.0.0", async () => {
               }
             });
             logger.info("✅ Test user created successfully");
+          }
+
+          // Инициализируем планы подписок
+          try {
+            await subscriptionService.initializeSubscriptionPlans();
+            logger.info("✅ Subscription plans initialized successfully");
+          } catch (planError: any) {
+            logger.warn("Subscription plans initialization warning:", planError.message);
+          }
+
+          // Запускаем cron задачи
+          try {
+            setupCronJobs();
+            logger.info("✅ Cron jobs started successfully");
+          } catch (cronError: any) {
+            logger.warn("Cron jobs initialization warning:", cronError.message);
           }
           
         } catch (initError: any) {

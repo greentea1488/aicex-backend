@@ -88,23 +88,55 @@ model UserProfile {
   updatedAt   DateTime @updatedAt
 }
 
+// Планы подписок (справочник)
+model SubscriptionPlan {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // 'basic', 'pro', 'premium'
+  displayName String   // 'AICEX Basic', 'AICEX Pro', 'AICEX Premium'
+  description String?
+  priceRub    Int      // Цена в рублях
+  priceUsd    Int      // Цена в долларах (центы)
+  priceEur    Int      // Цена в евро (центы)
+  tokens      Int      // Количество токенов в месяц
+  features    Json     // Список функций плана
+  lavaOfferId String   @unique // offerId из Lava.top
+  isActive    Boolean  @default(true)
+  
+  subscriptions Subscription[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // Подписка пользователя
 model Subscription {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String   @unique @db.ObjectId
-  plan        String   // 'free', 'basic', 'pro', 'enterprise'
-  status      String   // 'active', 'cancelled', 'expired'
+  planId      String   @db.ObjectId
+  status      SubscriptionStatus @default(ACTIVE)
   startDate   DateTime
-  endDate     DateTime?
-  features    Json     // Список доступных функций
+  endDate     DateTime
+  autoRenew   Boolean  @default(true)
+  lavaContractId String? // ID контракта из Lava.top
+  tokensGranted Int     @default(0) // Сколько токенов выдано за подписку
   
-  user        User     @relation(fields: [userId], references: [id])
+  user        User             @relation(fields: [userId], references: [id])
+  plan        SubscriptionPlan @relation(fields: [planId], references: [id])
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   @@index([status])
   @@index([endDate])
+  @@index([userId, status])
+  @@index([lavaContractId])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  SUSPENDED
 }
 
 // Логи активности
