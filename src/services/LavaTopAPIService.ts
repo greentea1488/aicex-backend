@@ -23,10 +23,10 @@ export class LavaTopAPIService {
   };
 
   constructor() {
-    this.apiKey = process.env.LAVA_TOP_API_KEY || '';
+    this.apiKey = process.env.LAVA_API_KEY || process.env.LAVA_TOP_API_KEY || '';
 
     if (!this.apiKey) {
-      console.warn('⚠️ LAVA_TOP_API_KEY not configured - Lava.top payments disabled');
+      console.warn('⚠️ LAVA_API_KEY not configured - Lava.top payments disabled');
     }
 
     this.client = axios.create({

@@ -184,25 +184,32 @@ export class TelegramAuthService {
   }
 
   /**
-   * Проверка токена сессии
+   * Проверка JWT токена сессии
    */
   async verifySessionToken(token: string) {
     try {
-      const payload = JSON.parse(Buffer.from(token, 'base64').toString());
+      const jwt = require('jsonwebtoken');
       
-      // Проверяем срок действия (24 часа)
-      const tokenAge = Date.now() - payload.timestamp;
-      if (tokenAge > 24 * 60 * 60 * 1000) {
-        throw new Error('Token expired');
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET not configured');
       }
 
-      // Получаем пользователя
+      // Верифицируем JWT токен
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      
+      if (!payload.userId && !payload.id) {
+        throw new Error('Invalid token payload');
+      }
+
+      // Получаем пользователя (используем userId или id из payload)
+      const userId = payload.userId || payload.id;
       const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
+        where: { id: userId },
         include: {
           balance: true,
-          profile: true,
-          subscription: true
+          subscription: {
+            include: { plan: true }
+          }
         }
       });
 
