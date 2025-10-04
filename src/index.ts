@@ -20,7 +20,8 @@ import {
   webhookRoutes,
   lavaTopRoutes,
   freepikRoutes,
-  monitoringRoutes
+  monitoringRoutes,
+  subscriptionRoutes
 } from './routes';
 const app = express();
 const PORT = parseInt(process.env.PORT || "8080", 10);
@@ -48,17 +49,20 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Загружаем все маршруты после исправления path-to-regexp ошибки
 try {
+  // Routes
   app.use("/api/auth", authRoutes);
   app.use("/api/user", userRoutes);
   app.use("/api/generation", generationRoutes);
-  app.use("/api/freepik", freepikRoutes);
-  app.use("/api/lava-top", lavaTopRoutes);
-  app.use("/api/monitoring", monitoringRoutes);
   app.use("/api/webhooks", webhookRoutes);
+  app.use("/api/lava-top", lavaTopRoutes);
+  app.use("/api/freepik", freepikRoutes);
+  app.use("/api/monitoring", monitoringRoutes);
+  app.use("/api/subscription", subscriptionRoutes);
   logger.info("✅ All routes loaded successfully");
   
   // Детальная диагностика переменных окружения
   logger.info("🔍 Environment Variables Diagnostic:");
+  logger.info(`🔑 DATABASE_URL: ${process.env.DATABASE_URL ? `EXISTS (${process.env.DATABASE_URL.substring(0, 20)}...)` : 'NOT FOUND'}`);
   logger.info(`🔑 FREEPIK_API_KEY: ${process.env.FREEPIK_API_KEY ? `EXISTS (${process.env.FREEPIK_API_KEY.substring(0, 10)}...)` : 'NOT FOUND'}`);
   logger.info(`🤖 OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? `EXISTS (${process.env.OPENAI_API_KEY.substring(0, 10)}...)` : 'NOT FOUND'}`);
   logger.info(`🎨 GEN_API_KEY: ${process.env.GEN_API_KEY ? `EXISTS (${process.env.GEN_API_KEY.substring(0, 10)}...)` : 'NOT FOUND'}`);

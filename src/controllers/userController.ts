@@ -4,21 +4,46 @@ import { prisma } from "../utils/prismaClient";
 // Get user profile
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const telegramId = req.user?.telegramId;
 
-    if (!userId) {
+    if (!telegramId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { telegramId: telegramId },
+      include: {
+        subscription: {
+          include: {
+            plan: true
+          }
+        },
+        balance: true
+      }
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(user);
+    // Формируем ответ с правильными полями
+    const response = {
+      id: user.id,
+      telegramId: user.telegramId,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      avatar: user.photoUrl, // Переименовываем для фронтенда
+      tokens: user.balance?.tokens || user.tokens || 0, // Используем баланс или старое поле
+      subscription: user.subscription?.plan?.displayName || null,
+      friendsReferred: user.friendsReferred,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+
+    res.json(response);
   } catch (error) {
     console.error("Error fetching user profile:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -28,10 +53,10 @@ export const getUserProfile = async (req: Request, res: Response) => {
 // Update user settings
 export const updateUserSettings = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const telegramId = req.user?.telegramId;
     const { appSettings, gptSettings, midjourneySettings, runwaySettings } = req.body;
 
-    if (!userId) {
+    if (!telegramId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -43,7 +68,7 @@ export const updateUserSettings = async (req: Request, res: Response) => {
     if (runwaySettings) updateData.runwaySettings = runwaySettings;
 
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { telegramId: telegramId },
       data: updateData,
     });
 
@@ -57,24 +82,25 @@ export const updateUserSettings = async (req: Request, res: Response) => {
 // Get user tokens balance
 export const getUserTokens = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const telegramId = req.user?.telegramId;
 
-    if (!userId) {
+    if (!telegramId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        tokens: true,
-      },
+      where: { telegramId: telegramId },
+      include: {
+        balance: true
+      }
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json({ tokens: user.tokens });
+    const tokens = user.balance?.tokens || user.tokens || 0;
+    res.json({ tokens });
   } catch (error) {
     console.error("Error fetching user tokens:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -84,24 +110,34 @@ export const getUserTokens = async (req: Request, res: Response) => {
 // Get user subscription status
 export const getUserSubscription = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const telegramId = req.user?.telegramId;
 
-    if (!userId) {
+    if (!telegramId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        subscription: true,
-      },
+      where: { telegramId: telegramId },
+      include: {
+        subscription: {
+          include: {
+            plan: true
+          }
+        }
+      }
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json({ subscription: user.subscription });
+    const subscription = user.subscription ? {
+      plan: user.subscription.plan.displayName,
+      status: user.subscription.status,
+      endDate: user.subscription.endDate
+    } : null;
+
+    res.json({ subscription });
   } catch (error) {
     console.error("Error fetching user subscription:", error);
     res.status(500).json({ error: "Internal server error" });

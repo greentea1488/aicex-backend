@@ -91,7 +91,12 @@ export const authUser = async (req: Request, res: Response) => {
     }
 
     // Генерируем токены
-    const accessToken = jwt.sign({ userId: user.id, telegramId: user.telegramId }, process.env.JWT_SECRET!, { expiresIn: "5m" });
+    const accessToken = jwt.sign({ 
+      id: user.id, 
+      userId: user.id, 
+      telegramId: user.telegramId,
+      username: user.username 
+    }, process.env.JWT_SECRET!, { expiresIn: "24h" });
 
     // Сохраняем refreshToken в БД
     res.json({ accessToken }).end();
