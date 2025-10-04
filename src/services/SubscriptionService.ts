@@ -14,7 +14,7 @@ export class SubscriptionService {
       const plans = [
         {
           name: 'basic',
-          displayName: 'AICEX Basic',
+          displayName: 'Базовая подписка',
           description: 'Базовый доступ к AI генерации изображений и видео',
           priceRub: 499,
           priceUsd: 500, // центы
@@ -30,7 +30,7 @@ export class SubscriptionService {
         },
         {
           name: 'pro',
-          displayName: 'AICEX Pro',
+          displayName: 'Про подписка',
           description: 'Профессиональный доступ ко всем AI моделям',
           priceRub: 1699,
           priceUsd: 1800, // центы
@@ -47,7 +47,7 @@ export class SubscriptionService {
         },
         {
           name: 'premium',
-          displayName: 'AICEX Premium',
+          displayName: 'Премиум подписка',
           description: 'Максимальный доступ для профессионалов',
           priceRub: 2999,
           priceUsd: 3100, // центы

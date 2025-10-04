@@ -90,9 +90,9 @@ export class LavaTopAPIService {
       }
 
       const planNames = {
-        basic: 'AICEX Basic',
-        pro: 'AICEX Pro',
-        premium: 'AICEX Premium'
+        basic: 'Базовая подписка',
+        pro: 'Про подписка',
+        premium: 'Премиум подписка'
       };
 
       const response = await this.client.post('/api/v2/invoice', {
@@ -150,21 +150,21 @@ export class LavaTopAPIService {
     return {
       basic: {
         offerId: this.SUBSCRIPTION_OFFERS.basic,
-        name: 'AICEX Basic',
+        name: 'Базовая подписка',
         price: 499,
         currency: 'RUB',
         tokens: 1000
       },
       pro: {
         offerId: this.SUBSCRIPTION_OFFERS.pro,
-        name: 'AICEX Pro', 
+        name: 'Про подписка', 
         price: 1699,
         currency: 'RUB',
         tokens: 5000
       },
       premium: {
         offerId: this.SUBSCRIPTION_OFFERS.premium,
-        name: 'AICEX Premium',
+        name: 'Премиум подписка',
         price: 2999,
         currency: 'RUB',
         tokens: 15000

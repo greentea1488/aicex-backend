@@ -136,18 +136,22 @@ export class LavaTopController {
         return;
       }
 
-      // Получаем пользователя для email
+      // Получаем пользователя
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { email: true, telegramId: true }
+        select: { email: true, telegramId: true, firstName: true }
       });
 
-      if (!user || !user.email) {
-        res.status(404).json({ error: 'User not found or email not set' });
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
         return;
       }
+
+      // Используем email пользователя или создаем фиктивный на основе telegramId
+      const userEmail = user.email || `user${user.telegramId}@telegram.local`;
+      
       // Создаем платеж через Lava.top API
-      const paymentResult = await lavaTopAPI.createSubscriptionInvoice(plan, user.email);
+      const paymentResult = await lavaTopAPI.createSubscriptionInvoice(plan, userEmail);
       
       if (!paymentResult.success) {
         res.status(500).json({ error: paymentResult.error });
