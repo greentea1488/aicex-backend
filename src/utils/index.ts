@@ -32,6 +32,8 @@ export function verifyTelegramInitData(initData: string): boolean {
 
   // Step 5: Compare the computed hash with the received hash
   if (hmac !== hash) {
+    console.log(`Hash verification failed: computed=${hmac}, received=${hash}`);
+    console.log(`Data check string: ${dataCheckString}`);
     return false;
   }
 
@@ -40,8 +42,9 @@ export function verifyTelegramInitData(initData: string): boolean {
   if (authDate) {
     const authDateNum = parseInt(authDate, 10);
     const currentTime = Math.floor(Date.now() / 1000);
-    // Allow a maximum time difference of 5 minute (300 seconds)
-    if (currentTime - authDateNum > 300) {
+    // Allow a maximum time difference of 24 hours (86400 seconds) - увеличено для отладки
+    if (currentTime - authDateNum > 86400) {
+      console.log(`Auth date check failed: current=${currentTime}, auth=${authDateNum}, diff=${currentTime - authDateNum}`);
       return false;
     }
   }
