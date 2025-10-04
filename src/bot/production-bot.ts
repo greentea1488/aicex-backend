@@ -229,24 +229,35 @@ bot.command("start", async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    // Создаем пользователя в БД
-    await prisma.user.upsert({
-      where: { telegramId: userId },
-      update: { 
-        username: ctx.from?.username || undefined,
-        firstName: ctx.from?.first_name || undefined,
-        lastName: ctx.from?.last_name || undefined,
-        lastActive: new Date()
-      },
-      create: {
-        telegramId: userId,
-        username: ctx.from?.username || undefined,
-        firstName: ctx.from?.first_name || undefined,
-        lastName: ctx.from?.last_name || undefined,
-        lastActive: new Date(),
-        tokens: 50 // Стартовые токены
-      }
+    // Создаем или обновляем пользователя в БД
+    const existingUser = await prisma.user.findUnique({
+      where: { telegramId: userId }
     });
+
+    if (existingUser) {
+      // Обновляем существующего пользователя (сохраняем токены)
+      await prisma.user.update({
+        where: { telegramId: userId },
+        data: { 
+          username: ctx.from?.username || undefined,
+          firstName: ctx.from?.first_name || undefined,
+          lastName: ctx.from?.last_name || undefined,
+          lastActive: new Date()
+        }
+      });
+    } else {
+      // Создаем нового пользователя
+      await prisma.user.create({
+        data: {
+          telegramId: userId,
+          username: ctx.from?.username || undefined,
+          firstName: ctx.from?.first_name || undefined,
+          lastName: ctx.from?.last_name || undefined,
+          lastActive: new Date(),
+          tokens: 100 // Стартовые токены для новых пользователей
+        }
+      });
+    }
 
     const welcomeMessage = `🎉 Добро пожаловать в AICEX AI!
 

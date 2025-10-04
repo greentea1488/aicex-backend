@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 export function verifyTelegramInitData(initData: string): boolean {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const botToken = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
   if (!botToken) {
     throw new Error("Telegram bot token is not configured");
