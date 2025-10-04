@@ -241,10 +241,10 @@ app.listen(PORT, "0.0.0.0", async () => {
       logger.info("🤖 Starting Telegram bot...");
       logger.info(`🔑 BOT_TOKEN available: ${process.env.BOT_TOKEN ? 'YES' : 'NO'}`);
       
-      // Импортируем и запускаем production bot v2
-      import('./bot/production-bot-v2')
-        .then(({ startProductionBotV2 }) => {
-          return startProductionBotV2();
+      // Импортируем и запускаем production bot
+      import('./bot/production-bot')
+        .then(({ startProductionBot }) => {
+          return startProductionBot();
         })
         .then(() => {
           logger.info("✅ Telegram bot started successfully!");

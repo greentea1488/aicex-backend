@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, InlineKeyboard } from "grammy";
 import { logger } from "../utils/logger";
 import { prisma } from "../utils/prismaClient";
 import { AIServiceManager } from "../services/ai/AIServiceManager";
@@ -10,22 +10,59 @@ const aiManager = new AIServiceManager();
 
 console.log("🤖 Starting AICEX Production Bot with AI integrations...");
 
+// 🔐 ПРОВЕРКА ДОСТУПА К ФУНКЦИЯМ
+async function checkUserAccess(userId: number, feature: string): Promise<{ hasAccess: boolean; message?: string }> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { telegramId: userId },
+      include: {
+        subscription: {
+          include: { plan: true }
+        }
+      }
+    });
+
+    if (!user) {
+      return { hasAccess: false, message: "❌ Пользователь не найден" };
+    }
+
+    // Проверяем активную подписку
+    const hasActiveSubscription = user.subscription && 
+      user.subscription.status === 'ACTIVE' && 
+      user.subscription.endDate > new Date();
+
+    // Бесплатные функции доступны всем
+    const freeFunctions = ['generate_image', 'chat_ai'];
+    if (freeFunctions.includes(feature)) {
+      return { hasAccess: true };
+    }
+
+    // Платные функции требуют подписку
+    if (!hasActiveSubscription) {
+      return { 
+        hasAccess: false, 
+        message: "🔒 <b>Функция недоступна</b>\n\n" +
+                "Для доступа к генерации видео необходима активная подписка.\n\n" +
+                "💳 Купите подписку в разделе 'Профиль' → 'Подписка'"
+      };
+    }
+
+    return { hasAccess: true };
+  } catch (error) {
+    console.error("Error checking user access:", error);
+    return { hasAccess: false, message: "❌ Ошибка проверки доступа" };
+  }
+}
+
 // 🎯 ГЛАВНОЕ МЕНЮ - только нейросети
-const mainMenu = {
-  inline_keyboard: [
-    [
-      { text: '🎨 Генерация фото', callback_data: 'generate_image' }
-    ],
-    [
-      { text: '🎬 Генерация видео', callback_data: 'generate_video' }
-    ],
-    [
-      { text: '💬 Чат с AI', callback_data: 'chat_ai' }
-    ],
-    [
-      { text: '👤 Профиль', web_app: { url: process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/' } }
-    ]
-  ]
+const getMainMenu = () => {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app/';
+  
+  return new InlineKeyboard()
+    .text('🎨 Генерация изображений', 'generate_image').row()
+    .text('🎬 Генерация видео', 'generate_video').row()
+    .text('💬 Чат с AI', 'chat_ai').row()
+    .webApp('👤 Профиль', frontendUrl);
 };
 
 // 🎨 МЕНЮ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ
@@ -232,7 +269,7 @@ bot.command("start", async (ctx) => {
 Выберите действие:`;
 
     await ctx.reply(welcomeMessage, {
-      reply_markup: mainMenu,
+      reply_markup: getMainMenu(),
       parse_mode: "HTML"
     });
 
@@ -295,6 +332,18 @@ bot.on("callback_query", async (ctx) => {
 
     // 🎬 ГЕНЕРАЦИЯ ВИДЕО
     case 'generate_video':
+      const videoAccess = await checkUserAccess(userId, 'generate_video');
+      if (!videoAccess.hasAccess) {
+        await ctx.editMessageText(
+          videoAccess.message!,
+          { 
+            reply_markup: new InlineKeyboard().text('⬅️ Назад', 'back_to_main'),
+            parse_mode: "HTML" 
+          }
+        );
+        break;
+      }
+      
       await ctx.editMessageText(
         "🎬 <b>Генерация видео</b>\n\nВыберите нейросеть:",
         { reply_markup: videoMenu, parse_mode: "HTML" }
@@ -374,13 +423,13 @@ bot.on("callback_query", async (ctx) => {
       try {
         await ctx.editMessageText(
           "🎯 <b>Главное меню</b>\n\nВыберите действие:",
-          { reply_markup: mainMenu, parse_mode: "HTML" }
+          { reply_markup: getMainMenu(), parse_mode: "HTML" }
         );
       } catch (error) {
         // Если не можем редактировать (например, сообщение с изображением), отправляем новое
         await ctx.reply(
           "🎯 <b>Главное меню</b>\n\nВыберите действие:",
-          { reply_markup: mainMenu, parse_mode: "HTML" }
+          { reply_markup: getMainMenu(), parse_mode: "HTML" }
         );
       }
       break;
@@ -473,7 +522,7 @@ bot.on("message:text", async (ctx) => {
     // Пользователь не в активном состоянии
     await ctx.reply(
       "🤖 Для начала работы используйте /start или выберите действие из меню.",
-      { reply_markup: mainMenu }
+      { reply_markup: getMainMenu() }
     );
     return;
   }
@@ -483,7 +532,7 @@ bot.on("message:text", async (ctx) => {
     userStates.delete(userId);
     await ctx.reply(
       "✅ Диалог завершен.\n\nВыберите новое действие:",
-      { reply_markup: mainMenu }
+      { reply_markup: getMainMenu() }
     );
     return;
   }
@@ -721,5 +770,7 @@ process.on("SIGINT", async () => {
 
 export { bot };
 
-// Запускаем бота
-startProductionBot().catch(console.error);
+// Запускаем бота только если это главный модуль
+if (require.main === module) {
+  startProductionBot().catch(console.error);
+}
