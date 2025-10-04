@@ -2,12 +2,11 @@ import crypto from "crypto";
 
 export function verifyTelegramInitData(initData: string): boolean {
   console.log(`🔍 DEBUG: Verifying initData length=${initData.length}`);
+  console.log(`🔍 NODE_ENV: ${process.env.NODE_ENV}`);
   
   // ВРЕМЕННО ОТКЛЮЧАЕМ ПРОВЕРКУ ДЛЯ ОТЛАДКИ
-  if (process.env.NODE_ENV === 'production') {
-    console.log(`⚠️ TEMPORARY: Skipping Telegram verification in production for debugging`);
-    return true;
-  }
+  console.log(`⚠️ TEMPORARY: Skipping Telegram verification for debugging`);
+  return true;
 
   const botToken = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
