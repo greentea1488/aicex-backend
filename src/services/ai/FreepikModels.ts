@@ -84,14 +84,14 @@ export const FREEPIK_VIDEO_MODELS: FreepikVideoModel[] = [
     id: 'minimax-hailuo-768p',
     name: 'Minimax Hailuo 02 768p',
     description: 'Качество 768p от Minimax',
-    endpoint: '/v1/ai/text-to-video/minimax-hailuo-02-768p',
+    endpoint: '/v1/ai/text-image-to-video/minimax-hailuo-02-768p',
     resolution: '768p'
   },
   {
     id: 'minimax-hailuo-1080p',
     name: 'Minimax Hailuo 02 1080p',
     description: 'Качество 1080p от Minimax',
-    endpoint: '/v1/ai/text-to-video/minimax-hailuo-02-1080p',
+    endpoint: '/v1/ai/text-image-to-video/minimax-hailuo-02-1080p',
     resolution: '1080p'
   },
   {
@@ -110,14 +110,14 @@ export const FREEPIK_VIDEO_MODELS: FreepikVideoModel[] = [
     id: 'pixverse-v5',
     name: 'PixVerse V5',
     description: 'Новая модель PixVerse',
-    endpoint: '/v1/ai/text-to-video/pixverse-v5',
+    endpoint: '/v1/ai/image-to-video/pixverse-v5',
     isNew: true
   },
   {
     id: 'pixverse-v5-transition',
     name: 'PixVerse V5 Transition',
     description: 'Переходы и анимации',
-    endpoint: '/v1/ai/text-to-video/pixverse-v5-transition',
+    endpoint: '/v1/ai/image-to-video/pixverse-v5-transition',
     isNew: true
   },
   {
