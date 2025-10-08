@@ -326,6 +326,28 @@ bot.on("callback_query", async (ctx) => {
   const breadcrumb = UXHelpers.getBreadcrumb(userState?.currentPath || ['main']);
   
   try {
+  // Обработка выбора конкретной модели для видео из фото
+  if (data.startsWith('freepik_vid_')) {
+    const modelId = data.replace('freepik_vid_', '');
+    userStates.set(userId, { 
+      state: 'waiting_for_photo_video', 
+      service: 'freepik',
+      model: modelId
+    });
+    await ctx.editMessageText(
+      `🎬 <b>${getVideoModelName(modelId)}</b>\n\n📸 Отправьте фото для создания видео:\n\n💡 <i>Модель автоматически создаст видео на основе вашего изображения</i>`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '⬅️ Назад', callback_data: 'photo_to_video_menu' }]
+          ]
+        },
+        parse_mode: "HTML"
+      }
+    );
+    return;
+  }
+
   switch (data) {
       // 🎯 НОВЫЕ БЫСТРЫЕ ДЕЙСТВИЯ
       case 'quick_image':
@@ -460,6 +482,15 @@ bot.on("callback_query", async (ctx) => {
         }
       );
       break;
+
+    // 🎬 ГЕНЕРАЦИЯ ВИДЕО ИЗ ФОТО
+    case 'photo_to_video_menu':
+      await ctx.editMessageText(
+        "🎬 <b>Создание видео из фото</b>\n\nВыберите модель для генерации:",
+        { reply_markup: getFreepikVideoModelsMenu(), parse_mode: "HTML" }
+      );
+      break;
+
 
     // 💬 AI ЧАТ
     case 'chat_ai':
@@ -606,6 +637,40 @@ bot.on("callback_query", async (ctx) => {
   } catch (error) {
     console.error("❌ Callback error:", error);
     await UXHelpers.sendSmartErrorNotification(ctx, error);
+  }
+});
+
+// 📸 ОБРАБОТКА ФОТОГРАФИЙ
+bot.on("message:photo", async (ctx) => {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
+  console.log("📸 Photo received from user:", userId);
+  
+  const userState = userStates.get(userId);
+  
+  if (userState?.state === 'waiting_for_photo_video') {
+    await handleVideoFromPhoto(ctx, userState.service);
+  } else if (userState?.state === 'vision_chat') {
+    await handleGPTVision(ctx);
+  } else {
+    // Предлагаем варианты использования фото
+    await ctx.reply("📸 <b>Что хотите сделать с фото?</b>\n\nВыберите действие:",
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "🎬 Создать видео", callback_data: "photo_to_video_menu" },
+              { text: "🔍 Анализ GPT-4", callback_data: "start_vision_chat" }
+            ],
+            [
+              { text: "🏠 Главная", callback_data: "back_to_main" }
+            ]
+          ]
+        },
+        parse_mode: "HTML"
+      }
+    );
   }
 });
 
@@ -1575,6 +1640,149 @@ process.on("SIGINT", async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
+
+// 🎬 ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ ВИДЕО ИЗ ФОТО
+async function handleVideoFromPhoto(ctx: any, service: string) {
+  try {
+    const userId = ctx.from?.id;
+    const userState = userStates.get(userId);
+    
+    if (!userState || userState.state !== 'waiting_for_photo_video') {
+      await ctx.reply("❌ Неожиданное состояние. Попробуйте заново.");
+      return;
+    }
+
+    // Получаем фото
+    const photo = ctx.message.photo[ctx.message.photo.length - 1];
+    const file = await ctx.api.getFile(photo.file_id);
+    const imageUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+    
+    const prompt = ctx.message.caption || "Create a cinematic video from this image";
+    const model = userState.model || 'kling_v2_5_pro';
+    
+    console.log('🎬 Starting video generation from photo:', {
+      userId,
+      service,
+      model,
+      prompt: prompt.substring(0, 50)
+    });
+
+    await ctx.reply("🎬 Создаю видео из вашего фото... Это может занять несколько минут.");
+
+    // Получаем баланс пользователя
+    const userBalance = await aiManager.getUserBalance(userId);
+    const userContext = { telegramId: userId, currentTokens: userBalance };
+    
+    // Используем FreepikService для генерации видео
+    const freepikService = new (await import('../services/ai/FreepikService')).FreepikService();
+    
+    const startTime = Date.now();
+    const result = await freepikService.generateVideoFromImage(
+      imageUrl,
+      prompt,
+      model as any,
+      5 // По умолчанию 5 секунд
+    );
+    const duration = Math.round((Date.now() - startTime) / 1000);
+
+    console.log('🎬 Video generation result:', {
+      success: result.success,
+      taskId: result.data?.id,
+      error: result.error
+    });
+
+    if (result.success && result.data?.id) {
+      // Сохраняем задачу в очередь
+      const task = await taskQueue.addTask({
+        userId,
+        service: 'freepik',
+        type: 'video',
+        prompt,
+        model,
+        imageUrl,
+        taskId: result.data.id,
+        status: 'processing'
+      });
+
+      await ctx.reply(`✅ <b>Видео создается!</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n⏱️ Время: ${UXHelpers.formatTime(duration)}\n\n🔄 Отслеживайте прогресс в разделе "Мои задачи"`,
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🔄 Еще одно', callback_data: 'photo_to_video_menu' },
+                { text: '📊 Статистика', callback_data: 'stats' }
+              ],
+              [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+            ]
+          }
+        }
+      );
+      
+      // Очищаем состояние
+      userStates.delete(userId);
+    } else {
+      const errorMessage = result.error || 'Не удалось создать видео';
+      await ctx.reply(`❌ Ошибка создания видео: ${errorMessage}`);
+    }
+
+  } catch (error: any) {
+    console.error('🎬 Video generation error:', error);
+    await ctx.reply(`❌ Ошибка создания видео: ${error.message}`);
+  }
+}
+
+async function handleGPTVision(ctx: any) {
+  try {
+    const userId = ctx.from?.id;
+    
+    // Получаем фото
+    const photo = ctx.message.photo[ctx.message.photo.length - 1];
+    const file = await ctx.api.getFile(photo.file_id);
+    const imageUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+    
+    const prompt = ctx.message.caption || "Проанализируй это изображение и опиши что на нем изображено";
+    
+    await ctx.reply("🔍 Анализирую изображение...");
+    
+    const chatgptService = new (await import('../services/ai/OpenAIService')).OpenAIService();
+    const result = await chatgptService.analyzeImage(imageUrl, prompt);
+    
+    if (result.success && result.content) {
+      await ctx.reply(`📸 <b>Анализ изображения GPT-4V:</b>\n\n${result.content}`,
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🔄 Еще один анализ', callback_data: 'start_vision_chat' },
+                { text: '🏠 Главная', callback_data: 'back_to_main' }
+              ]
+            ]
+          }
+        }
+      );
+    } else {
+      await ctx.reply(`❌ Ошибка анализа: ${result.error || 'Неизвестная ошибка'}`);
+    }
+
+  } catch (error: any) {
+    console.error('🔍 GPT Vision error:', error);
+    await ctx.reply(`❌ Ошибка анализа изображения: ${error.message}`);
+  }
+}
+
+function getVideoModelName(modelId: string): string {
+  const models: Record<string, string> = {
+    'kling_v2_5_pro': 'Kling 2.5 Turbo Pro',
+    'kling_v2_1_pro': 'Kling 2.1 Pro',
+    'kling_v2_1_std': 'Kling 2.1 Standard',
+    'minimax_hailuo_1080p': 'MiniMax Hailuo 1080p',
+    'pixverse_v5': 'PixVerse V5',
+    'seedance_pro_1080p': 'Seedance Pro 1080p'
+  };
+  return models[modelId] || modelId;
+}
 
 export { bot };
 
