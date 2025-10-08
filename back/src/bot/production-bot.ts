@@ -597,6 +597,11 @@ bot.on("callback_query", async (ctx) => {
       await handleBackToMain(ctx, userId);
       break;
 
+    // 📋 МОИ ЗАДАЧИ
+    case 'my_tasks':
+      await handleMyTasks(ctx, userId);
+      break;
+
     default:
       // 🎨 ОБРАБОТКА БЫСТРЫХ ДЕЙСТВИЙ С ТЕКСТОМ
       if (data?.startsWith('quick_img_')) {
@@ -1588,6 +1593,51 @@ async function handleStats(ctx: any, userId: number) {
     
     // Отвечаем на callback, чтобы убрать "часики"
     await ctx.answerCallbackQuery();
+    
+  } catch (error) {
+    await UXHelpers.sendSmartErrorNotification(ctx, error);
+  }
+}
+
+// 📋 Мои задачи
+async function handleMyTasks(ctx: any, userId: number) {
+  try {
+    const userTasks = taskQueue.getUserTasks(userId);
+    const activeTasks = userTasks.filter(t => t.status === 'processing' || t.status === 'pending');
+    
+    if (activeTasks.length === 0) {
+      await ctx.editMessageText(
+        "📋 <b>Мои задачи</b>\n\n✅ У вас нет активных задач",
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              ...getNavigationButtons()
+            ]
+          }
+        }
+      );
+      return;
+    }
+    
+    let message = "📋 <b>Мои задачи</b>\n\n";
+    
+    activeTasks.forEach((task, index) => {
+      const emoji = task.type === 'video' ? '🎬' : '🎨';
+      const statusEmoji = task.status === 'processing' ? '⏳' : '⏸️';
+      message += `${index + 1}. ${emoji} ${statusEmoji} ${task.prompt.substring(0, 30)}...\n`;
+      message += `   Модель: ${task.model || 'default'}\n`;
+      message += `   Прогресс: ${task.progress}%\n\n`;
+    });
+    
+    await ctx.editMessageText(message, {
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          ...getNavigationButtons()
+        ]
+      }
+    });
     
   } catch (error) {
     await UXHelpers.sendSmartErrorNotification(ctx, error);
