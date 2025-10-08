@@ -626,6 +626,34 @@ export class WebhookController {
         data: updateData
       });
 
+      // Сохраняем в историю генераций при успешном завершении
+      if (status === 'completed' && updateData.imageUrl) {
+        console.log('💾 Saving to GenerationHistory:', {
+          userId: task.userId,
+          service: 'freepik',
+          type: task.type || 'image',
+          prompt: task.prompt,
+          resultUrl: updateData.imageUrl
+        });
+        
+        await prisma.generationHistory.create({
+          data: {
+            userId: task.userId, // ✅ Используем внутренний userId
+            service: 'freepik',
+            type: task.type || 'image',
+            prompt: task.prompt,
+            resultUrl: updateData.imageUrl,
+            tokensUsed: task.cost || 0,
+            status: 'completed'
+          }
+        });
+        
+        logger.info('✅ Generation saved to history', {
+          userId: task.userId,
+          taskId: task_id
+        });
+      }
+
       // Отправляем уведомление пользователю через бота
       await this.notifyUserAboutTaskCompletion(task, status, updateData.imageUrl);
 
@@ -686,6 +714,33 @@ export class WebhookController {
         where: { id: task.id },
         data: updateData
       });
+
+      // Сохраняем в историю генераций при успешном завершении
+      if (status === 'completed' && updateData.imageUrl) {
+        console.log('💾 Saving Midjourney to GenerationHistory:', {
+          userId: task.userId,
+          service: 'midjourney',
+          prompt: task.prompt,
+          resultUrl: updateData.imageUrl
+        });
+        
+        await prisma.generationHistory.create({
+          data: {
+            userId: task.userId, // ✅ Используем внутренний userId
+            service: 'midjourney',
+            type: 'image',
+            prompt: task.prompt,
+            resultUrl: updateData.imageUrl,
+            tokensUsed: task.cost || 0,
+            status: 'completed'
+          }
+        });
+        
+        logger.info('✅ Midjourney generation saved to history', {
+          userId: task.userId,
+          taskId: task_id
+        });
+      }
 
       // Отправляем уведомление пользователю
       await this.notifyUserAboutTaskCompletion(task, status, updateData.imageUrl);
@@ -748,6 +803,33 @@ export class WebhookController {
         where: { id: task.id },
         data: updateData
       });
+
+      // Сохраняем в историю генераций при успешном завершении
+      if (status === 'completed' && updateData.videoUrl) {
+        console.log('💾 Saving Runway to GenerationHistory:', {
+          userId: task.userId,
+          service: 'runway',
+          prompt: task.prompt,
+          resultUrl: updateData.videoUrl
+        });
+        
+        await prisma.generationHistory.create({
+          data: {
+            userId: task.userId, // ✅ Используем внутренний userId
+            service: 'runway',
+            type: 'video',
+            prompt: task.prompt,
+            resultUrl: updateData.videoUrl,
+            tokensUsed: task.cost || 0,
+            status: 'completed'
+          }
+        });
+        
+        logger.info('✅ Runway generation saved to history', {
+          userId: task.userId,
+          taskId: task_id
+        });
+      }
 
       // Отправляем уведомление пользователю
       await this.notifyUserAboutTaskCompletion(task, status, updateData.videoUrl);
