@@ -34,10 +34,17 @@ onMounted(async () => {
   // ВСЕГДА загружаем данные пользователя
   try {
     console.log('==================== STARTING AUTH FLOW ====================');
+    console.log('Environment PROD:', import.meta.env.PROD);
+    console.log('Telegram initData:', tg?.initData ? 'Present' : 'Missing');
+    console.log('Telegram initDataUnsafe:', tg?.initDataUnsafe);
+    console.log('===============================================================');
     
     // Сначала пробуем загрузить через API
     if (import.meta.env.PROD && tg?.initData) {
       console.log('🔄 Attempting Telegram auth...');
+      console.log('InitData length:', tg.initData.length);
+      console.log('Referral code:', tg?.initDataUnsafe?.start_param);
+      
       const { data: tokensData } = await authUser({
         initData: tg.initData,
         referralCode: tg?.initDataUnsafe?.start_param ?? "",
@@ -74,6 +81,9 @@ onMounted(async () => {
   } catch (error) {
     console.error('==================== AUTH ERROR ====================');
     console.error('Auth error:', error);
+    console.error('Error message:', (error as any)?.message);
+    console.error('Error response:', (error as any)?.response?.data);
+    console.error('Error status:', (error as any)?.response?.status);
     console.error('===============================================================');
     
     // Fallback - загружаем тестовые данные
