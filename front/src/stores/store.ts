@@ -60,7 +60,7 @@ export const useStore = defineStore("store", () => {
           lastName: tgUser.last_name || '',
           email: null,
           avatar: tgUser.photo_url || null, // Добавляем аватарку из Telegram
-          tokens: 10, // Стартовые токены
+          tokens: 0, // Не устанавливаем токены в fallback - они загрузятся отдельно
           subscription: null,
           friendsReferred: 0,
           createdAt: new Date().toISOString(),
@@ -104,13 +104,23 @@ export const useStore = defineStore("store", () => {
 
   const updateUserTokens = async () => {
     try {
+      console.log('🔄 Updating user tokens...');
       const response = await getUserTokens();
+      console.log('✅ Tokens response:', response.data);
+      
       if (user.value) {
+        const oldTokens = user.value.tokens;
         user.value.tokens = response.data.tokens;
+        console.log(`💰 Tokens updated: ${oldTokens} → ${user.value.tokens}`);
       }
       return response.data.tokens;
     } catch (error) {
-      console.error("Error updating user tokens:", error);
+      console.error("❌ Error updating user tokens:", error);
+      console.error('🔍 Token error details:', {
+        status: (error as any)?.response?.status,
+        statusText: (error as any)?.response?.statusText,
+        data: (error as any)?.response?.data
+      });
       throw error;
     }
   };

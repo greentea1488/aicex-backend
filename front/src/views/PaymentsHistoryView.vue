@@ -82,7 +82,7 @@ onMounted(() => {
     </div>
 
     <!-- Main content -->
-    <div class="relative z-10 px-6 telegram-content">
+    <div class="relative z-10 px-6 pt-6 telegram-content">
       <!-- Navigation Header -->
       <div class="flex items-center justify-between mb-8">
         <button
@@ -97,9 +97,14 @@ onMounted(() => {
           <span class="font-medium">Назад</span>
         </button>
         
-        <h1 class="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-          История платежей
-        </h1>
+        <div class="text-right">
+          <h1 class="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            История
+          </h1>
+          <h2 class="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            платежей
+          </h2>
+        </div>
         
         <div class="w-10"></div> <!-- Spacer for centering -->
       </div>
