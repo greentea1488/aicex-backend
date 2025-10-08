@@ -1,0 +1,51 @@
+# Railway ignore file - минимальный набор исключений
+
+# Frontend (не нужен для backend деплоя)
+front/
+
+# Environment files
+.env*
+!.env.railway
+
+# Logs
+*.log
+logs/
+
+# Development
+node_modules/
+coverage/
+.nyc_output/
+
+# IDE
+vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+
+# Development files
+*.md
+docs/
+examples/
+tests/
+test/
+
+# Build artifacts (keep for backend)
+# dist/
+
+# Uploads and temporary files
+uploads/
+temp/
+tmp/
+
+# Git
+.git/
+.gitignore
+
+# Front-end specific (if deploying backend)
+front/

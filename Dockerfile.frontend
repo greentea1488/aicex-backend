@@ -1,0 +1,23 @@
+# Frontend Dockerfile for AICEX AI Bot
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files from front directory
+COPY front/package*.json ./
+
+# Install dependencies (including devDependencies for build)
+RUN npm ci
+
+# Copy source code from front directory
+COPY front/ .
+
+# Build the application
+RUN npm run build
+
+# Expose port
+EXPOSE 4173
+
+# Start the application
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]

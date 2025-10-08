@@ -1,0 +1,20 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = [
+  "cd back && npm ci",
+  "cd back && echo '=== Checking @types installation ===' && ls -la node_modules/@types/ || echo '@types directory not found!'"
+]
+
+[phases.build]
+cmds = ["cd back && npm run build"]
+
+[start]
+cmd = "cd back && node dist/index.js"
+
+[healthcheck]
+path = "/ok"
+
+[variables]
+NODE_ENV = "production"

@@ -1,0 +1,94 @@
+name: Deploy AI Telegram Bot
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+          MONGO_INITDB_DATABASE: ai-telegram-bot
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: |
+          back/package-lock.json
+          front/package-lock.json
+    
+    - name: Install Backend Dependencies
+      run: |
+        cd back
+        npm ci
+    
+    - name: Install Frontend Dependencies
+      run: |
+        cd front
+        npm ci
+    
+    - name: Generate Prisma Client
+      run: |
+        cd back
+        npx prisma generate
+    
+    - name: Build Backend
+      run: |
+        cd back
+        npm run build
+    
+    - name: Build Frontend
+      run: |
+        cd front
+        npm run build
+    
+    - name: Run Backend Tests
+      run: |
+        cd back
+        npm test
+      env:
+        NODE_ENV: test
+        DATABASE_URL: mongodb://admin:password123@localhost:27017/ai-telegram-bot-test?authSource=admin
+        JWT_SECRET: test-secret-key
+        BOT_TOKEN: test-bot-token
+        OPENAI_API_KEY: test-openai-key
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd /path/to/your/app
+          git pull origin main
+          docker-compose down
+          docker-compose up --build -d
+          docker system prune -f
+      env:
+        HOST: ${{ secrets.HOST }}
+        USERNAME: ${{ secrets.USERNAME }}
+        SSH_KEY: ${{ secrets.SSH_KEY }}

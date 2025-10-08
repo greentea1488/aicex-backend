@@ -1,0 +1,37 @@
+{
+  "name": "asdfasdf",
+  "version": "1.0.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:with-types": "run-p type-check \"build-only {@}\" --",
+    "preview": "vite preview --host",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.9",
+    "axios": "^1.11.0",
+    "pinia": "^3.0.1",
+    "tailwindcss": "^4.0.9",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0",
+    "vue3-slide-up-down": "^2.1.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "@types/node": "^22.13.8",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/tsconfig": "^0.7.0",
+    "npm-run-all2": "^7.0.2",
+    "sass-embedded": "^1.85.1",
+    "telegram-webapps": "^8.0.5",
+    "typescript": "~5.7.3",
+    "vite": "^6.1.0",
+    "vite-plugin-vue-devtools": "^7.7.2",
+    "vite-svg-loader": "^5.1.0",
+    "vue-tsc": "^2.2.2"
+  }
+}

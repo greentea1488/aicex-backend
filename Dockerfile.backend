@@ -1,0 +1,46 @@
+# Используем официальный Node.js образ
+FROM node:20-alpine
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем package.json и package-lock.json сначала для кэширования слоев
+COPY back/package*.json ./
+
+# Устанавливаем все зависимости (нужны для сборки)
+RUN npm ci
+
+# Копируем остальные файлы бэкенда
+COPY back/ .
+
+# Генерируем Prisma клиент
+RUN npx prisma generate
+
+# Миграции будут выполнены в runtime когда DATABASE_URL будет доступен
+
+# Собираем TypeScript
+RUN npm run build
+
+# Удаляем devDependencies после сборки
+RUN npm prune --omit=dev
+
+# Создаем пользователя для безопасности
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Создаем директории для логов и загрузок
+RUN mkdir -p logs uploads
+RUN chown -R nodejs:nodejs logs uploads
+
+# Переключаемся на пользователя nodejs
+USER nodejs
+
+# Открываем порт (Railway автоматически определит порт)
+EXPOSE 3025
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3025) + '/ok', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Запускаем приложение
+CMD ["npm", "start"]

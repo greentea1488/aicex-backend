@@ -1,0 +1,641 @@
+import { Request, Response } from "express";
+import { PrismaClient } from '../generated/prisma';
+import { PaymentService } from "../services/PaymentService";
+// import { LavaTopSDKService } from "../services/LavaTopSDKService"; // Временно отключено
+import logger from "../utils/logger";
+import axios, { AxiosError } from "axios";
+
+// Create a new payment
+export const createPayment = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { amount, currency, type } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!amount || !currency || !type) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const payment = await prisma.payment.create({
+      data: {
+        userId,
+        amount,
+        currency,
+        status: "PENDING",
+      },
+    });
+
+    res.status(201).json(payment);
+  } catch (error) {
+    console.error("Error creating payment:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get payment history
+export const getPaymentHistory = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const payments = await prisma.payment.findMany({
+      where: { userId },
+      skip,
+      take: Number(limit),
+      orderBy: { createdAt: "desc" },
+    });
+
+    const totalCount = await prisma.payment.count({
+      where: { userId },
+    });
+
+    res.json({
+      payments,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: totalCount,
+        pages: Math.ceil(totalCount / Number(limit)),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching payment history:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get token history
+export const getTokenHistory = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const tokenHistory = await prisma.tokenHistory.findMany({
+      where: { userId },
+      skip,
+      take: Number(limit),
+      orderBy: { createdAt: "desc" },
+    });
+
+    const totalCount = await prisma.tokenHistory.count({
+      where: { userId },
+    });
+
+    res.json({
+      tokenHistory,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: totalCount,
+        pages: Math.ceil(totalCount / Number(limit)),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching token history:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Buy tokens
+export const buyTokens = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { amount, paymentMethod } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Invalid token amount" });
+    }
+
+    // Check if user has active subscription
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscription: true },
+    });
+
+    if (!user?.subscription) {
+      return res.status(403).json({ error: "Active subscription required to buy tokens" });
+    }
+
+    // Create payment record
+    const payment = await prisma.payment.create({
+      data: {
+        userId,
+        amount: amount * 1.4342, // Price per token in stars
+        currency: "STARS",
+        status: "PENDING",
+      },
+    });
+
+    // In a real application, you would integrate with a payment provider here
+    // For now, we'll simulate a successful payment
+
+    // Update payment status
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: "COMPLETED" },
+    });
+
+    // Get current user balance before update
+    const userBefore = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tokens: true },
+    });
+    
+    if (!userBefore) {
+      throw new Error("User not found");
+    }
+
+    const balanceBefore = userBefore.tokens;
+    const balanceAfter = balanceBefore + amount;
+
+    // Add tokens to user
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        tokens: { increment: amount },
+      },
+    });
+
+    // Create token history record
+    await prisma.tokenHistory.create({
+      data: {
+        userId,
+        amount,
+        type: "PURCHASE",
+        balanceBefore,
+        balanceAfter,
+        description: `Token purchase via payment`,
+        paymentId: payment.id,
+      },
+    });
+
+    res.json({
+      success: true,
+      payment,
+      tokensAdded: amount,
+    });
+  } catch (error) {
+    console.error("Error buying tokens:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Update subscription
+export const updateSubscription = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { plan, duration = 1 } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const validPlans = ["base", "pro", "premium"];
+    if (!validPlans.includes(plan)) {
+      return res.status(400).json({ error: "Invalid subscription plan" });
+    }
+
+    // Calculate price based on plan
+    const prices = {
+      base: { rub: 920, eur: 9.5, usd: 10, tokens: 100 },
+      pro: { rub: 2760, eur: 28.5, usd: 30, tokens: 300 },
+      premium: { rub: 4600, eur: 47.5, usd: 50, tokens: 600 },
+    };
+
+    const planPrice = prices[plan as keyof typeof prices];
+
+    // Create payment record
+    const payment = await prisma.payment.create({
+      data: {
+        userId,
+        amount: planPrice.rub * duration,
+        currency: "RUB",
+        status: "PENDING",
+      },
+    });
+
+    // In a real application, you would integrate with a payment provider here
+    // For now, we'll simulate a successful payment
+
+    // Update payment status
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: "COMPLETED" },
+    });
+
+    // Get current user balance before update
+    const userBefore = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tokens: true },
+    });
+    
+    if (!userBefore) {
+      throw new Error("User not found");
+    }
+
+    const tokenAmount = planPrice.tokens * duration;
+    const balanceBefore = userBefore.tokens;
+    const balanceAfter = balanceBefore + tokenAmount;
+
+    // Update user subscription and add tokens
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        subscription: plan as any,
+        tokens: { increment: tokenAmount },
+      },
+    });
+
+    // Create token history record
+    await prisma.tokenHistory.create({
+      data: {
+        userId,
+        amount: tokenAmount,
+        type: "PURCHASE",
+        balanceBefore,
+        balanceAfter,
+        description: `Subscription purchase: ${plan} for ${duration} month(s)`,
+        paymentId: payment.id,
+      },
+    });
+
+    res.json({
+      success: true,
+      payment,
+      subscription: plan,
+      tokensAdded: planPrice.tokens * duration,
+    });
+  } catch (error) {
+    console.error("Error updating subscription:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get subscription plans
+export const getSubscriptionPlans = async (req: Request, res: Response) => {
+  try {
+    // Получаем планы из базы данных
+    const dbPlans = await prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: { priceRub: 'asc' }
+    });
+
+    logger.info(`Found ${dbPlans.length} subscription plans in database`);
+    logger.info('Plans data:', JSON.stringify(dbPlans, null, 2));
+    
+    // Если планы есть в БД, используем их
+    if (dbPlans && dbPlans.length > 0) {
+      
+      const plans = dbPlans.map(plan => {
+        // Правильно обрабатываем features - может быть массив или объект
+        let features: string[] = [];
+        if (Array.isArray(plan.features)) {
+          features = (plan.features as any[]).filter(v => typeof v === 'string');
+        } else if (typeof plan.features === 'object' && plan.features !== null) {
+          // Если это объект, пытаемся извлечь массив
+          features = Object.values(plan.features as any).filter(v => typeof v === 'string');
+        }
+        
+        return {
+          id: plan.name,
+          name: plan.displayName,
+          displayName: plan.displayName,  // Добавляем displayName для совместимости
+          price: { 
+            rub: plan.priceRub, 
+            eur: plan.priceEur / 100, // конвертируем центы в евро
+            usd: plan.priceUsd / 100  // конвертируем центы в доллары
+          },
+          tokens: plan.tokens,
+          features: features,
+          description: plan.description || ''
+        };
+      });
+      
+      logger.info('Returning plans:', JSON.stringify(plans, null, 2));
+      
+      // Отключаем кэш для планов
+      res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      return res.status(200).json(plans);
+    }
+    
+    // Fallback: если в БД нет планов, возвращаем дефолтные
+    logger.warn("No plans found in database, using fallback plans");
+    const fallbackPlans = [
+      {
+        id: "basic",
+        name: "Базовая подписка",
+        displayName: "Базовая подписка",
+        price: { rub: 499, eur: 4.99, usd: 5.00 },
+        tokens: 1000,
+        features: ["Базовый доступ к AI генерации изображений и видео"],
+        description: "Базовый доступ к AI генерации"
+      },
+      {
+        id: "pro", 
+        name: "Про подписка",
+        displayName: "Про подписка",
+        price: { rub: 1699, eur: 16.99, usd: 18.00 },
+        tokens: 5000,
+        features: ["Профессиональный доступ ко всем AI моделям", "Приоритетная обработка"],
+        description: "Профессиональный доступ"
+      },
+      {
+        id: "premium",
+        name: "Премиум подписка", 
+        displayName: "Премиум подписка",
+        price: { rub: 2999, eur: 29.99, usd: 31.00 },
+        tokens: 15000,
+        features: ["Максимальный доступ для профессионалов", "API доступ", "Коммерческая лицензия"],
+        description: "Максимальный доступ"
+      }
+    ];
+    
+    res.json(fallbackPlans);
+  } catch (error) {
+    logger.error("Error fetching subscription plans:", error);
+    
+    // В случае любой ошибки возвращаем fallback планы
+    const fallbackPlans = [
+      {
+        id: "basic",
+        name: "Базовая подписка",
+        displayName: "Базовая подписка",
+        price: { rub: 499, eur: 4.99, usd: 5.00 },
+        tokens: 1000,
+        features: ["Базовый доступ к AI генерации"],
+        description: "Базовый доступ"
+      }
+    ];
+    
+    res.json(fallbackPlans);
+  }
+};
+
+// Создание Lava платежа для подписки
+export const createLavaSubscriptionPayment = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { plan, duration = 1 } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!plan || !["base", "pro", "premium"].includes(plan)) {
+      return res.status(400).json({ error: "Invalid plan" });
+    }
+
+    // Цены планов в рублях
+    const planPrices = {
+      base: 920,
+      pro: 2760,
+      premium: 4600,
+    };
+
+    const amount = planPrices[plan as keyof typeof planPrices] * duration;
+    const paymentService = new PaymentService();
+
+    const paymentResult = await paymentService.createPayment({
+      userId,
+      amount,
+      tokensAmount: 0, // Для подписки токены не нужны
+      description: `Подписка ${plan} на ${duration} месяц(ев)`,
+      successUrl: `${process.env.FRONTEND_URL}/payment/success`,
+      failUrl: `${process.env.FRONTEND_URL}/payment/fail`,
+    });
+
+    if (paymentResult.success && paymentResult.paymentUrl) {
+      res.json({
+        success: true,
+        paymentId: paymentResult.paymentId,
+        paymentUrl: paymentResult.paymentUrl,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: paymentResult.error || "Failed to create payment",
+      });
+    }
+  } catch (error) {
+    logger.error("Error creating Lava subscription payment:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Создание подписки через Lava.top API (упрощенная версия)
+export const createLavaTopSubscription = async (req: Request, res: Response) => {
+  try {
+    console.log('🎯 CONTROLLER HIT: createLavaTopSubscription');
+    console.log('🔍 Request details:', {
+      method: req.method,
+      originalUrl: req.originalUrl,
+      body: req.body
+    });
+    
+    logger.info('🔍 LAVA TOP: Request received', {
+      body: req.body,
+      method: req.method,
+      url: req.url,
+      headers: req.headers
+    });
+
+    const { plan, userId } = req.body;
+
+    if (!userId) {
+      logger.error('❌ LAVA TOP: Missing userId');
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    if (!plan || !["basic", "pro", "premium"].includes(plan)) {
+      logger.error('❌ LAVA TOP: Invalid plan', { plan });
+      return res.status(400).json({ error: "Invalid plan" });
+    }
+
+    logger.info('✅ LAVA TOP: Request validated', { plan, userId });
+
+    // Получаем план подписки из БД
+    const subscriptionPlan = await prisma.subscriptionPlan.findUnique({
+      where: { name: plan }
+    });
+    
+    if (!subscriptionPlan) {
+      logger.error('Subscription plan not found', { plan });
+      return res.status(400).json({ error: 'Subscription plan not found' });
+    }
+
+    // Создаем уникальный email для пользователя
+    const userEmail = `user${Date.now()}@aicex.bot`;
+
+    // Fallback URLs если переменные окружения не настроены
+    const backendUrl = process.env.BACKEND_URL || 'https://aicexaibot-production.up.railway.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app';
+
+    // Данные для создания инвойса
+    const invoiceData = {
+      email: userEmail,
+      offerId: subscriptionPlan.lavaOfferId,
+      currency: 'RUB',
+      description: `${subscriptionPlan.displayName} - AICEX AI Bot`,
+      webhookUrl: `${backendUrl}/api/webhooks/lava`,
+      successUrl: `${frontendUrl.replace(/\/$/, '')}/payment/success`, // Убираем лишние слэши
+      failUrl: `${frontendUrl.replace(/\/$/, '')}/payment/fail`
+    };
+    console.log('🔍 LAVA API: Request data:', JSON.stringify(invoiceData, null, 2));
+    console.log('🔍 LAVA API: Has API key:', !!process.env.LAVA_API_KEY);
+    console.log('🔍 LAVA API: API key length:', process.env.LAVA_API_KEY?.length || 0);
+
+    // Безопасный запрос к LAVA Gate API
+    const lavaResult = await createInvoiceSafe(invoiceData, logger);
+    
+    if (!lavaResult.ok) {
+      logger.error('🚨 LAVA Gate error', {
+        status: lavaResult.status,
+        data: lavaResult.data,
+        payload: invoiceData
+      });
+      
+      return res.status(502).json({
+        success: false,
+        error: "LAVA_GATEWAY_ERROR",
+        lavaStatus: lavaResult.status,
+        lavaData: lavaResult.data
+      });
+    }
+
+    logger.info('✅ LAVA Gate success', {
+      status: lavaResult.status,
+      invoiceId: lavaResult.data.id
+    });
+
+    if (lavaResult.data.id && lavaResult.data.paymentUrl) {
+      // Сохраняем информацию о платеже в БД
+      await prisma.payment.create({
+        data: {
+          userId: userId,
+          amount: subscriptionPlan.priceRub,
+          currency: 'RUB',
+          status: 'PENDING',
+          provider: 'lava',
+          providerId: responseData.id,
+          metadata: JSON.stringify({
+            lavaInvoiceId: responseData.id,
+            offerId: subscriptionPlan.lavaOfferId,
+            userEmail: userEmail,
+            plan: plan,
+            planId: subscriptionPlan.id
+          })
+        }
+      });
+
+      // Возвращаем успешный ответ
+      const successResponse = {
+        success: true,
+        paymentId: responseData.id,
+        paymentUrl: responseData.paymentUrl,
+        amount: subscriptionPlan.priceRub,
+        currency: 'RUB'
+      };
+
+      console.log('✅ LAVA API: Success', successResponse);
+      return res.status(200).json(successResponse);
+      
+    } else {
+      console.error('❌ LAVA API: Invalid response status:', response.status);
+      console.error('❌ LAVA API: Response data:', JSON.stringify(responseData, null, 2));
+      return res.status(400).json({
+        success: false,
+        error: responseData.message || responseData.error || 'Payment creation failed'
+      });
+    }
+
+  } catch (error: any) {
+    logger.error('💥 LAVA API: Exception', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
+    
+    // Возвращаем более подробную информацию об ошибке в development
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    return res.status(500).json({ 
+      success: false,
+      error: error.message || 'Internal server error',
+      ...(isDev && { 
+        details: error.stack,
+        errorName: error.name 
+      })
+    });
+  }
+};
+// Создание Lava платежа для токенов
+export const createLavaTokenPayment = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { amount } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Invalid token amount" });
+    }
+
+    // Цена за токен в рублях (примерно 1.43 рубля за токен)
+    const pricePerToken = 1.43;
+    const totalPrice = Math.round(amount * pricePerToken);
+
+    const paymentService = new PaymentService();
+
+    const paymentResult = await paymentService.createPayment({
+      userId,
+      amount: totalPrice,
+      tokensAmount: amount,
+      description: `Покупка ${amount} токенов`,
+      successUrl: `${process.env.FRONTEND_URL}/payment/success`,
+      failUrl: `${process.env.FRONTEND_URL}/payment/fail`,
+    });
+
+    if (paymentResult.success && paymentResult.paymentUrl) {
+      res.json({
+        success: true,
+        paymentId: paymentResult.paymentId,
+        paymentUrl: paymentResult.paymentUrl,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: paymentResult.error || "Failed to create payment",
+      });
+    }
+  } catch (error) {
+    logger.error("Error creating Lava token payment:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
