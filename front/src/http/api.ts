@@ -20,6 +20,8 @@ apiClient.interceptors.request.use(
     console.log('Token found:', !!token);
     console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'none');
     console.log('localStorage auth_token:', localStorage.getItem('auth_token') ? 'Present' : 'None');
+    console.log('Full localStorage:', Object.keys(localStorage));
+    console.log('Auth store token:', import.meta.env.PROD ? 'Check store' : 'Dev mode');
     console.log('===============================================================');
     
     if (token && config.headers) {

@@ -43,7 +43,13 @@ onMounted(async () => {
         referralCode: tg?.initDataUnsafe?.start_param ?? "",
       });
 
-      authStore.setTokens(tokensData.accessToken);
+      console.log('==================== AUTH RESPONSE ====================');
+      console.log('Full response data:', tokensData);
+      console.log('Token field:', tokensData.token ? 'Present' : 'Missing');
+      console.log('Token preview:', tokensData.token ? tokensData.token.substring(0, 20) + '...' : 'none');
+      console.log('===============================================================');
+
+      authStore.setTokens(tokensData.token);
       console.log('✅ Telegram auth successful');
     } else {
       console.log('⚠️ Skipping Telegram auth (dev mode or no initData)');
