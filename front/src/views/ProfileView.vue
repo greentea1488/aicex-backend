@@ -11,6 +11,8 @@ const stats = ref<any>(null)
 const userTokens = computed(() => stats.value?.tokens || store.user?.tokens || 0)
 const userGenerations = computed(() => stats.value?.totalGenerations || 0)
 const userReferrals = computed(() => stats.value?.referrals || store.user?.friendsReferred || 0)
+const tokensSpent = computed(() => stats.value?.tokensSpent || 0)
+const lastGeneration = computed(() => stats.value?.lastGeneration || null)
 const joinDate = computed(() => {
   if (stats.value?.memberSince) {
     return new Date(stats.value.memberSince).toLocaleDateString('ru-RU')
@@ -49,6 +51,17 @@ onMounted(async () => {
 const handleImageError = (e: Event) => {
   console.log('Avatar image failed to load, showing initials instead')
   // Не скрываем изображение, просто логируем ошибку
+}
+
+const formatLastGeneration = (generation: any) => {
+  if (!generation?.createdAt) return 'Недавно'
+  const date = new Date(generation.createdAt)
+  return date.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 </script>
 
@@ -100,19 +113,35 @@ const handleImageError = (e: Event) => {
             </div>
           </div>
 
-          <!-- Stats -->
-          <div class="grid grid-cols-3 gap-4">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-cyan-300 drop-shadow-sm">{{ userTokens }}</div>
-              <div class="text-xs text-white/90 font-medium">Токенов</div>
+          <!-- Main Stats -->
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="text-center bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-xl p-4 border border-cyan-400/30">
+              <div class="text-3xl font-bold text-cyan-300 drop-shadow-sm">{{ userTokens }}</div>
+              <div class="text-sm text-white/90 font-medium">Токенов</div>
             </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-purple-300 drop-shadow-sm">{{ userGenerations }}</div>
-              <div class="text-xs text-white/90 font-medium">Генераций</div>
+            <div class="text-center bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-400/30">
+              <div class="text-3xl font-bold text-purple-300 drop-shadow-sm">{{ userGenerations }}</div>
+              <div class="text-sm text-white/90 font-medium">Генераций</div>
             </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-pink-300 drop-shadow-sm">{{ userReferrals }}</div>
+          </div>
+
+          <!-- Secondary Stats -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="text-center bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-lg p-3 border border-emerald-400/30">
+              <div class="text-xl font-bold text-emerald-300 drop-shadow-sm">{{ tokensSpent }}</div>
+              <div class="text-xs text-white/90 font-medium">Потрачено</div>
+            </div>
+            <div class="text-center bg-gradient-to-br from-pink-500/20 to-rose-500/20 rounded-lg p-3 border border-pink-400/30">
+              <div class="text-xl font-bold text-pink-300 drop-shadow-sm">{{ userReferrals }}</div>
               <div class="text-xs text-white/90 font-medium">Рефералов</div>
+            </div>
+          </div>
+
+          <!-- Last Generation Info -->
+          <div v-if="lastGeneration" class="mt-4 p-3 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-lg border border-indigo-400/30">
+            <div class="text-center">
+              <div class="text-sm text-white/80 font-medium mb-1">Последняя генерация</div>
+              <div class="text-xs text-white/90">{{ formatLastGeneration(lastGeneration) }}</div>
             </div>
           </div>
         </div>
