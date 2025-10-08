@@ -238,6 +238,21 @@ const userStates = new Map<number, {
   data?: any;
 }>();
 
+// 🧭 Универсальная функция для создания кнопок навигации
+function getNavigationButtons(backCallback?: string, includeHome: boolean = true) {
+  const buttons: any[] = [];
+  
+  if (backCallback) {
+    buttons.push([{ text: '⬅️ Назад', callback_data: backCallback }]);
+  }
+  
+  if (includeHome) {
+    buttons.push([{ text: '🏠 Главная', callback_data: 'back_to_main' }]);
+  }
+  
+  return buttons;
+}
+
 // 🚀 УЛУЧШЕННАЯ КОМАНДА /start
 bot.command("start", async (ctx) => {
   console.log("📨 /start from user:", ctx.from?.id);
@@ -340,7 +355,7 @@ bot.on("callback_query", async (ctx) => {
       {
         reply_markup: {
           inline_keyboard: [
-            [{ text: '⬅️ Назад', callback_data: 'photo_to_video_menu' }]
+            ...getNavigationButtons('photo_to_video_menu')
           ]
         },
         parse_mode: "HTML"
@@ -400,14 +415,31 @@ bot.on("callback_query", async (ctx) => {
     case 'generate_image':
       await ctx.editMessageText(
         "🎨 <b>Генерация изображений</b>\n\nВыберите нейросеть:",
-        { reply_markup: imageMenu, parse_mode: "HTML" }
+        { 
+          reply_markup: {
+            inline_keyboard: [
+              ...imageMenu.inline_keyboard,
+              ...getNavigationButtons()
+            ]
+          },
+          parse_mode: "HTML" 
+        }
       );
       break;
 
     case 'image_freepik':
+      const freepikImageMenu = getFreepikImageModelsMenu();
       await ctx.editMessageText(
         "🎨 <b>Freepik AI</b>\n\nВыберите модель для генерации:",
-        { reply_markup: getFreepikImageModelsMenu(), parse_mode: "HTML" }
+        { 
+          reply_markup: {
+            inline_keyboard: [
+              ...freepikImageMenu.inline_keyboard,
+              ...getNavigationButtons()
+            ]
+          },
+          parse_mode: "HTML" 
+        }
       );
       break;
 
@@ -437,21 +469,47 @@ bot.on("callback_query", async (ctx) => {
     case 'generate_video':
       await ctx.editMessageText(
         "🎬 <b>Генерация видео</b>\n\nВыберите нейросеть:",
-        { reply_markup: videoMenu, parse_mode: "HTML" }
+        { 
+          reply_markup: {
+            inline_keyboard: [
+              ...videoMenu.inline_keyboard,
+              ...getNavigationButtons()
+            ]
+          },
+          parse_mode: "HTML" 
+        }
       );
       break;
 
     case 'video_freepik':
+      const freepikVideoMenu = getFreepikVideoModelsMenu();
       await ctx.editMessageText(
         "🎬 <b>Freepik Video</b>\n\nВыберите модель для генерации:",
-        { reply_markup: getFreepikVideoModelsMenu(), parse_mode: "HTML" }
+        { 
+          reply_markup: {
+            inline_keyboard: [
+              ...freepikVideoMenu.inline_keyboard,
+              ...getNavigationButtons()
+            ]
+          },
+          parse_mode: "HTML" 
+        }
       );
       break;
 
     case 'video_kling':
+      const klingMenu = getKlingModelsMenu();
       await ctx.editMessageText(
         "⚡ <b>Kling AI Video</b>\n\nВыберите модель Kling для генерации видео:\n\n💡 Используется Freepik API",
-        { reply_markup: getKlingModelsMenu(), parse_mode: "HTML" }
+        { 
+          reply_markup: {
+            inline_keyboard: [
+              ...klingMenu.inline_keyboard,
+              ...getNavigationButtons()
+            ]
+          },
+          parse_mode: "HTML" 
+        }
       );
       break;
 
@@ -476,7 +534,7 @@ bot.on("callback_query", async (ctx) => {
         {
           reply_markup: {
             inline_keyboard: [
-              [{ text: '⬅️ Назад', callback_data: 'generate_video' }]
+              ...getNavigationButtons('generate_video')
             ]
           },
           parse_mode: "HTML"
@@ -486,9 +544,18 @@ bot.on("callback_query", async (ctx) => {
 
     // 🎬 ГЕНЕРАЦИЯ ВИДЕО ИЗ ФОТО
     case 'photo_to_video_menu':
+      const photoVideoMenu = getFreepikVideoModelsMenu();
       await ctx.editMessageText(
         "🎬 <b>Создание видео из фото</b>\n\nВыберите модель для генерации:",
-        { reply_markup: getFreepikVideoModelsMenu(), parse_mode: "HTML" }
+        { 
+          reply_markup: {
+            inline_keyboard: [
+              ...photoVideoMenu.inline_keyboard,
+              ...getNavigationButtons()
+            ]
+          },
+          parse_mode: "HTML" 
+        }
       );
       break;
 
@@ -497,7 +564,15 @@ bot.on("callback_query", async (ctx) => {
     case 'chat_ai':
       await ctx.editMessageText(
         "💬 <b>AI Чат</b>\n\nВыберите модель:",
-        { reply_markup: chatMenu, parse_mode: "HTML" }
+        { 
+          reply_markup: {
+            inline_keyboard: [
+              ...chatMenu.inline_keyboard,
+              ...getNavigationButtons()
+            ]
+          },
+          parse_mode: "HTML" 
+        }
       );
       break;
 
@@ -519,19 +594,7 @@ bot.on("callback_query", async (ctx) => {
 
     // 🔙 НАВИГАЦИЯ
     case 'back_to_main':
-      userStates.delete(userId); // Очищаем состояние
-      try {
-        await ctx.editMessageText(
-          "🎯 <b>Главное меню</b>\n\nВыберите действие:",
-          { reply_markup: getMainMenu(userId), parse_mode: "HTML" }
-        );
-      } catch (error) {
-        // Если не можем редактировать (например, сообщение с изображением), отправляем новое
-        await ctx.reply(
-          "🎯 <b>Главное меню</b>\n\nВыберите действие:",
-          { reply_markup: getMainMenu(userId), parse_mode: "HTML" }
-        );
-      }
+      await handleBackToMain(ctx, userId);
       break;
 
     default:
@@ -664,9 +727,7 @@ bot.on("message:photo", async (ctx) => {
               { text: "🎬 Создать видео", callback_data: "photo_to_video_menu" },
               { text: "🔍 Анализ GPT-4", callback_data: "start_vision_chat" }
             ],
-            [
-              { text: "🏠 Главная", callback_data: "back_to_main" }
-            ]
+            ...getNavigationButtons()
           ]
         },
         parse_mode: "HTML"
@@ -1525,8 +1586,9 @@ async function handleStats(ctx: any, userId: number) {
 // ⬅️ Назад в главное меню
 async function handleBackToMain(ctx: any, userId: number) {
   try {
-    // Очищаем состояние пользователя
+    // Очищаем ВСЕ состояния пользователя
     UXHelpers.clearUserState(userId);
+    userStates.delete(userId);
     stateManager.endSession(userId.toString());
     
     const message = `🏠 <b>Главное меню</b>\n\nВыберите действие:`;
@@ -1546,11 +1608,19 @@ async function handleBackToMain(ctx: any, userId: number) {
       });
     }
     
-    // Отвечаем на callback, чтобы убрать "часики"
-    await ctx.answerCallbackQuery();
-    
   } catch (error) {
-    await UXHelpers.sendSmartErrorNotification(ctx, error);
+    // Даже при ошибке пытаемся вернуть в главное меню
+    try {
+      await ctx.reply(
+        "🏠 <b>Главное меню</b>\n\nВыберите действие:",
+        { 
+          parse_mode: "HTML",
+          reply_markup: getMainMenu(userId) 
+        }
+      );
+    } catch (fallbackError) {
+      console.error('❌ Critical error returning to main menu:', fallbackError);
+    }
   }
 }
 
@@ -1737,7 +1807,7 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
                 { text: '🔄 Еще одно', callback_data: 'photo_to_video_menu' },
                 { text: '📊 Статистика', callback_data: 'stats' }
               ],
-              [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+              ...getNavigationButtons()
             ]
           }
         }
@@ -1747,12 +1817,32 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
       userStates.delete(userId);
     } else {
       const errorMessage = result.error || 'Не удалось создать видео';
-      await ctx.reply(`❌ Ошибка создания видео: ${errorMessage}`);
+      await ctx.reply(`❌ <b>Ошибка создания видео</b>\n\n${errorMessage}`,
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔄 Попробовать снова', callback_data: 'photo_to_video_menu' }],
+              ...getNavigationButtons()
+            ]
+          }
+        }
+      );
     }
 
   } catch (error: any) {
     console.error('🎬 Video generation error:', error);
-    await ctx.reply(`❌ Ошибка создания видео: ${error.message}`);
+    await ctx.reply(`❌ <b>Ошибка создания видео</b>\n\n${error.message}`,
+      {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔄 Попробовать снова', callback_data: 'photo_to_video_menu' }],
+            ...getNavigationButtons()
+          ]
+        }
+      }
+    );
   }
 }
 
@@ -1778,21 +1868,39 @@ async function handleGPTVision(ctx: any) {
           parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
-              [
-                { text: '🔄 Еще один анализ', callback_data: 'start_vision_chat' },
-                { text: '🏠 Главная', callback_data: 'back_to_main' }
-              ]
+              [{ text: '🔄 Еще один анализ', callback_data: 'start_vision_chat' }],
+              ...getNavigationButtons()
             ]
           }
         }
       );
     } else {
-      await ctx.reply(`❌ Ошибка анализа: ${result.error || 'Неизвестная ошибка'}`);
+      await ctx.reply(`❌ <b>Ошибка анализа</b>\n\n${result.error || 'Неизвестная ошибка'}`,
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔄 Попробовать снова', callback_data: 'start_vision_chat' }],
+              ...getNavigationButtons()
+            ]
+          }
+        }
+      );
     }
 
   } catch (error: any) {
     console.error('🔍 GPT Vision error:', error);
-    await ctx.reply(`❌ Ошибка анализа изображения: ${error.message}`);
+    await ctx.reply(`❌ <b>Ошибка анализа изображения</b>\n\n${error.message}`,
+      {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔄 Попробовать снова', callback_data: 'start_vision_chat' }],
+            ...getNavigationButtons()
+          ]
+        }
+      }
+    );
   }
 }
 
