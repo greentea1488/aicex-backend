@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { logger } from '../../utils/logger';
+import { PromptEnhancerService } from '../PromptEnhancerService';
 
 // Интерфейс для конфигурации модели изображений
 interface FreepikImageModelConfig {
@@ -181,6 +182,9 @@ export interface FreepikImageRequest {
   model?: keyof typeof FREEPIK_IMAGE_MODELS;
   resolution?: '1k' | '2k' | '4k';
   creative_detailing?: number; // 0-100
+  enhancePrompt?: boolean; // Включить улучшение промпта
+  promptStyle?: 'photographic' | 'artistic' | 'realistic' | 'fantasy' | 'anime';
+  promptQuality?: 'high' | 'medium' | 'low';
 }
 
 export interface FreepikVideoRequest {
@@ -204,6 +208,13 @@ export interface FreepikResponse {
       id: string;
       url: string;
     }>;
+    promptEnhancement?: {
+      original: string;
+      enhanced: string;
+      improvements: string[];
+      style: string;
+      quality: string;
+    } | null;
   };
   error?: string;
 }
@@ -211,6 +222,7 @@ export interface FreepikResponse {
 export class FreepikService {
   private apiKey: string;
   private baseUrl = process.env.FREEPIK_API_URL || 'https://api.freepik.com';
+  private promptEnhancer: PromptEnhancerService;
   
   // Только один правильный базовый URL (endpoints уже содержат /v1/)
   private alternativeBaseUrls = [
@@ -223,6 +235,7 @@ export class FreepikService {
       logger.error('FREEPIK_API_KEY is not set in environment variables');
       throw new Error('FREEPIK_API_KEY is required');
     }
+    this.promptEnhancer = new PromptEnhancerService();
     logger.info('FreepikService initialized with API key:', this.apiKey.substring(0, 8) + '...');
   }
 
@@ -260,10 +273,46 @@ export class FreepikService {
       const model = request.model || 'seedream';
       const modelConfig = FREEPIK_IMAGE_MODELS[model];
       
+      // Улучшаем промпт если включено
+      let finalPrompt = request.prompt;
+      let promptEnhancement = null;
+      
+      if (request.enhancePrompt !== false) { // По умолчанию включено
+        console.log('==================== PROMPT ENHANCEMENT START ====================');
+        console.log('Original Prompt:', request.prompt);
+        console.log('Enhancement Options:', {
+          style: request.promptStyle || 'photographic',
+          quality: request.promptQuality || 'high'
+        });
+        console.log('===============================================================');
+        
+        try {
+          promptEnhancement = await this.promptEnhancer.enhancePrompt(request.prompt, {
+            style: request.promptStyle || 'photographic',
+            quality: request.promptQuality || 'high',
+            language: 'ru'
+          });
+          finalPrompt = promptEnhancement.enhanced;
+          
+          console.log('==================== PROMPT ENHANCED ====================');
+          console.log('Original:', promptEnhancement.original);
+          console.log('Enhanced:', promptEnhancement.enhanced);
+          console.log('Improvements:', promptEnhancement.improvements);
+          console.log('===============================================================');
+        } catch (error) {
+          console.log('==================== PROMPT ENHANCEMENT FAILED ====================');
+          console.log('Error:', error);
+          console.log('Using original prompt');
+          console.log('===============================================================');
+        }
+      }
+
       logger.info('🔥 FREEPIK GENERATION START:', { 
-        prompt: request.prompt.substring(0, 50),
+        originalPrompt: request.prompt.substring(0, 50),
+        finalPrompt: finalPrompt.substring(0, 50),
         model: request.model,
         aspect_ratio: request.aspect_ratio,
+        promptEnhanced: !!promptEnhancement,
         timestamp: new Date().toISOString()
       });
       
@@ -299,7 +348,7 @@ export class FreepikService {
 
       // Создаем базовый запрос согласно официальной документации Freepik API
       const baseRequestData: any = {
-        prompt: request.prompt,
+        prompt: finalPrompt, // Используем улучшенный промпт
         aspect_ratio: this.convertAspectRatio(request.aspect_ratio)
       };
       
@@ -395,7 +444,7 @@ export class FreepikService {
               });
               
               // Если успешно, обрабатываем ответ
-              const processedResponse = await this.processFreepikResponse(response);
+              const processedResponse = await this.processFreepikResponse(response, promptEnhancement);
               
               console.log('==================== PROCESSED RESPONSE ====================');
               console.log('Processed Response:', JSON.stringify(processedResponse, null, 2));
@@ -453,7 +502,7 @@ export class FreepikService {
   /**
    * Обработка ответа от Freepik API
    */
-  private async processFreepikResponse(response: any): Promise<FreepikResponse> {
+  private async processFreepikResponse(response: any, promptEnhancement?: any): Promise<FreepikResponse> {
     console.log('==================== PROCESS FREEPIK RESPONSE START ====================');
     console.log('Raw Response Data:', JSON.stringify(response.data, null, 2));
     console.log('Response Status:', response.status);
@@ -571,7 +620,15 @@ export class FreepikService {
         data: {
           id: taskId,
           status: 'completed',
-          images: processedImages
+          images: processedImages,
+          // Добавляем информацию об улучшении промпта
+          promptEnhancement: promptEnhancement ? {
+            original: promptEnhancement.original,
+            enhanced: promptEnhancement.enhanced,
+            improvements: promptEnhancement.improvements,
+            style: promptEnhancement.style,
+            quality: promptEnhancement.quality
+          } : null
         }
       };
     }

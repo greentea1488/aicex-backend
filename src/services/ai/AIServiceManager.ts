@@ -304,7 +304,10 @@ export class AIServiceManager {
       const request: FreepikImageRequest = {
         prompt,
         aspect_ratio: options?.aspect_ratio || '1:1',
-        model: options?.model || 'seedream'
+        model: options?.model || 'seedream',
+        enhancePrompt: options?.enhancePrompt !== false, // По умолчанию включено
+        promptStyle: options?.promptStyle || 'photographic',
+        promptQuality: options?.promptQuality || 'high'
       };
 
       console.log('==================== AI SERVICE MANAGER FREEPIK START ====================');
