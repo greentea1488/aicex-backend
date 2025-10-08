@@ -146,6 +146,13 @@ export const FREEPIK_VIDEO_MODELS = {
     maxDuration: 5,
     resolution: '720p'
   },
+  kling_v2_1_master: {
+    name: 'Kling 2.1 Master',
+    description: 'Мастер версия Kling v2.1 с продвинутыми возможностями',
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-master',
+    maxDuration: 10,
+    resolution: '1080p'
+  },
   kling_v2_5_pro: {
     name: 'Kling 2.5 Turbo Pro',
     description: 'Кинематографические видео с улучшенным движением и детализацией',

@@ -1658,7 +1658,15 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
     const imageUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
     
     const prompt = ctx.message.caption || "Create a cinematic video from this image";
-    const model = userState.model || 'kling_v2_5_pro';
+    let model = userState.model || 'kling_v2_5_pro';
+    
+    // Конвертируем callback ID в FreepikService ID
+    const modelMapping: Record<string, string> = {
+      'kling-v2-1-master': 'kling_v2_1_master',
+      'kling-pro-v2-1': 'kling_v2_1_pro',
+      'kling-std-v2-1': 'kling_v2_1_std'
+    };
+    model = modelMapping[model] || model;
     
     console.log('🎬 Starting video generation from photo:', {
       userId,
@@ -1777,6 +1785,8 @@ function getVideoModelName(modelId: string): string {
     'kling_v2_5_pro': 'Kling 2.5 Turbo Pro',
     'kling_v2_1_pro': 'Kling 2.1 Pro',
     'kling_v2_1_std': 'Kling 2.1 Standard',
+    'kling_v2_1_master': 'Kling 2.1 Master',
+    'kling-v2-1-master': 'Kling 2.1 Master',
     'minimax_hailuo_1080p': 'MiniMax Hailuo 1080p',
     'pixverse_v5': 'PixVerse V5',
     'seedance_pro_1080p': 'Seedance Pro 1080p'

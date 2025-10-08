@@ -98,13 +98,13 @@ export const FREEPIK_VIDEO_MODELS: FreepikVideoModel[] = [
     id: 'kling-v2-1-master',
     name: 'Kling v2.1 Master',
     description: 'Мастер версия Kling v2.1',
-    endpoint: '/v1/ai/text-to-video/kling-v2-1-master'
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-master'
   },
   {
     id: 'kling-pro-v2-1',
     name: 'Kling Pro v2.1',
     description: 'Профессиональная версия Kling',
-    endpoint: '/v1/ai/text-to-video/kling-pro-v2-1'
+    endpoint: '/v1/ai/image-to-video/kling-pro-v2-1'
   },
   {
     id: 'pixverse-v5',
@@ -124,37 +124,37 @@ export const FREEPIK_VIDEO_MODELS: FreepikVideoModel[] = [
     id: 'kling-std-v2-1',
     name: 'Kling Std v2.1',
     description: 'Стандартная версия Kling',
-    endpoint: '/v1/ai/text-to-video/kling-std-v2-1'
+    endpoint: '/v1/ai/image-to-video/kling-std-v2-1'
   },
   {
     id: 'kling-v2',
     name: 'Kling v2',
     description: 'Базовая версия Kling v2',
-    endpoint: '/v1/ai/text-to-video/kling-v2'
+    endpoint: '/v1/ai/image-to-video/kling-v2'
   },
   {
     id: 'kling-pro-1-6',
     name: 'Kling Pro 1.6',
     description: 'Профессиональная версия 1.6',
-    endpoint: '/v1/ai/text-to-video/kling-pro-1-6'
+    endpoint: '/v1/ai/image-to-video/kling-pro-1-6'
   },
   {
     id: 'kling-std-1-6',
     name: 'Kling Std 1.6',
     description: 'Стандартная версия 1.6',
-    endpoint: '/v1/ai/text-to-video/kling-std-1-6'
+    endpoint: '/v1/ai/image-to-video/kling-std-1-6'
   },
   {
     id: 'kling-elements-pro-1-6',
     name: 'Kling Elements Pro 1.6',
     description: 'Элементы и эффекты Pro',
-    endpoint: '/v1/ai/text-to-video/kling-elements-pro-1-6'
+    endpoint: '/v1/ai/image-to-video/kling-elements-pro-1-6'
   },
   {
     id: 'kling-elements-std-1-6',
     name: 'Kling Elements Std 1.6',
     description: 'Элементы и эффекты Standard',
-    endpoint: '/v1/ai/text-to-video/kling-elements-std-1-6'
+    endpoint: '/v1/ai/image-to-video/kling-elements-std-1-6'
   },
   {
     id: 'seedance-pro-1080p',
