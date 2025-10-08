@@ -52,14 +52,26 @@ export class UserAPIController {
             username: userData.username || 'unknown',
             firstName: userData.first_name,
             lastName: userData.last_name,
-            tokens: 10 // Стартовые токены
+            tokens: 500 // Увеличиваем стартовые токены до 500
           }
         });
 
         logger.info('New user registered', {
           userId: user.id,
-          telegramId: user.telegramId
+          telegramId: user.telegramId,
+          tokens: user.tokens
         });
+        
+        console.log('==================== NEW USER CREATED ====================');
+        console.log('User ID:', user.id);
+        console.log('Telegram ID:', user.telegramId);
+        console.log('Starting tokens:', user.tokens);
+        console.log('===============================================================');
+      } else {
+        console.log('==================== EXISTING USER LOGIN ====================');
+        console.log('User ID:', user.id);
+        console.log('Current tokens:', user.tokens);
+        console.log('===============================================================');
       }
 
       // Создаем JWT токен
@@ -175,7 +187,13 @@ export class UserAPIController {
     try {
       const userId = req.user?.id;
 
+      console.log('==================== GET TOKEN BALANCE ====================');
+      console.log('User ID:', userId);
+      console.log('Headers:', req.headers);
+      console.log('===============================================================');
+
       if (!userId) {
+        console.log('❌ User not authenticated');
         res.status(401).json({ error: 'User not authenticated' });
         return;
       }
@@ -186,10 +204,12 @@ export class UserAPIController {
       });
 
       if (!user) {
+        console.log('❌ User not found in database');
         res.status(404).json({ error: 'User not found' });
         return;
       }
 
+      console.log('✅ User found, tokens:', user.tokens);
       res.json({ tokens: user.tokens });
 
     } catch (error) {
@@ -206,6 +226,13 @@ export class UserAPIController {
       const userId = req.user?.id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
+
+      console.log('==================== GET TOKEN HISTORY ====================');
+      console.log('User ID:', userId);
+      console.log('Page:', page);
+      console.log('Limit:', limit);
+      console.log('Headers:', req.headers);
+      console.log('===============================================================');
 
       logger.info('Token history request:', {
         userId,
@@ -231,6 +258,19 @@ export class UserAPIController {
         }),
         prisma.tokenHistory.count({ where: { userId } })
       ]);
+
+      console.log('✅ Token history found:', {
+        userId,
+        historyCount: history.length,
+        total,
+        history: history.map(h => ({
+          id: h.id,
+          amount: h.amount,
+          type: h.type,
+          service: h.service,
+          createdAt: h.createdAt
+        }))
+      });
 
       logger.info('Token history result:', {
         userId,
