@@ -59,10 +59,8 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('auth_token')
       localStorage.removeItem('user_data')
       
-      // Перенаправляем на страницу авторизации
-      if (window.location.pathname !== '/auth') {
-        window.location.href = '/auth'
-      }
+      console.log('🔐 Auth token cleared, but staying on current page (Telegram Mini App)');
+      // НЕ редиректим в Telegram Mini App - просто очищаем токены
     }
     
     return Promise.reject(error)

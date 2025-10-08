@@ -12,47 +12,75 @@ const store = useStore();
 const tg = getTelegramWebApp();
 
 onMounted(async () => {
+  console.log('==================== APP MOUNTED ====================');
+  console.log('Telegram WebApp available:', !!tg);
+  console.log('Environment:', import.meta.env.PROD ? 'production' : 'development');
+  console.log('===============================================================');
+
   if (tg) {
     tg.ready();
     tg.expand();
     if (tg.enableClosingConfirmation) {
       tg.enableClosingConfirmation();
     }
+    console.log('✅ Telegram WebApp initialized');
   }
 
   if (authStore.accessToken === "undefined") {
     authStore.clearTokens();
+    console.log('🧹 Cleared invalid auth token');
   }
 
   // ВСЕГДА загружаем данные пользователя
   try {
+    console.log('==================== STARTING AUTH FLOW ====================');
+    
     // Сначала пробуем загрузить через API
     if (import.meta.env.PROD && tg?.initData) {
+      console.log('🔄 Attempting Telegram auth...');
       const { data: tokensData } = await authUser({
         initData: tg.initData,
         referralCode: tg?.initDataUnsafe?.start_param ?? "",
       });
 
       authStore.setTokens(tokensData.accessToken);
+      console.log('✅ Telegram auth successful');
+    } else {
+      console.log('⚠️ Skipping Telegram auth (dev mode or no initData)');
     }
 
     // Загружаем профиль пользователя
+    console.log('🔄 Fetching user profile...');
     await store.fetchUserProfile();
+    console.log('✅ User profile loaded');
     
     // Обновляем токены и подписку
+    console.log('🔄 Updating user tokens...');
     await store.updateUserTokens();
+    console.log('✅ User tokens updated');
+    
+    console.log('🔄 Updating user subscription...');
     await store.updateUserSubscription();
+    console.log('✅ User subscription updated');
+    
+    console.log('==================== AUTH FLOW COMPLETED ====================');
     
   } catch (error) {
+    console.error('==================== AUTH ERROR ====================');
     console.error('Auth error:', error);
+    console.error('===============================================================');
     
     // Fallback - загружаем тестовые данные
     try {
+      console.log('🔄 Attempting fallback user profile...');
       await store.fetchUserProfile();
+      console.log('✅ Fallback user profile loaded');
     } catch (fallbackError) {
-      console.error('Fallback error:', fallbackError);
+      console.error('❌ Fallback error:', fallbackError);
     }
   }
+  
+  console.log('==================== APP INITIALIZATION COMPLETE ====================');
 });
 </script>
 
