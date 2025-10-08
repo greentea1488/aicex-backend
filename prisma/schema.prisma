@@ -1,0 +1,380 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId      Int            @unique
+  username        String
+  firstName       String?
+  lastName        String?
+  phone           String?
+  avatar          String?
+  bio             String?
+  location        String?
+  website         String?
+  referral        String?
+  tokens          Int              @default(100)
+  
+  // Lava подписки
+  consumers   LavaConsumer[]
+  lavaSubscriptions LavaSubscription[]
+  friendsReferred Int            @default(0)
+  subscription    Subscription?
+  subscriptionExpiresAt DateTime?
+  
+  // Связи с другими моделями
+  dialogs         ChatHistory[]
+  payments        Payment[] 
+  tokenHistory    TokenHistory[] 
+  freepikTasks    FreepikTask[]
+  runwayTasks     RunwayTask[]
+  midjourneyTasks MidjourneyTask[]
+  auditLogs       AuditLog[]
+  generationHistory GenerationHistory[]
+
+  appSettings     AppSettings? 
+  gptSettings     GptSettings?
+  midjourneySettings MidjourneySettings?
+  runwaySettings RunwaySettings?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  // Критически важные индексы для производительности
+  @@index([tokens])
+  @@index([subscription])
+  @@index([createdAt])
+  @@index([updatedAt])
+}
+
+type AppSettings {
+  notifications Boolean @default(false)
+}
+type GptSettings {
+  model         String @default("gpt-4o-mini")
+  audioResponse Boolean @default(false)
+  voice         String @default("ru")
+  logModelName  Boolean @default(false)
+  userPrompt    String @default("")
+  systemPrompt  String @default("You are a helpful assistant. Respond in Russian unless asked otherwise.")
+  temperature   Float @default(0.4)
+  max_tokens    Int @default(2000)
+  
+  // Image generation settings
+  image_model   String @default("dall-e-3")
+  image_size    String @default("1024x1024")
+  image_quality String @default("standard")
+}
+
+type MidjourneySettings {
+  model         String @default("7.0")  // Midjourney model version
+  style         String @default("photorealistic")  // Style (photorealistic, artistic, anime, cartoon)
+  aspect_ratio  String @default("1:1")  // Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
+  quality       String @default("high")  // Quality level (low, medium, high)
+  userPrompt    String @default("")     // Custom user prompt
+  exceptions    String @default("")     // Exceptions/negative prompts
+}
+
+type RunwaySettings {
+  length Int @default(5)
+  seed Int @default(0)
+}
+
+model Payment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  amount      Float    // Сумма в рублях
+  currency    String   @default("RUB")
+  status      PaymentStatus @default(PENDING)
+  provider    String   @default("lava") // lava, yookassa, etc
+  providerId  String?  // ID платежа в системе провайдера
+  description String?  // Описание платежа
+  tokensAdded Int      @default(0) // Сколько токенов добавлено
+  metadata    Json?    // Дополнительные данные
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([status])
+  @@index([providerId])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+model TokenHistory {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  amount      Int      // Положительное для пополнения, отрицательное для трат
+  type        TokenTransactionType
+  description String?  // Описание операции
+  service     String?  // Какой сервис использовался (freepik, midjourney, etc)
+  taskId      String?  // ID связанной задачи
+  paymentId   String?  @db.ObjectId // ID связанного платежа
+  balanceBefore Int    // Баланс до операции
+  balanceAfter  Int    // Баланс после операции
+  metadata    Json?    // Дополнительные данные
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([type])
+  @@index([service])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+enum TokenTransactionType {
+  PURCHASE      // Покупка токенов
+  BONUS         // Бонусные токены
+  REFERRAL      // Реферальные токены
+  SPEND_FREEPIK // Трата на Freepik
+  SPEND_MIDJOURNEY // Трата на Midjourney
+  SPEND_RUNWAY  // Трата на Runway
+  SPEND_CHATGPT // Трата на ChatGPT
+  REFUND        // Возврат токенов
+  ADMIN_ADJUST  // Админская корректировка
+}
+
+// tg bot models
+model ChatHistory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  messages  Json[]
+  title     String   @default("Без названия")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+model BotChatSession {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId  Int
+  aiProvider  String   // 'chatgpt', 'midjourney', etc.
+  messages    Json[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([telegramId])
+  @@index([telegramId, isActive])
+  @@unique([telegramId, aiProvider])
+}
+
+enum Subscription {
+  base
+  pro
+  premium
+}
+
+// Планы подписок (справочник)
+model SubscriptionPlan {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // 'basic', 'pro', 'premium'
+  displayName String   // 'Базовая подписка', 'Про подписка', 'Премиум подписка'
+  description String?
+  priceRub    Int      // Цена в рублях
+  priceUsd    Int      // Цена в долларах (центы)
+  priceEur    Int      // Цена в евро (центы)
+  tokens      Int      // Количество токенов в месяц
+  features    Json     // Список функций плана
+  lavaProductId String? @unique // productId из Lava.top для рекуррентных платежей
+  lavaOfferId String   @unique // offerId из Lava.top (оставляем для совместимости)
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([isActive])
+}
+
+// Lava подписчики
+model LavaConsumer {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String  @db.ObjectId
+  user       User    @relation(fields: [userId], references: [id])
+  consumerId String  @unique // из LAVA
+  createdAt  DateTime @default(now())
+}
+
+enum SubStatus {
+  created
+  activated
+  suspended
+  deactivated
+}
+
+// Lava подписки
+model LavaSubscription {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id])
+  consumerId      String
+  subscriptionId  String?  @unique
+  orderId         String   @unique
+  productId       String
+  period          String   // one_month|three_months|six_months|year
+  status          SubStatus @default(created)
+  activationTime  DateTime?
+  nextPayTime     DateTime?
+  lastPayTime     DateTime?
+  payerMask       String?
+  amount          Float?
+  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+}
+
+// Webhook события
+model WebhookEvent {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  externalId   String?  // subscription_id|invoice_id
+  type         String   // activated/suspended/deactivated
+  signature    String?
+  payload      Json
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model FreepikTask {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  taskId    String   @unique  // Freepik task ID
+  userId    String   @db.ObjectId  // Правильная связь с User
+  prompt    String              // User's original prompt
+  model     String              // Freepik model used
+  type      String   @default("image")  // "image" or "video"
+  status    String   @default("CREATED")  // CREATED, PROCESSING, COMPLETED, FAILED
+  response  String?             // Full webhook response (JSON)
+  cost      Int      @default(0)  // Cost in tokens
+  imageUrl  String?             // Generated image/video URL
+  error     String?             // Error message if failed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связь с пользователем
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Индексы для производительности
+  @@index([userId])
+  @@index([userId, status])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RunwayTask {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  taskId    String   @unique  // Runway task ID
+  userId    String   @db.ObjectId  // Правильная связь с User
+  prompt    String              // User's original prompt
+  model     String              // Runway model used (gen3, gen2, etc.)
+  type      String   @default("text_to_video")  // "text_to_video", "image_to_video", etc.
+  status    String   @default("CREATED")  // CREATED, PROCESSING, COMPLETED, FAILED
+  response  String?             // Full webhook response (JSON)
+  cost      Int      @default(0)  // Cost in tokens
+  videoUrl  String?             // Generated video URL
+  error     String?             // Error message if failed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связь с пользователем
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Индексы для производительности
+  @@index([userId])
+  @@index([userId, status])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model MidjourneyTask {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  taskId      String   @unique  // GenAPI task ID
+  userId      String   @db.ObjectId  // Правильная связь с User
+  telegramId  Int                // Telegram user ID (для обратной совместимости)
+  prompt      String              // User's original prompt
+  model       String              // Midjourney model used (5.0, 6.0, 7.0, etc.)
+  style       String              // Style used (photorealistic, artistic, etc.)
+  aspect_ratio String            // Aspect ratio (1:1, 16:9, etc.)
+  quality     String              // Quality level (low, medium, high)
+  imageUrl    String?            // Generated image URL
+  status      String   @default("pending")  // pending, processing, completed, failed
+  cost        Int      @default(0)  // Cost in tokens
+  error       String?             // Error message if failed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Связь с пользователем
+  user        User     @relation(fields: [userId], references: [id])
+
+  // Индексы для производительности
+  @@index([userId])
+  @@index([userId, status])
+  @@index([telegramId])
+  @@index([telegramId, status])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  action    String   // 'token_deduction', 'task_created', 'login', etc.
+  metadata  Json?    // Additional data about the action
+  ipAddress String?  // User's IP address
+  userAgent String?  // User's browser/client info
+  timestamp DateTime @default(now())
+  
+  // Связь с пользователем
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Индексы для быстрого поиска
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([userId, action])
+  @@index([userId, timestamp])
+}
+
+// История генерации контента
+model GenerationHistory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  service   String   // 'freepik', 'midjourney', 'runway', 'kling', 'chatgpt'
+  type      String   // 'image', 'video', 'text'
+  prompt    String
+  resultUrl String?
+  taskId    String?
+  tokensUsed Int
+  status    String   // 'completed', 'failed', 'processing'
+  createdAt DateTime @default(now())
+  
+  // Связь с пользователем
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Индексы
+  @@index([userId])
+  @@index([service])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}

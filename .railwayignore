@@ -1,0 +1,25 @@
+# Backend Railway ignore
+
+# Development
+node_modules/
+.env*
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+tests/
+test/
+*.test.*
+coverage/
+
+# Documentation
+*.md
+docs/
