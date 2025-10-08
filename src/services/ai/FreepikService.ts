@@ -1159,8 +1159,18 @@ export class FreepikService {
         endpoint = `/ai/image-to-video/kling-v2-1-std/${taskId}`;
       }
 
+      const fullUrl = `${this.baseUrl}${endpoint}`;
+      
+      console.log('🔍 Checking task status:', {
+        taskId,
+        type,
+        model,
+        endpoint,
+        fullUrl
+      });
+
       const response = await axios.get(
-        `${this.baseUrl}${endpoint}`,
+        fullUrl,
         {
           headers: {
             'x-freepik-api-key': this.apiKey
@@ -1168,8 +1178,20 @@ export class FreepikService {
         }
       );
 
+      console.log('🔍 Task status response:', {
+        taskId,
+        status: response.status,
+        data: response.data
+      });
+
       const status = response.data.data?.status;
       const generated = response.data.data?.generated;
+      
+      console.log('🔍 Parsed status:', {
+        status,
+        generatedLength: generated?.length,
+        generated
+      });
       
       return {
         success: true,
