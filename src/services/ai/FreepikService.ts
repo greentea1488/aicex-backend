@@ -1031,6 +1031,13 @@ export class FreepikService {
 
       const fullUrl = `${this.baseUrl}${modelConfig.endpoint}`;
       
+      console.log('🎬 Request data:', { 
+        model, 
+        endpoint: modelConfig.endpoint,
+        fullUrl,
+        requestData 
+      });
+      
       logger.info('🎬 Request data:', { 
         model, 
         endpoint: modelConfig.endpoint,
@@ -1071,9 +1078,11 @@ export class FreepikService {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
+        invalidParams: error.response?.data?.invalid_params,
         message: error.message,
         url: error.config?.url,
-        method: error.config?.method
+        method: error.config?.method,
+        requestBody: error.config?.data
       });
       
       logger.error('🎬 Freepik image-to-video error:', {
