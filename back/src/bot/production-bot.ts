@@ -1798,20 +1798,21 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
         createdAt: new Date()
       });
 
-      await ctx.reply(`✅ <b>Видео создается!</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n⏱️ Время: ${UXHelpers.formatTime(duration)}\n\n🔄 Отслеживайте прогресс в разделе "Мои задачи"`,
+      // Отправляем сообщение с прогресс-баром
+      const progressMessage = await ctx.reply(
+        `🎬 <b>Создаю видео...</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n\n${getProgressBar(0)}\n\n⏱️ Примерное время: 2-5 минут`,
         {
           parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
-              [
-                { text: '🔄 Еще одно', callback_data: 'photo_to_video_menu' },
-                { text: '📊 Статистика', callback_data: 'stats' }
-              ],
               ...getNavigationButtons()
             ]
           }
         }
       );
+      
+      // Запускаем мониторинг прогресса
+      monitorVideoProgress(ctx, progressMessage.message_id, result.data.id, model, prompt, userId);
       
       // Очищаем состояние
       userStates.delete(userId);
@@ -1902,6 +1903,146 @@ async function handleGPTVision(ctx: any) {
       }
     );
   }
+}
+
+// 📊 Создание визуального прогресс-бара
+function getProgressBar(percent: number): string {
+  const filled = Math.floor(percent / 10);
+  const empty = 10 - filled;
+  const bar = '█'.repeat(filled) + '░'.repeat(empty);
+  return `${bar} ${percent}%`;
+}
+
+// 🔄 Мониторинг прогресса генерации видео
+async function monitorVideoProgress(ctx: any, messageId: number, taskId: string, model: string, prompt: string, userId: number) {
+  const freepikService = new (await import('../services/ai/FreepikService')).FreepikService();
+  let progress = 0;
+  let attempts = 0;
+  const maxAttempts = 60; // 5 минут (каждые 5 секунд)
+  
+  const interval = setInterval(async () => {
+    attempts++;
+    
+    // Симулируем прогресс (0% → 90% за первые 80% времени)
+    if (progress < 90) {
+      progress = Math.min(90, Math.floor((attempts / maxAttempts) * 90));
+    }
+    
+    try {
+      // Проверяем статус задачи
+      const status = await freepikService.checkTaskStatus(taskId, 'video', model);
+      
+      console.log(`🔄 Video progress check (${attempts}/${maxAttempts}):`, {
+        taskId,
+        model,
+        status: status.data?.status,
+        hasVideos: !!status.data?.videos?.length
+      });
+      
+      if (status.success && status.data?.status === 'completed' && status.data?.videos?.length) {
+        // Видео готово!
+        clearInterval(interval);
+        progress = 100;
+        
+        const videoUrl = status.data.videos[0].url;
+        
+        // Обновляем сообщение с прогрессом на финальное
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          messageId,
+          `✅ <b>Видео готово!</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n\n${getProgressBar(100)}\n\n🎥 Скачиваю и отправляю...`,
+          {
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                ...getNavigationButtons()
+              ]
+            }
+          }
+        );
+        
+        // Отправляем видео пользователю
+        await ctx.replyWithVideo(videoUrl, {
+          caption: `🎬 <b>Ваше видео готово!</b>\n\n📝 "${prompt}"\n🎨 ${getVideoModelName(model)}`,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🔄 Еще одно', callback_data: 'photo_to_video_menu' },
+                { text: '📊 Статистика', callback_data: 'stats' }
+              ],
+              ...getNavigationButtons()
+            ]
+          }
+        });
+        
+        return;
+      }
+      
+      if (status.data?.status === 'failed') {
+        // Генерация провалилась
+        clearInterval(interval);
+        
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          messageId,
+          `❌ <b>Ошибка генерации видео</b>\n\n📝 Промпт: "${prompt}"\n\n${status.error || 'Не удалось создать видео'}`,
+          {
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🔄 Попробовать снова', callback_data: 'photo_to_video_menu' }],
+                ...getNavigationButtons()
+              ]
+            }
+          }
+        );
+        
+        return;
+      }
+      
+      // Обновляем прогресс-бар каждые 15 секунд (каждые 3 попытки)
+      if (attempts % 3 === 0) {
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          messageId,
+          `🎬 <b>Создаю видео...</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n\n${getProgressBar(progress)}\n\n⏱️ Осталось ~${Math.ceil((maxAttempts - attempts) * 5 / 60)} мин`,
+          {
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                ...getNavigationButtons()
+              ]
+            }
+          }
+        ).catch(() => {}); // Игнорируем ошибки редактирования
+      }
+      
+    } catch (error) {
+      console.error('Error checking video progress:', error);
+    }
+    
+    // Если превысили максимальное время ожидания
+    if (attempts >= maxAttempts) {
+      clearInterval(interval);
+      
+      await ctx.api.editMessageText(
+        ctx.chat.id,
+        messageId,
+        `⏱️ <b>Генерация занимает больше времени</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n\n💡 Видео будет отправлено автоматически когда будет готово.\n\n🔔 Проверьте раздел "Мои задачи" позже.`,
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📋 Мои задачи', callback_data: 'my_tasks' }],
+              ...getNavigationButtons()
+            ]
+          }
+        }
+      ).catch(() => {});
+    }
+    
+  }, 5000); // Проверяем каждые 5 секунд
 }
 
 function getVideoModelName(modelId: string): string {
