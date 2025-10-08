@@ -228,11 +228,30 @@ const loadGenerations = async (page = 1, append = false) => {
   try {
     loading.value = true
     
+    console.log('==================== LOAD GENERATIONS START ====================');
+    console.log('Page:', page);
+    console.log('Append:', append);
+    console.log('API URL:', api.generations.getHistory.toString());
+    console.log('===============================================================');
+    
     const response = await api.generations.getHistory(undefined, page, 20)
+    
+    console.log('==================== LOAD GENERATIONS RESPONSE ====================');
+    console.log('Response:', response);
+    console.log('Response data:', response.data);
+    console.log('Response status:', response.status);
+    console.log('===============================================================');
     
     if (response.data) {
       // API возвращает { history, pagination }, а не { data: { data, pagination } }
       const data = response.data as any
+      
+      console.log('==================== LOAD GENERATIONS DATA ====================');
+      console.log('Data:', data);
+      console.log('History:', data.history);
+      console.log('Pagination:', data.pagination);
+      console.log('History length:', data.history?.length);
+      console.log('===============================================================');
       
       if (append) {
         generations.value = [...generations.value, ...data.history]
@@ -246,9 +265,27 @@ const loadGenerations = async (page = 1, append = false) => {
       // Update stats based on loaded generations
       totalGenerations.value = generations.value.length
       tokensSpent.value = generations.value.reduce((sum, gen) => sum + (gen.tokensUsed || 0), 0)
+      
+      console.log('==================== LOAD GENERATIONS SUCCESS ====================');
+      console.log('Generations loaded:', generations.value.length);
+      console.log('Total generations:', totalGenerations.value);
+      console.log('Tokens spent:', tokensSpent.value);
+      console.log('===============================================================');
+    } else {
+      console.log('==================== LOAD GENERATIONS NO DATA ====================');
+      console.log('No data in response');
+      console.log('===============================================================');
     }
   } catch (error) {
-    console.error('Error loading generations:', error)
+    console.error('==================== LOAD GENERATIONS ERROR ====================');
+    console.error('Error loading generations:', error);
+    console.error('Error details:', {
+      message: (error as any).message,
+      status: (error as any).response?.status,
+      statusText: (error as any).response?.statusText,
+      data: (error as any).response?.data
+    });
+    console.error('===============================================================');
   } finally {
     loading.value = false
   }
@@ -256,19 +293,48 @@ const loadGenerations = async (page = 1, append = false) => {
 
 const loadStats = async () => {
   try {
+    console.log('==================== LOAD STATS START ====================');
+    console.log('API URL:', api.stats.get.toString());
+    console.log('===============================================================');
+    
     const response = await api.stats.get()
+    
+    console.log('==================== LOAD STATS RESPONSE ====================');
+    console.log('Response:', response);
+    console.log('Response data:', response.data);
+    console.log('Response status:', response.status);
+    console.log('===============================================================');
     
     if (response.data?.success && response.data.data) {
       const stats = response.data.data
       totalGenerations.value = stats.totalGenerations || 0
       tokensSpent.value = stats.tokensSpent || 0
+      
+      console.log('==================== LOAD STATS SUCCESS ====================');
+      console.log('Stats:', stats);
+      console.log('Total generations:', totalGenerations.value);
+      console.log('Tokens spent:', tokensSpent.value);
+      console.log('===============================================================');
     } else {
+      console.log('==================== LOAD STATS NO DATA ====================');
+      console.log('No data in response, using fallback');
+      console.log('===============================================================');
+      
       // Fallback: count from loaded generations
       totalGenerations.value = generations.value.length
       tokensSpent.value = generations.value.reduce((sum, gen) => sum + (gen.tokensUsed || 0), 0)
     }
   } catch (error) {
-    console.error('Error loading stats:', error)
+    console.error('==================== LOAD STATS ERROR ====================');
+    console.error('Error loading stats:', error);
+    console.error('Error details:', {
+      message: (error as any).message,
+      status: (error as any).response?.status,
+      statusText: (error as any).response?.statusText,
+      data: (error as any).response?.data
+    });
+    console.error('===============================================================');
+    
     // Fallback: count from loaded generations
     totalGenerations.value = generations.value.length
     tokensSpent.value = generations.value.reduce((sum, gen) => sum + (gen.tokensUsed || 0), 0)
@@ -284,10 +350,24 @@ const goBack = () => {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    loadGenerations(),
-    loadStats()
-  ])
+  console.log('==================== GENERATIONS HISTORY MOUNTED ====================');
+  console.log('Component mounted, loading data...');
+  console.log('===============================================================');
+  
+  try {
+    await Promise.all([
+      loadGenerations(),
+      loadStats()
+    ])
+    
+    console.log('==================== GENERATIONS HISTORY LOADED ====================');
+    console.log('All data loaded successfully');
+    console.log('===============================================================');
+  } catch (error) {
+    console.error('==================== GENERATIONS HISTORY MOUNT ERROR ====================');
+    console.error('Error during component mount:', error);
+    console.error('===============================================================');
+  }
 })
 </script>
 

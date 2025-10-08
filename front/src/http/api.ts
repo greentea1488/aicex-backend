@@ -13,12 +13,23 @@ export const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('auth_token')
+    
+    console.log('==================== API REQUEST INTERCEPTOR ====================');
+    console.log('URL:', config.url);
+    console.log('Method:', config.method);
+    console.log('Token found:', !!token);
+    console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'none');
+    console.log('===============================================================');
+    
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
   (error) => {
+    console.error('==================== API REQUEST INTERCEPTOR ERROR ====================');
+    console.error('Request interceptor error:', error);
+    console.error('===============================================================');
     return Promise.reject(error)
   }
 )
@@ -26,11 +37,25 @@ apiClient.interceptors.request.use(
 // Интерцептор для обработки ответов
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
+    console.log('==================== API RESPONSE INTERCEPTOR ====================');
+    console.log('URL:', response.config.url);
+    console.log('Status:', response.status);
+    console.log('Data preview:', JSON.stringify(response.data).substring(0, 200) + '...');
+    console.log('===============================================================');
+    
     return response
   },
   (error) => {
+    console.error('==================== API RESPONSE INTERCEPTOR ERROR ====================');
+    console.error('URL:', error.config?.url);
+    console.error('Status:', error.response?.status);
+    console.error('Status Text:', error.response?.statusText);
+    console.error('Data:', error.response?.data);
+    console.error('===============================================================');
+    
     // Если токен истек или недействителен
     if (error.response?.status === 401) {
+      console.log('==================== UNAUTHORIZED - CLEARING TOKENS ====================');
       localStorage.removeItem('auth_token')
       localStorage.removeItem('user_data')
       
