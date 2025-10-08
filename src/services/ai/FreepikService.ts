@@ -958,8 +958,18 @@ export class FreepikService {
       const requestData: any = {};
       
       // Добавляем webhook только если BACKEND_URL настроен
-      if (process.env.BACKEND_URL && process.env.BACKEND_URL !== 'undefined') {
-        requestData.webhook_url = `${process.env.BACKEND_URL}/api/webhooks/freepik`;
+      const backendUrl = process.env.BACKEND_URL || 
+                         process.env.RAILWAY_PUBLIC_DOMAIN || 
+                         process.env.RAILWAY_STATIC_URL ||
+                         'https://aicexaibot-production.up.railway.app';
+                         
+      console.log('🔗 Backend URL for webhook:', backendUrl);
+      
+      if (backendUrl && backendUrl !== 'undefined') {
+        requestData.webhook_url = `${backendUrl}/api/webhooks/freepik`;
+        console.log('✅ Webhook URL set:', requestData.webhook_url);
+      } else {
+        console.log('⚠️ No webhook URL - will use polling mode');
       }
 
       // Обработка специфичных полей для разных моделей
