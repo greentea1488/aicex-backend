@@ -870,16 +870,36 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
     // Небольшая задержка для показа финального статуса
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    if (result.success && result.data?.url) {
+    // Проверяем разные варианты URL в результате
+    let imageUrl = null;
+    if (result.success && result.data) {
+      // Вариант 1: Прямой URL
+      if (result.data.url) {
+        imageUrl = result.data.url;
+      }
+      // Вариант 2: URL в массиве images
+      else if (result.data.images && result.data.images.length > 0 && result.data.images[0].url) {
+        imageUrl = result.data.images[0].url;
+      }
+    }
+
+    console.log('==================== IMAGE URL CHECK ====================');
+    console.log('Result success:', result.success);
+    console.log('Result data:', result.data);
+    console.log('Image URL found:', imageUrl);
+    console.log('===============================================================');
+
+    if (result.success && imageUrl) {
       logger.info('Image generation completed:', {
         service,
         data,
         dataModel: data?.model,
-        resultMetadata: result.data?.metadata
+        resultMetadata: result.data?.metadata,
+        imageUrl
       });
       
       const modelText = data?.model ? ` (${data.model})` : '';
-      await ctx.replyWithPhoto(result.data.url, {
+      await ctx.replyWithPhoto(imageUrl, {
         caption: `✅ <b>Изображение готово!</b>\n\n📝 Промпт: "${prompt}"\n🎨 Сервис: ${service === 'freepik' ? 'Freepik AI' + modelText : 'DALL-E'}\n💰 Потрачено токенов: ${result.tokensUsed}\n⏱️ Время: ${UXHelpers.formatTime(duration)}`,
         parse_mode: "HTML",
         reply_markup: {
@@ -894,7 +914,13 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
       });
       
     } else {
-      await UXHelpers.sendSmartErrorNotification(ctx, result.error);
+      console.log('==================== IMAGE GENERATION FAILED ====================');
+      console.log('Result:', JSON.stringify(result, null, 2));
+      console.log('Image URL:', imageUrl);
+      console.log('===============================================================');
+      
+      const errorMessage = result.error || 'Не удалось получить изображение';
+      await UXHelpers.sendSmartErrorNotification(ctx, errorMessage);
     }
     
     // Обновляем состояние задачи
