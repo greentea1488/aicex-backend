@@ -427,7 +427,16 @@ export class UserAPIController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
 
+      console.log('==================== GET GENERATION HISTORY ====================');
+      console.log('User ID:', userId);
+      console.log('Service:', service);
+      console.log('Page:', page);
+      console.log('Limit:', limit);
+      console.log('Headers:', req.headers);
+      console.log('===============================================================');
+
       if (!userId) {
+        console.log('❌ User not authenticated');
         res.status(401).json({ error: 'User not authenticated' });
         return;
       }
@@ -460,6 +469,12 @@ export class UserAPIController {
         }),
         prisma.generationHistory.count({ where })
       ]);
+
+      console.log('==================== GENERATION HISTORY RESULT ====================');
+      console.log('Total generations:', total);
+      console.log('History count:', history.length);
+      console.log('History:', history);
+      console.log('===============================================================');
 
       logger.info('Generation history fetched:', {
         userId,
@@ -495,7 +510,13 @@ export class UserAPIController {
     try {
       const userId = req.user?.id;
 
+      console.log('==================== GET USER STATS ====================');
+      console.log('User ID:', userId);
+      console.log('Headers:', req.headers);
+      console.log('===============================================================');
+
       if (!userId) {
+        console.log('❌ User not authenticated');
         res.status(401).json({ error: 'User not authenticated' });
         return;
       }
@@ -555,6 +576,14 @@ export class UserAPIController {
           ).service
         : 'Нет';
 
+      console.log('==================== USER STATS RESULT ====================');
+      console.log('Total generations:', totalGenerations);
+      console.log('Tokens spent:', tokensSpent);
+      console.log('Current balance:', user.tokens);
+      console.log('Last generation:', lastGeneration);
+      console.log('Favorite service:', favoriteService);
+      console.log('===============================================================');
+
       logger.info('User stats fetched:', {
         userId,
         totalGenerations,
@@ -575,6 +604,59 @@ export class UserAPIController {
 
     } catch (error) {
       logger.error('Get user stats error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Загружает аватарку пользователя
+   */
+  async uploadAvatar(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { avatarUrl } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+      }
+
+      if (!avatarUrl) {
+        res.status(400).json({ error: 'Avatar URL is required' });
+        return;
+      }
+
+      console.log('==================== UPLOAD AVATAR ====================');
+      console.log('User ID:', userId);
+      console.log('Avatar URL:', avatarUrl);
+      console.log('===============================================================');
+
+      // Обновляем аватарку пользователя
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { avatar: avatarUrl },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          telegramId: true
+        }
+      });
+
+      logger.info('Avatar uploaded successfully:', {
+        userId,
+        avatarUrl,
+        updatedUser
+      });
+
+      res.json({
+        success: true,
+        user: updatedUser
+      });
+
+    } catch (error) {
+      logger.error('Upload avatar error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   }
