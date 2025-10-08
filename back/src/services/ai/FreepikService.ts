@@ -1060,9 +1060,13 @@ export class FreepikService {
         }
       );
 
+      console.log('🎬 Freepik image-to-video FULL response:', JSON.stringify(response.data, null, 2));
+      
       logger.info('🎬 Freepik image-to-video response:', {
         status: response.status,
         taskId: response.data.data?.task_id,
+        selfUrl: response.data.data?.self,
+        webhookUrl: response.data.data?.webhook_url,
         data: response.data
       });
 
