@@ -62,11 +62,11 @@
             <div 
               v-for="generation in generations" 
               :key="generation.id"
-              class="bg-gradient-to-r from-white/20 to-white/10 backdrop-blur-xl border border-white/30 rounded-xl overflow-hidden hover:bg-white/25 hover:border-white/40 hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 group shadow-lg"
+              class="bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-indigo-900/40 backdrop-blur-xl border border-purple-500/30 rounded-xl overflow-hidden hover:from-purple-800/50 hover:via-blue-800/40 hover:to-indigo-800/50 hover:border-purple-400/50 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 group shadow-lg"
             >
               <div class="flex p-4">
                 <!-- Image -->
-                <div class="w-24 h-24 flex-shrink-0 relative group rounded-xl overflow-hidden border border-white/40 shadow-md">
+                <div class="w-24 h-24 flex-shrink-0 relative group rounded-xl overflow-hidden border border-purple-400/40 shadow-md bg-gradient-to-br from-purple-800/20 to-blue-800/20">
                   <img 
                     :src="generation.resultUrl" 
                     :alt="generation.prompt"
@@ -79,7 +79,7 @@
                     @click="downloadImage(generation.resultUrl, generation.prompt)"
                     class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-sm"
                   >
-                    <div class="bg-white/20 backdrop-blur-md rounded-full p-2">
+                    <div class="bg-gradient-to-br from-purple-500/40 to-blue-500/40 backdrop-blur-md rounded-full p-2 border border-purple-400/30">
                       <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                       </svg>
@@ -94,7 +94,7 @@
                     <span class="px-3 py-1 rounded-full text-xs font-medium shadow-sm" :class="getServiceBadgeClass(generation.service)">
                       {{ getServiceName(generation.service) }}
                     </span>
-                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-white/20 to-white/10 text-white border border-white/20">
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-500/30 to-purple-500/30 text-indigo-200 border border-indigo-400/30">
                       {{ generation.type }}
                     </span>
                   </div>
@@ -112,7 +112,7 @@
                       </svg>
                       <span>{{ formatDate(generation.createdAt) }}</span>
                     </div>
-                    <div class="flex items-center gap-1 bg-white/20 border border-white/30 px-2 py-1 rounded-full shadow-sm">
+                    <div class="flex items-center gap-1 bg-gradient-to-r from-amber-500/30 to-yellow-500/30 border border-amber-400/30 px-2 py-1 rounded-full shadow-sm">
                       <svg class="w-3 h-3 text-yellow-300 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                       </svg>
@@ -168,14 +168,14 @@ const getServiceName = (service: string) => {
 
 const getServiceBadgeClass = (service: string) => {
   const classes: Record<string, string> = {
-    'freepik': 'bg-gradient-to-r from-blue-500/30 to-cyan-500/30 text-blue-200 border border-blue-400/30',
-    'dalle': 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-purple-200 border border-purple-400/30',
-    'midjourney': 'bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-green-200 border border-green-400/30',
-    'runway': 'bg-gradient-to-r from-orange-500/30 to-red-500/30 text-orange-200 border border-orange-400/30',
-    'openai': 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 text-indigo-200 border border-indigo-400/30',
-    'kling': 'bg-gradient-to-r from-violet-500/30 to-purple-500/30 text-violet-200 border border-violet-400/30'
+    'freepik': 'bg-gradient-to-r from-blue-600/50 to-cyan-600/50 text-blue-100 border border-blue-500/50 shadow-lg shadow-blue-500/20',
+    'dalle': 'bg-gradient-to-r from-purple-600/50 to-pink-600/50 text-purple-100 border border-purple-500/50 shadow-lg shadow-purple-500/20',
+    'midjourney': 'bg-gradient-to-r from-green-600/50 to-emerald-600/50 text-green-100 border border-green-500/50 shadow-lg shadow-green-500/20',
+    'runway': 'bg-gradient-to-r from-orange-600/50 to-red-600/50 text-orange-100 border border-orange-500/50 shadow-lg shadow-orange-500/20',
+    'openai': 'bg-gradient-to-r from-indigo-600/50 to-purple-600/50 text-indigo-100 border border-indigo-500/50 shadow-lg shadow-indigo-500/20',
+    'kling': 'bg-gradient-to-r from-violet-600/50 to-purple-600/50 text-violet-100 border border-violet-500/50 shadow-lg shadow-violet-500/20'
   }
-  return classes[service] || 'bg-gradient-to-r from-gray-500/30 to-slate-500/30 text-gray-200 border border-gray-400/30'
+  return classes[service] || 'bg-gradient-to-r from-gray-600/50 to-slate-600/50 text-gray-100 border border-gray-500/50 shadow-lg shadow-gray-500/20'
 }
 
 const formatDate = (dateString: string) => {
