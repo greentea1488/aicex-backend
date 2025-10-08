@@ -104,24 +104,24 @@ export const api = {
 
   // Профиль пользователя
   profile: {
-    get: () => apiClient.get<ApiResponse<any>>('/profile'),
-    update: (data: any) => apiClient.put<ApiResponse<any>>('/profile', data)
+    get: () => apiClient.get<ApiResponse<any>>('/api/profile'),
+    update: (data: any) => apiClient.put<ApiResponse<any>>('/api/profile', data)
   },
 
   // Токены
   tokens: {
-    getBalance: () => apiClient.get<ApiResponse<{ tokens: number }>>('/tokens/balance'),
+    getBalance: () => apiClient.get<ApiResponse<{ tokens: number }>>('/api/tokens/balance'),
     getHistory: (page = 1, limit = 20) => 
-      apiClient.get<PaginatedResponse<any>>('/tokens/history', { params: { page, limit } }),
-    getPackages: () => apiClient.get<ApiResponse<{ packages: any[] }>>('/packages')
+      apiClient.get<PaginatedResponse<any>>('/api/tokens/history', { params: { page, limit } }),
+    getPackages: () => apiClient.get<ApiResponse<{ packages: any[] }>>('/api/packages')
   },
 
   // Платежи
   payments: {
     create: (packageId: string) => 
-      apiClient.post<ApiResponse<{ paymentId: string; paymentUrl: string }>>('/payments', { packageId }),
+      apiClient.post<ApiResponse<{ paymentId: string; paymentUrl: string }>>('/api/payments', { packageId }),
     getHistory: (limit = 10) => 
-      apiClient.get<ApiResponse<{ payments: any[] }>>('/payments/history', { params: { limit } })
+      apiClient.get<ApiResponse<{ payments: any[] }>>('/api/payments/history', { params: { limit } })
   },
 
   // Генерация контента
@@ -132,19 +132,19 @@ export const api = {
       style?: string
       aspect_ratio?: string
       quality?: string
-    }) => apiClient.post<ApiResponse<{ taskId: string; estimatedTime: number }>>('/generate/midjourney', data),
+    }) => apiClient.post<ApiResponse<{ taskId: string; estimatedTime: number }>>('/api/generate/midjourney', data),
 
     kling: (data: {
       prompt: string
       duration?: number
       aspect_ratio?: string
-    }) => apiClient.post<ApiResponse<{ taskId: string; estimatedTime: number }>>('/generate/kling', data)
+    }) => apiClient.post<ApiResponse<{ taskId: string; estimatedTime: number }>>('/api/generate/kling', data)
   },
 
   // История генераций
   generations: {
     getHistory: (service?: string, page = 1, limit = 20) => 
-      apiClient.get<PaginatedResponse<any>>('/generations', { 
+      apiClient.get<PaginatedResponse<any>>('/api/generations', { 
         params: { service, page, limit } 
       })
   },
@@ -160,19 +160,19 @@ export const api = {
       memberSince: string
       subscription: string | null
       referrals: number
-    }>>('/stats')
+    }>>('/api/stats')
   },
 
   // Опции сервисов
   services: {
     getOptions: (service: string) => 
-      apiClient.get<ApiResponse<any>>(`/services/${service}/options`)
+      apiClient.get<ApiResponse<any>>(`/api/services/${service}/options`)
   },
 
   // Аватарка
   avatar: {
     upload: (avatarUrl: string) => 
-      apiClient.post<ApiResponse<{ user: any }>>('/avatar/upload', { avatarUrl })
+      apiClient.post<ApiResponse<{ user: any }>>('/api/avatar/upload', { avatarUrl })
   }
 }
 
