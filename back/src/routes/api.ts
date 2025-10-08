@@ -63,6 +63,11 @@ router.get('/stats', async (req, res) => {
   await userController.getUserStats(req, res);
 });
 
+// Загрузка аватарки
+router.post('/avatar/upload', async (req, res) => {
+  await userController.uploadAvatar(req, res);
+});
+
 // Опции сервисов
 router.get('/services/:service/options', async (req, res) => {
   await userController.getServiceOptions(req, res);

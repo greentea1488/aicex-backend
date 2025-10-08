@@ -142,6 +142,12 @@ export const api = {
   services: {
     getOptions: (service: string) => 
       apiClient.get<ApiResponse<any>>(`/services/${service}/options`)
+  },
+
+  // Аватарка
+  avatar: {
+    upload: (avatarUrl: string) => 
+      apiClient.post<ApiResponse<{ user: any }>>('/avatar/upload', { avatarUrl })
   }
 }
 

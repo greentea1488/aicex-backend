@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import type { User, ChatHistory, Payment, TokenHistory } from "@/types";
 import { getUserProfile, getUserTokens, getUserSubscription } from "@/http/endpoints";
 import { getTelegramUser } from "@/config/development";
+import api from "@/http/api";
 
 export const useStore = defineStore("store", () => {
   const user = ref<User | null>(null);
@@ -13,6 +14,23 @@ export const useStore = defineStore("store", () => {
   const isSubscribed = computed(() => user.value?.subscription !== null && user.value?.subscription !== undefined);
 
   // User actions
+  const uploadAvatar = async (avatarUrl: string) => {
+    try {
+      console.log('🔄 Uploading avatar:', avatarUrl);
+      const response = await api.avatar.upload(avatarUrl);
+      console.log('✅ Avatar uploaded:', response.data);
+      
+      if (response.data.success && response.data.user) {
+        user.value = { ...user.value, ...response.data.user } as User;
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error uploading avatar:', error);
+      throw error;
+    }
+  };
+
   const fetchUserProfile = async () => {
     try {
       console.log('🔄 Fetching user profile from API...');
@@ -48,6 +66,16 @@ export const useStore = defineStore("store", () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         } as any;
+
+        // Автоматически загружаем аватарку если она есть
+        if (tgUser.photo_url) {
+          try {
+            await uploadAvatar(tgUser.photo_url);
+            console.log('✅ Avatar uploaded from Telegram');
+          } catch (error) {
+            console.error('❌ Failed to upload avatar from Telegram:', error);
+          }
+        }
         console.log('🎭 Created fallback user from Telegram data:', user.value);
         return user.value;
       }
@@ -107,6 +135,7 @@ export const useStore = defineStore("store", () => {
     payments,
     tokenHistory,
     isSubscribed,
+    uploadAvatar,
     fetchUserProfile,
     updateUserTokens,
     updateUserSubscription,
