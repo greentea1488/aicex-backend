@@ -929,11 +929,20 @@ export class FreepikService {
    */
   async generateVideoFromImage(imageUrl: string, prompt?: string, model: keyof typeof FREEPIK_VIDEO_MODELS = 'kling_v2_5_pro', duration?: number): Promise<FreepikResponse> {
     try {
+      console.log('🎬 generateVideoFromImage called with:', { model, imageUrl: imageUrl.substring(0, 50), prompt });
+      
       const modelConfig = FREEPIK_VIDEO_MODELS[model];
       
       if (!modelConfig) {
+        console.error('❌ Unknown video model:', model);
         throw new Error(`Unknown video model: ${model}`);
       }
+      
+      console.log('🎬 Model config found:', { 
+        name: modelConfig.name, 
+        endpoint: modelConfig.endpoint,
+        baseUrl: this.baseUrl 
+      });
       
       logger.info('🎬 Freepik image-to-video generation started:', { 
         imageUrl: imageUrl.substring(0, 50) + '...',
@@ -941,6 +950,7 @@ export class FreepikService {
         model: modelConfig.name,
         modelId: model,
         endpoint: modelConfig.endpoint,
+        baseUrl: this.baseUrl,
         duration
       });
 
@@ -1055,12 +1065,23 @@ export class FreepikService {
       };
 
     } catch (error: any) {
+      console.error('🎬 Freepik image-to-video error:', {
+        model,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+      
       logger.error('🎬 Freepik image-to-video error:', {
         model,
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        message: error.message
+        message: error.message,
+        url: error.config?.url
       });
       
       return {
