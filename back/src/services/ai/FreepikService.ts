@@ -1204,6 +1204,17 @@ export class FreepikService {
       };
 
     } catch (error: any) {
+      console.error('🔍 Task status check ERROR:', {
+        taskId,
+        type,
+        model,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        url: error.config?.url
+      });
+      
       logger.error('Task status check failed:', error.response?.data || error.message);
       
       return {
