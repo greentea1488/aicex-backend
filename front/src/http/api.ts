@@ -19,6 +19,7 @@ apiClient.interceptors.request.use(
     console.log('Method:', config.method);
     console.log('Token found:', !!token);
     console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'none');
+    console.log('localStorage auth_token:', localStorage.getItem('auth_token') ? 'Present' : 'None');
     console.log('===============================================================');
     
     if (token && config.headers) {
