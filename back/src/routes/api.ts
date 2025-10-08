@@ -14,6 +14,11 @@ router.get('/packages', async (req, res) => {
   await userController.getTokenPackages(req, res);
 });
 
+// Auth endpoints
+router.get('/auth/myself', async (req, res) => {
+  await userController.getProfile(req, res);
+});
+
 // Защищенные роуты (требуют авторизации)
 router.use(authMiddleware);
 

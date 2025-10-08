@@ -35,10 +35,10 @@ $api.interceptors.request.use(async config => {
       console.log('🔐 Attempting auth with:', {
         initDataLength: initData?.length,
         referralCode,
-        authURL: `${baseURL}/api/auth/auth`
+        authURL: `${baseURL}/api/auth/telegram`
       });
 
-      const { data: tokensData } = await axios.post(`${baseURL}/api/auth/auth`, {
+      const { data: tokensData } = await axios.post(`${baseURL}/api/auth/telegram`, {
         initData,
         referralCode,
       });
@@ -74,7 +74,7 @@ $api.interceptors.request.use(async config => {
 
       const baseURL = import.meta.env.VITE_APP_HOST_URL || import.meta.env.VITE_BACKEND_URL || 'https://aicexaibot-production.up.railway.app';
       
-      const { data: tokensData } = await axios.post(`${baseURL}/api/auth/auth`, {
+      const { data: tokensData } = await axios.post(`${baseURL}/api/auth/telegram`, {
         initData,
         referralCode,
       });

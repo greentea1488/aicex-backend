@@ -4,7 +4,7 @@ import type { User, Payment, TokenHistory, ChatHistory, ReferralStats, Subscript
 
 // Auth endpoints
 export const authUser = async (data: { initData: string; referralCode: string }): Promise<AxiosResponse> => {
-  return $api.post("/api/auth/auth", data);
+  return $api.post("/api/auth/telegram", data);
 };
 
 export const getMyself = async (): Promise<AxiosResponse<User>> => {
