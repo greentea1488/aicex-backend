@@ -955,9 +955,12 @@ export class FreepikService {
         duration
       });
 
-      const requestData: any = {
-        webhook_url: `${process.env.BACKEND_URL}/api/webhooks/freepik`
-      };
+      const requestData: any = {};
+      
+      // Добавляем webhook только если BACKEND_URL настроен
+      if (process.env.BACKEND_URL && process.env.BACKEND_URL !== 'undefined') {
+        requestData.webhook_url = `${process.env.BACKEND_URL}/api/webhooks/freepik`;
+      }
 
       // Обработка специфичных полей для разных моделей
       switch (model) {
