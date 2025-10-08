@@ -1151,19 +1151,18 @@ export class FreepikService {
       // Для изображений используем Mystic endpoint по умолчанию
       let endpoint = `/ai/mystic/${taskId}`;
       
-      // Для видео НЕ ИСПОЛЬЗУЕМ /ai/image-to-video/, только название модели!
-      // Согласно документации: GET /{model}/{task-id}
+      // Для видео используем ТОТ ЖЕ endpoint что и для создания + task_id
+      // Согласно документации: GET /ai/image-to-video/{model}/{task-id}
       if (type === 'video' && model) {
         const modelConfig = FREEPIK_VIDEO_MODELS[model as keyof typeof FREEPIK_VIDEO_MODELS];
         if (modelConfig) {
-          // Извлекаем только название модели из endpoint (последняя часть после последнего /)
-          const modelName = modelConfig.endpoint.split('/').pop();
-          endpoint = `/ai/${modelName}/${taskId}`;
+          // Используем тот же endpoint + task_id
+          endpoint = `${modelConfig.endpoint}/${taskId}`;
         } else {
-          endpoint = `/ai/kling-v2-1-std/${taskId}`;
+          endpoint = `/ai/image-to-video/kling-v2-1-std/${taskId}`;
         }
       } else if (type === 'video') {
-        endpoint = `/ai/kling-v2-1-std/${taskId}`;
+        endpoint = `/ai/image-to-video/kling-v2-1-std/${taskId}`;
       }
 
       const fullUrl = `${this.baseUrl}${endpoint}`;
