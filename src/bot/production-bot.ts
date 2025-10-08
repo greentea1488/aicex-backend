@@ -234,6 +234,7 @@ function getAllKlingModelsMenu(page: number = 0) {
 const userStates = new Map<number, {
   state: string;
   service: string;
+  model?: string;
   data?: any;
 }>();
 

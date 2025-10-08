@@ -1093,7 +1093,7 @@ export class FreepikService {
       id: key,
       name: model.name,
       description: model.description,
-      maxDuration: model.maxDuration,
+      supportedDurations: model.supportedDurations || [],
       resolution: model.resolution
     }));
   }

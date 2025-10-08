@@ -22,6 +22,9 @@ export interface GenerationTask {
   type: 'image' | 'video' | 'chat';
   service: string;
   prompt: string;
+  model?: string;
+  imageUrl?: string;
+  taskId?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress: number;
   result?: any;
