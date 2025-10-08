@@ -466,6 +466,15 @@ export class FreepikService {
     let taskId = response.data.data?.task_id || response.data.task_id || response.data.id;
     let images = response.data.data?.generated || response.data.generated || response.data.images;
     let status = response.data.data?.status || response.data.status;
+    
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если статус CREATED и generated пустой, но есть images в data - используем images!
+    if (status === 'CREATED' && (!images || images.length === 0)) {
+      images = response.data.data?.images || response.data.images;
+      if (images && images.length > 0) {
+        status = 'COMPLETED'; // Обновляем статус
+        console.log('🔥 FIXED: Found images in data.images, updating status to COMPLETED');
+      }
+    }
 
     console.log('==================== PARSED FREEPIK RESPONSE ====================');
     console.log('Task ID:', taskId);
