@@ -135,42 +135,44 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2_1_pro: {
     name: 'Kling 2.1 Pro',
     description: 'Премиум генерация видео из изображений',
-    endpoint: '/ai/image-to-video/kling-v2-1-pro',
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-pro',
     maxDuration: 10,
     resolution: '1080p'
   },
   kling_v2_1_std: {
     name: 'Kling 2.1 Standard',
     description: 'Стандартная генерация видео из изображений',
-    endpoint: '/ai/image-to-video/kling-v2-1-std',
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-std',
     maxDuration: 5,
     resolution: '720p'
   },
   kling_v2_5_pro: {
     name: 'Kling 2.5 Turbo Pro',
-    description: 'Быстрая премиум генерация видео',
-    endpoint: '/ai/image-to-video/kling-v2-5-pro',
+    description: 'Кинематографические видео с улучшенным движением и детализацией',
+    endpoint: '/v1/ai/image-to-video/kling-v2-5-pro',
     maxDuration: 10,
-    resolution: '1080p'
+    minDuration: 5,
+    resolution: '1080p',
+    supportsDuration: [5, 10] // Поддерживает 5s и 10s согласно документации
   },
   minimax_hailuo_1080p: {
     name: 'MiniMax Hailuo 1080p',
     description: 'Высококачественное видео из текста/изображения',
-    endpoint: '/ai/text-image-to-video/minimax-hailuo-02-1080p',
+    endpoint: '/v1/ai/text-image-to-video/minimax-hailuo-02-1080p',
     maxDuration: 6,
     resolution: '1080p'
   },
   pixverse_v5: {
     name: 'PixVerse V5',
     description: 'Универсальная генерация видео',
-    endpoint: '/ai/image-to-video/pixverse-v5',
+    endpoint: '/v1/ai/image-to-video/pixverse-v5',
     maxDuration: 4,
     resolution: '720p'
   },
   seedance_pro_1080p: {
     name: 'Seedance Pro 1080p',
     description: 'Профессиональная генерация видео',
-    endpoint: '/ai/image-to-video/seedance-pro-1080p',
+    endpoint: '/v1/ai/image-to-video/seedance-pro-1080p',
     maxDuration: 4,
     resolution: '1080p'
   }
@@ -804,14 +806,15 @@ export class FreepikService {
   /**
    * Генерация видео из изображения через Freepik API
    */
-  async generateVideoFromImage(imageUrl: string, prompt?: string, model: keyof typeof FREEPIK_VIDEO_MODELS = 'kling_v2_1_std'): Promise<FreepikResponse> {
+  async generateVideoFromImage(imageUrl: string, prompt?: string, model: keyof typeof FREEPIK_VIDEO_MODELS = 'kling_v2_1_std', duration?: number): Promise<FreepikResponse> {
     try {
       const modelConfig = FREEPIK_VIDEO_MODELS[model];
       
-      logger.info('Freepik image-to-video generation started:', { 
+      logger.info('🎬 Freepik image-to-video generation started:', { 
         imageUrl: imageUrl.substring(0, 50) + '...',
         prompt: prompt?.substring(0, 100),
-        model: modelConfig.name
+        model: modelConfig.name,
+        duration
       });
 
       const requestData: any = {
@@ -825,8 +828,16 @@ export class FreepikService {
       }
 
       // Настройки продолжительности для разных моделей
-      if (modelConfig.maxDuration) {
-        requestData.duration = Math.min(modelConfig.maxDuration, 10);
+      if (model === 'kling_v2_5_pro') {
+        // Kling v2.5 Pro поддерживает только 5s и 10s
+        if (duration && (duration === 5 || duration === 10)) {
+          requestData.duration = duration;
+        } else {
+          requestData.duration = 5; // По умолчанию 5 секунд
+        }
+      } else if (modelConfig.maxDuration) {
+        // Для других моделей используем maxDuration
+        requestData.duration = duration ? Math.min(duration, modelConfig.maxDuration) : modelConfig.maxDuration;
       }
 
       const response = await axios.post(
@@ -900,14 +911,21 @@ export class FreepikService {
   /**
    * Проверка статуса задачи (универсальный метод)
    */
-  async checkTaskStatus(taskId: string, type: 'image' | 'video' = 'image'): Promise<FreepikResponse> {
+  async checkTaskStatus(taskId: string, type: 'image' | 'video' = 'image', model?: string): Promise<FreepikResponse> {
     try {
       // Для изображений используем Mystic endpoint по умолчанию
-      let endpoint = `/ai/mystic/${taskId}`;
+      let endpoint = `/v1/ai/mystic/${taskId}`;
       
-      // Для видео используем Kling endpoint по умолчанию
-      if (type === 'video') {
-        endpoint = `/ai/image-to-video/kling-v2-1-std/${taskId}`;
+      // Для видео используем соответствующий endpoint модели
+      if (type === 'video' && model) {
+        const modelConfig = FREEPIK_VIDEO_MODELS[model as keyof typeof FREEPIK_VIDEO_MODELS];
+        if (modelConfig) {
+          endpoint = `${modelConfig.endpoint}/${taskId}`;
+        } else {
+          endpoint = `/v1/ai/image-to-video/kling-v2-1-std/${taskId}`;
+        }
+      } else if (type === 'video') {
+        endpoint = `/v1/ai/image-to-video/kling-v2-1-std/${taskId}`;
       }
 
       const response = await axios.get(
