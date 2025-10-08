@@ -1660,11 +1660,23 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
     const prompt = ctx.message.caption || "Create a cinematic video from this image";
     let model = userState.model || 'kling_v2_5_pro';
     
-    // Конвертируем callback ID в FreepikService ID
+    // Конвертируем callback ID в FreepikService ID  
     const modelMapping: Record<string, string> = {
       'kling-v2-1-master': 'kling_v2_1_master',
       'kling-pro-v2-1': 'kling_v2_1_pro',
-      'kling-std-v2-1': 'kling_v2_1_std'
+      'kling-std-v2-1': 'kling_v2_1_std',
+      'kling-v2-5-pro': 'kling_v2_5_pro',
+      'kling-v2': 'kling_v2',
+      'kling-pro-1-6': 'kling_pro_1_6',
+      'kling-std-1-6': 'kling_std_1_6',
+      'kling-elements-pro-1-6': 'kling_elements_pro_1_6',
+      'kling-elements-std-1-6': 'kling_elements_std_1_6',
+      'minimax-hailuo-768p': 'minimax_hailuo_768p',
+      'minimax-hailuo-1080p': 'minimax_hailuo_1080p',
+      'pixverse-v5': 'pixverse_v5',
+      'pixverse-v5-transition': 'pixverse_v5_transition',
+      'seedance-pro-1080p': 'seedance_pro_1080p',
+      'wan-v2-2-720p': 'wan_v2_2_720p'
     };
     model = modelMapping[model] || model;
     
@@ -1782,14 +1794,25 @@ async function handleGPTVision(ctx: any) {
 
 function getVideoModelName(modelId: string): string {
   const models: Record<string, string> = {
-    'kling_v2_5_pro': 'Kling 2.5 Turbo Pro',
+    'kling_v2_5_pro': 'Kling 2.5 Pro',
+    'kling_v2_1_master': 'Kling 2.1 Master',
     'kling_v2_1_pro': 'Kling 2.1 Pro',
     'kling_v2_1_std': 'Kling 2.1 Standard',
-    'kling_v2_1_master': 'Kling 2.1 Master',
-    'kling-v2-1-master': 'Kling 2.1 Master',
+    'kling_v2': 'Kling v2',
+    'kling_pro_1_6': 'Kling Pro 1.6',
+    'kling_std_1_6': 'Kling Std 1.6',
+    'kling_elements_pro_1_6': 'Kling Elements Pro 1.6',
+    'kling_elements_std_1_6': 'Kling Elements Std 1.6',
+    'minimax_hailuo_768p': 'MiniMax Hailuo 768p',
     'minimax_hailuo_1080p': 'MiniMax Hailuo 1080p',
     'pixverse_v5': 'PixVerse V5',
-    'seedance_pro_1080p': 'Seedance Pro 1080p'
+    'pixverse_v5_transition': 'PixVerse V5 Transition',
+    'seedance_pro_1080p': 'Seedance Pro 1080p',
+    'wan_v2_2_720p': 'Wan v2.2 720p',
+    // Поддержка старых ID с дефисами
+    'kling-v2-1-master': 'Kling 2.1 Master',
+    'kling-pro-v2-1': 'Kling 2.1 Pro',
+    'kling-std-v2-1': 'Kling 2.1 Standard'
   };
   return models[modelId] || modelId;
 }

@@ -132,56 +132,170 @@ export const FREEPIK_ALTERNATIVE_ENDPOINTS = [
 
 // Модели для генерации видео (из Freepik API - заменяют Runway и Kling)
 export const FREEPIK_VIDEO_MODELS = {
-  kling_v2_1_pro: {
-    name: 'Kling 2.1 Pro',
-    description: 'Премиум генерация видео из изображений',
-    endpoint: '/v1/ai/image-to-video/kling-v2-1-pro',
-    maxDuration: 10,
+  // 🎬 Kling v2.5 Pro - Новейшая модель
+  kling_v2_5_pro: {
+    name: 'Kling 2.5 Pro',
+    description: 'Кинематографические видео с улучшенным движением и детализацией',
+    endpoint: '/v1/ai/image-to-video/kling-v2-5-pro',
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration'],
     resolution: '1080p'
   },
-  kling_v2_1_std: {
-    name: 'Kling 2.1 Standard',
-    description: 'Стандартная генерация видео из изображений',
-    endpoint: '/v1/ai/image-to-video/kling-v2-1-std',
-    maxDuration: 5,
-    resolution: '720p'
+  
+  // 🎬 MiniMax Hailuo 02 - 768p
+  minimax_hailuo_768p: {
+    name: 'MiniMax Hailuo 02 768p',
+    description: 'Качество 768p от Minimax',
+    endpoint: '/v1/ai/image-to-video/minimax-hailuo-02-768p',
+    supportedDurations: [6, 10],
+    requiredFields: ['prompt', 'first_frame_image'],
+    optionalFields: ['last_frame_image', 'prompt_optimizer', 'duration'],
+    resolution: '768p'
   },
+  
+  // 🎬 MiniMax Hailuo 02 - 1080p
+  minimax_hailuo_1080p: {
+    name: 'MiniMax Hailuo 02 1080p',
+    description: 'Качество 1080p от Minimax (только 6 сек)',
+    endpoint: '/v1/ai/image-to-video/minimax-hailuo-02-1080p',
+    supportedDurations: [6],
+    requiredFields: ['prompt', 'first_frame_image'],
+    optionalFields: ['last_frame_image', 'prompt_optimizer', 'duration'],
+    resolution: '1080p'
+  },
+  
+  // 🎬 Kling v2.1 Master
   kling_v2_1_master: {
     name: 'Kling 2.1 Master',
     description: 'Мастер версия Kling v2.1 с продвинутыми возможностями',
     endpoint: '/v1/ai/image-to-video/kling-v2-1-master',
-    maxDuration: 10,
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
     resolution: '1080p'
   },
-  kling_v2_5_pro: {
-    name: 'Kling 2.5 Turbo Pro',
-    description: 'Кинематографические видео с улучшенным движением и детализацией',
-    endpoint: '/v1/ai/image-to-video/kling-v2-5-pro',
-    maxDuration: 10,
-    minDuration: 5,
-    resolution: '1080p',
-    supportsDuration: [5, 10] // Поддерживает 5s и 10s согласно документации
-  },
-  minimax_hailuo_1080p: {
-    name: 'MiniMax Hailuo 1080p',
-    description: 'Высококачественное видео из текста/изображения',
-    endpoint: '/v1/ai/text-image-to-video/minimax-hailuo-02-1080p',
-    maxDuration: 6,
+  
+  // 🎬 Kling Pro v2.1
+  kling_v2_1_pro: {
+    name: 'Kling Pro v2.1',
+    description: 'Премиум генерация видео из изображений',
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-pro',
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['image_tail', 'prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
     resolution: '1080p'
   },
-  pixverse_v5: {
-    name: 'PixVerse V5',
-    description: 'Универсальная генерация видео',
-    endpoint: '/v1/ai/image-to-video/pixverse-v5',
-    maxDuration: 4,
+  
+  // 🎬 Kling Std v2.1
+  kling_v2_1_std: {
+    name: 'Kling Std v2.1',
+    description: 'Стандартная генерация видео из изображений',
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-std',
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
     resolution: '720p'
   },
+  
+  // 🎬 PixVerse V5
+  pixverse_v5: {
+    name: 'PixVerse V5',
+    description: 'Универсальная генерация видео с разными стилями',
+    endpoint: '/v1/ai/image-to-video/pixverse-v5',
+    supportedDurations: [5, 8],
+    supportedResolutions: ['360p', '540p', '720p', '1080p'],
+    requiredFields: ['prompt', 'image_url'],
+    optionalFields: ['resolution', 'duration', 'negative_prompt', 'style', 'seed'],
+    resolution: '1080p'
+  },
+  
+  // 🎬 PixVerse V5 Transition
+  pixverse_v5_transition: {
+    name: 'PixVerse V5 Transition',
+    description: 'Переходы и анимации между двумя изображениями',
+    endpoint: '/v1/ai/image-to-video/pixverse-v5-transition',
+    supportedDurations: [5, 8],
+    requiredFields: ['start_image_url', 'end_image_url'],
+    optionalFields: ['resolution', 'duration', 'prompt'],
+    resolution: '1080p'
+  },
+  
+  // 🎬 Kling v2
+  kling_v2: {
+    name: 'Kling v2',
+    description: 'Базовая версия Kling v2',
+    endpoint: '/v1/ai/image-to-video/kling-v2',
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration'],
+    resolution: '720p'
+  },
+  
+  // 🎬 Kling Pro 1.6
+  kling_pro_1_6: {
+    name: 'Kling Pro 1.6',
+    description: 'Профессиональная версия 1.6',
+    endpoint: '/v1/ai/image-to-video/kling-pro',
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
+    resolution: '1080p'
+  },
+  
+  // 🎬 Kling Std 1.6
+  kling_std_1_6: {
+    name: 'Kling Std 1.6',
+    description: 'Стандартная версия 1.6',
+    endpoint: '/v1/ai/image-to-video/kling-std',
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
+    resolution: '720p'
+  },
+  
+  // 🎬 Kling Elements Pro 1.6
+  kling_elements_pro_1_6: {
+    name: 'Kling Elements Pro 1.6',
+    description: 'Работа с несколькими изображениями (до 4)',
+    endpoint: '/v1/ai/image-to-video/kling-elements-pro',
+    supportedDurations: [5, 10],
+    requiredFields: ['images'],
+    optionalFields: ['prompt', 'negative_prompt', 'duration', 'aspect_ratio'],
+    resolution: '1080p'
+  },
+  
+  // 🎬 Kling Elements Std 1.6
+  kling_elements_std_1_6: {
+    name: 'Kling Elements Std 1.6',
+    description: 'Стандартная версия Elements (до 4 изображений)',
+    endpoint: '/v1/ai/image-to-video/kling-elements-std',
+    supportedDurations: [5, 10],
+    requiredFields: ['images'],
+    optionalFields: ['prompt', 'negative_prompt', 'duration', 'aspect_ratio'],
+    resolution: '720p'
+  },
+  
+  // 🎬 Seedance Pro 1080p
   seedance_pro_1080p: {
     name: 'Seedance Pro 1080p',
     description: 'Профессиональная генерация видео',
     endpoint: '/v1/ai/image-to-video/seedance-pro-1080p',
-    maxDuration: 4,
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['prompt', 'duration'],
     resolution: '1080p'
+  },
+  
+  // 🎬 Wan v2.2 720p
+  wan_v2_2_720p: {
+    name: 'Wan v2.2 720p',
+    description: 'Модель Wan для генерации видео',
+    endpoint: '/v1/ai/image-to-video/wan-v2-2-720p',
+    supportedDurations: [5, 10],
+    requiredFields: ['image'],
+    optionalFields: ['prompt', 'duration'],
+    resolution: '720p'
   }
 };
 
@@ -813,39 +927,98 @@ export class FreepikService {
   /**
    * Генерация видео из изображения через Freepik API
    */
-  async generateVideoFromImage(imageUrl: string, prompt?: string, model: keyof typeof FREEPIK_VIDEO_MODELS = 'kling_v2_1_std', duration?: number): Promise<FreepikResponse> {
+  async generateVideoFromImage(imageUrl: string, prompt?: string, model: keyof typeof FREEPIK_VIDEO_MODELS = 'kling_v2_5_pro', duration?: number): Promise<FreepikResponse> {
     try {
       const modelConfig = FREEPIK_VIDEO_MODELS[model];
+      
+      if (!modelConfig) {
+        throw new Error(`Unknown video model: ${model}`);
+      }
       
       logger.info('🎬 Freepik image-to-video generation started:', { 
         imageUrl: imageUrl.substring(0, 50) + '...',
         prompt: prompt?.substring(0, 100),
         model: modelConfig.name,
+        modelId: model,
+        endpoint: modelConfig.endpoint,
         duration
       });
 
       const requestData: any = {
-        image: imageUrl,
         webhook_url: `${process.env.BACKEND_URL}/api/webhooks/freepik`
       };
 
-      // Добавляем prompt если есть
-      if (prompt) {
-        requestData.prompt = prompt;
+      // Обработка специфичных полей для разных моделей
+      switch (model) {
+        // MiniMax модели требуют prompt и first_frame_image
+        case 'minimax_hailuo_768p':
+        case 'minimax_hailuo_1080p':
+          requestData.prompt = prompt || 'Create a cinematic video';
+          requestData.first_frame_image = imageUrl;
+          requestData.prompt_optimizer = true;
+          // MiniMax 1080p поддерживает только 6 секунд
+          if (model === 'minimax_hailuo_1080p') {
+            requestData.duration = 6;
+          } else {
+            requestData.duration = duration && [6, 10].includes(duration) ? duration : 6;
+          }
+          break;
+
+        // PixVerse V5 требует prompt и image_url
+        case 'pixverse_v5':
+          requestData.prompt = prompt || 'Create a cinematic video';
+          requestData.image_url = imageUrl;
+          requestData.resolution = '1080p';
+          requestData.duration = duration && [5, 8].includes(duration) ? duration : 5;
+          break;
+
+        // PixVerse V5 Transition требует start_image_url и end_image_url
+        case 'pixverse_v5_transition':
+          requestData.start_image_url = imageUrl;
+          requestData.end_image_url = imageUrl; // Можно добавить второе изображение позже
+          if (prompt) requestData.prompt = prompt;
+          requestData.duration = duration && [5, 8].includes(duration) ? duration : 5;
+          break;
+
+        // Kling Elements требуют массив images
+        case 'kling_elements_pro_1_6':
+        case 'kling_elements_std_1_6':
+          requestData.images = [imageUrl];
+          if (prompt) requestData.prompt = prompt;
+          requestData.duration = duration && [5, 10].includes(duration) ? String(duration) : "5";
+          requestData.aspect_ratio = 'widescreen_16_9';
+          break;
+
+        // Все остальные Kling модели используют image
+        case 'kling_v2_5_pro':
+          requestData.image = imageUrl;
+          if (prompt) requestData.prompt = prompt;
+          requestData.cfg_scale = 0.5;
+          // Kling v2.5 Pro поддерживает только 5s и 10s
+          requestData.duration = duration && [5, 10].includes(duration) ? String(duration) : "5";
+          break;
+
+        default:
+          // Для всех остальных моделей (Kling Pro/Std 1.6, 2.1, v2, Seedance, Wan)
+          requestData.image = imageUrl;
+          if (prompt) requestData.prompt = prompt;
+          
+          // Добавляем cfg_scale для Kling моделей
+          if (model.includes('kling')) {
+            requestData.cfg_scale = 0.5;
+          }
+          
+          // Обрабатываем duration
+          if (modelConfig.supportedDurations) {
+            const validDuration = duration && modelConfig.supportedDurations.includes(duration) 
+              ? duration 
+              : modelConfig.supportedDurations[0];
+            requestData.duration = String(validDuration);
+          }
+          break;
       }
 
-      // Настройки продолжительности для разных моделей
-      if (model === 'kling_v2_5_pro') {
-        // Kling v2.5 Pro поддерживает только 5s и 10s
-        if (duration && (duration === 5 || duration === 10)) {
-          requestData.duration = duration;
-        } else {
-          requestData.duration = 5; // По умолчанию 5 секунд
-        }
-      } else if (modelConfig.maxDuration) {
-        // Для других моделей используем maxDuration
-        requestData.duration = duration ? Math.min(duration, modelConfig.maxDuration) : modelConfig.maxDuration;
-      }
+      logger.info('🎬 Request data:', { model, requestData: { ...requestData, image: requestData.image?.substring(0, 50) + '...' } });
 
       const response = await axios.post(
         `${this.baseUrl}${modelConfig.endpoint}`,
@@ -859,7 +1032,11 @@ export class FreepikService {
         }
       );
 
-      logger.info('Freepik image-to-video response:', response.data);
+      logger.info('🎬 Freepik image-to-video response:', {
+        status: response.status,
+        taskId: response.data.data?.task_id,
+        data: response.data
+      });
 
       return {
         success: true,
@@ -871,7 +1048,13 @@ export class FreepikService {
       };
 
     } catch (error: any) {
-      logger.error('Freepik image-to-video error:', error.response?.data || error.message);
+      logger.error('🎬 Freepik image-to-video error:', {
+        model,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
       
       return {
         success: false,
