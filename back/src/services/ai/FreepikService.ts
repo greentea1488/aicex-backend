@@ -1018,10 +1018,17 @@ export class FreepikService {
           break;
       }
 
-      logger.info('🎬 Request data:', { model, requestData: { ...requestData, image: requestData.image?.substring(0, 50) + '...' } });
+      const fullUrl = `${this.baseUrl}${modelConfig.endpoint}`;
+      
+      logger.info('🎬 Request data:', { 
+        model, 
+        endpoint: modelConfig.endpoint,
+        fullUrl,
+        requestData: { ...requestData, image: requestData.image?.substring(0, 50) + '...' } 
+      });
 
       const response = await axios.post(
-        `${this.baseUrl}${modelConfig.endpoint}`,
+        fullUrl,
         requestData,
         {
           headers: {
