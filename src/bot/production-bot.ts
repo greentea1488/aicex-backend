@@ -1715,6 +1715,7 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
     if (result.success && result.data?.id) {
       // Сохраняем задачу в очередь
       const task = await taskQueue.addTask({
+        id: `video_${Date.now()}_${userId}`,
         userId,
         service: 'freepik',
         type: 'video',
@@ -1722,7 +1723,9 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
         model,
         imageUrl,
         taskId: result.data.id,
-        status: 'processing'
+        status: 'processing',
+        progress: 0,
+        createdAt: new Date()
       });
 
       await ctx.reply(`✅ <b>Видео создается!</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n⏱️ Время: ${UXHelpers.formatTime(duration)}\n\n🔄 Отслеживайте прогресс в разделе "Мои задачи"`,
