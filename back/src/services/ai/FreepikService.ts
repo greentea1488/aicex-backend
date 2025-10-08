@@ -958,14 +958,19 @@ export class FreepikService {
       const requestData: any = {};
       
       // Добавляем webhook только если BACKEND_URL настроен
-      const backendUrl = process.env.BACKEND_URL || 
-                         process.env.RAILWAY_PUBLIC_DOMAIN || 
-                         process.env.RAILWAY_STATIC_URL ||
-                         'https://aicexaibot-production.up.railway.app';
+      let backendUrl = process.env.BACKEND_URL || 
+                       process.env.RAILWAY_PUBLIC_DOMAIN || 
+                       process.env.RAILWAY_STATIC_URL ||
+                       'https://aicexaibot-production.up.railway.app';
+      
+      // Добавляем https:// если отсутствует
+      if (backendUrl && !backendUrl.startsWith('http://') && !backendUrl.startsWith('https://')) {
+        backendUrl = `https://${backendUrl}`;
+      }
                          
       console.log('🔗 Backend URL for webhook:', backendUrl);
       
-      if (backendUrl && backendUrl !== 'undefined') {
+      if (backendUrl && backendUrl !== 'undefined' && backendUrl !== 'https://undefined') {
         requestData.webhook_url = `${backendUrl}/api/webhooks/freepik`;
         console.log('✅ Webhook URL set:', requestData.webhook_url);
       } else {
