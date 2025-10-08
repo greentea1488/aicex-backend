@@ -632,14 +632,17 @@ export class UserAPIController {
       });
 
       res.json({
-        tokens: user.tokens,
-        totalGenerations,
-        tokensSpent,
-        lastGeneration: lastGeneration?.createdAt,
-        favoriteService,
-        memberSince: user.createdAt,
-        subscription: user.subscription,
-        referrals: user.friendsReferred
+        success: true,
+        data: {
+          tokens: user.tokens,
+          totalGenerations,
+          tokensSpent,
+          lastGeneration: lastGeneration?.createdAt,
+          favoriteService,
+          memberSince: user.createdAt,
+          subscription: user.subscription,
+          referrals: user.friendsReferred
+        }
       });
 
     } catch (error) {

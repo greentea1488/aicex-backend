@@ -34,10 +34,17 @@ onMounted(async () => {
   
   // Загружаем статистику
   try {
+    console.log('📊 Loading user stats...')
     const response = await api.stats.get()
-    if (response.data.success) {
+    console.log('📊 Stats response:', response.data)
+    
+    if (response.data?.success && response.data?.data) {
       stats.value = response.data.data
       console.log('📊 User stats loaded:', stats.value)
+    } else if (response.data && !response.data.success) {
+      // Fallback: если API возвращает данные напрямую без success обертки
+      stats.value = response.data
+      console.log('📊 User stats loaded (fallback):', stats.value)
     }
   } catch (error) {
     console.error('Error loading user stats:', error)
