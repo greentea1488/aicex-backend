@@ -107,7 +107,7 @@ export class RunwayService {
           prompt_image: imageUrl,
           prompt_text: prompt || '',
           duration: options?.duration || 5,
-          resolution: options?.resolution || '1280x768',
+          ratio: options?.ratio || '1280:720',
           seed: options?.seed,
           watermark: options?.watermark !== false
         },
@@ -369,21 +369,21 @@ export class RunwayService {
    * Валидация параметров запроса
    */
   validateRequest(request: RunwayVideoRequest): { valid: boolean; error?: string } {
-    if (!request.prompt || request.prompt.trim().length === 0) {
-      return { valid: false, error: 'Prompt is required' };
+    if (!request.promptText || request.promptText.trim().length === 0) {
+      return { valid: false, error: 'Prompt text is required' };
     }
 
-    if (request.prompt.length > 500) {
-      return { valid: false, error: 'Prompt is too long (max 500 characters)' };
+    if (request.promptText.length > 500) {
+      return { valid: false, error: 'Prompt text is too long (max 500 characters)' };
     }
 
     if (request.duration && ![5, 10].includes(request.duration)) {
       return { valid: false, error: 'Duration must be 5 or 10 seconds' };
     }
 
-    const validResolutions = ['1280x768', '768x1280', '1408x768', '768x1408'];
-    if (request.resolution && !validResolutions.includes(request.resolution)) {
-      return { valid: false, error: 'Invalid resolution' };
+    const validRatios = ['1280:720', '720:1280', '1408:768', '768:1408', '1920:1080', '1080:1920'];
+    if (request.ratio && !validRatios.includes(request.ratio)) {
+      return { valid: false, error: 'Invalid ratio' };
     }
 
     return { valid: true };
