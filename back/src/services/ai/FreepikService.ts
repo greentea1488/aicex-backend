@@ -20,8 +20,8 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
   'seedream': {
     name: 'Seedream v3',
     description: 'Креативная генерация изображений',
-    endpoint: '/v1/ai/text-to-image/seedream',    // Специфичный endpoint для Seedream v3
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/text-to-image/seedream',    // Специфичный endpoint для Seedream v3
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false                      // НЕ передаем model
   },
   
@@ -33,15 +33,15 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
   'flux-dev': {
     name: 'Flux Dev',
     description: 'Быстрая генерация изображений',
-    endpoint: '/v1/ai/text-to-image/flux-dev',    // Специфичный endpoint
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/text-to-image/flux-dev',    // Специфичный endpoint
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false                      // НЕ передаем model
   },
   'flux_dev': {
     name: 'Flux Dev',
     description: 'Быстрая генерация изображений',
-    endpoint: '/v1/ai/text-to-image/flux-dev',
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/text-to-image/flux-dev',
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false
   },
   
@@ -50,15 +50,15 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
   'flux-pro': {
     name: 'Flux Pro v1.1',
     description: 'Профессиональная генерация изображений',
-    endpoint: '/v1/ai/text-to-image/flux-pro-v1-1', // Специфичный endpoint
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/text-to-image/flux-pro-v1-1', // Специфичный endpoint
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false                        // НЕ передаем model
   },
   'flux_pro': {
     name: 'Flux Pro v1.1',
     description: 'Профессиональная генерация изображений',
-    endpoint: '/v1/ai/text-to-image/flux-pro-v1-1',
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/text-to-image/flux-pro-v1-1',
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false
   },
   
@@ -67,8 +67,8 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
   'hyperflux': {
     name: 'Hyperflux',
     description: 'Гибридная быстрая генерация изображений',
-    endpoint: '/v1/ai/text-to-image/hyperflux',    // Специфичный endpoint
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/text-to-image/hyperflux',    // Специфичный endpoint
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false                       // НЕ передаем model
   },
   
@@ -77,8 +77,8 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
   'mystic': {
     name: 'Freepik Mystic',
     description: 'Ultra-realistic, high-resolution images (Freepik exclusive)',
-    endpoint: '/v1/ai/mystic',                     // Специфичный endpoint
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/mystic',                     // Специфичный endpoint
+    fallbackEndpoint: '/ai/text-to-image',
     model: 'realism',                              // Mystic требует model: 'realism', 'fluid' или 'zen'
     requiresModelParam: true                       // Передаем model в параметре
   },
@@ -89,7 +89,7 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
     name: 'Classic Fast',
     description: 'Быстрая базовая генерация изображений',
     endpoint: '/v1/ai/text-to-image',              // Базовый endpoint
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false                      // НЕ передаем model
   },
   
@@ -98,8 +98,8 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
   'imagen3': {
     name: 'Google Imagen 3',
     description: 'Google\'s latest image generation model',
-    endpoint: '/v1/ai/text-to-image/imagen3',      // Специфичный endpoint
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/text-to-image/imagen3',      // Специфичный endpoint
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false                      // НЕ передаем model
   },
   
@@ -108,8 +108,8 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
   'gemini': {
     name: 'Gemini 2.5 Flash',
     description: 'Google\'s Gemini for image generation',
-    endpoint: '/v1/ai/gemini-2-5-flash-image-preview', // Специфичный endpoint
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/gemini-2-5-flash-image-preview', // Специфичный endpoint
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false                      // НЕ передаем model
   },
   
@@ -117,8 +117,8 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
   'gemini-flash': {
     name: 'Gemini 2.5 Flash',
     description: 'Google\'s Gemini for image generation',
-    endpoint: '/v1/ai/gemini-2-5-flash-image-preview', // Специфичный endpoint
-    fallbackEndpoint: '/v1/ai/text-to-image',
+    endpoint: '/ai/gemini-2-5-flash-image-preview', // Специфичный endpoint
+    fallbackEndpoint: '/ai/text-to-image',
     requiresModelParam: false                      // НЕ передаем model
   }
 };
@@ -126,18 +126,18 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
 // Альтернативные endpoints для тестирования (используются как последний fallback)
 // В основном используются специфичные endpoints из конфигурации моделей
 export const FREEPIK_ALTERNATIVE_ENDPOINTS = [
-  '/v1/ai/text-to-image',     // Classic Fast - базовый endpoint
-  '/v1/ai/mystic',             // Mystic endpoint
+  '/ai/text-to-image',     // Classic Fast - базовый endpoint
+  '/ai/mystic',             // Mystic endpoint
 ];
 
 // Модели для генерации видео (из Freepik API - заменяют Runway и Kling)
-// ВАЖНО: endpoint'ы С /v1/ в начале, т.к. baseUrl содержит /v1
+// ВАЖНО: endpoint'ы БЕЗ /v1/ в начале, т.к. baseUrl уже содержит /v1
 export const FREEPIK_VIDEO_MODELS = {
   // 🎬 Kling v2.5 Pro - Новейшая модель
   kling_v2_5_pro: {
     name: 'Kling 2.5 Pro',
     description: 'Кинематографические видео с улучшенным движением и детализацией',
-    endpoint: '/v1/ai/image-to-video/kling-v2-5-pro',
+    endpoint: '/ai/image-to-video/kling-v2-5-pro',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration'],
@@ -148,7 +148,7 @@ export const FREEPIK_VIDEO_MODELS = {
   minimax_hailuo_768p: {
     name: 'MiniMax Hailuo 02 768p',
     description: 'Качество 768p от Minimax',
-    endpoint: '/v1/ai/image-to-video/minimax-hailuo-02-768p',
+    endpoint: '/ai/image-to-video/minimax-hailuo-02-768p',
     supportedDurations: [6, 10],
     requiredFields: ['prompt', 'first_frame_image'],
     optionalFields: ['last_frame_image', 'prompt_optimizer', 'duration'],
@@ -159,7 +159,7 @@ export const FREEPIK_VIDEO_MODELS = {
   minimax_hailuo_1080p: {
     name: 'MiniMax Hailuo 02 1080p',
     description: 'Качество 1080p от Minimax (только 6 сек)',
-    endpoint: '/v1/ai/image-to-video/minimax-hailuo-02-1080p',
+    endpoint: '/ai/image-to-video/minimax-hailuo-02-1080p',
     supportedDurations: [6],
     requiredFields: ['prompt', 'first_frame_image'],
     optionalFields: ['last_frame_image', 'prompt_optimizer', 'duration'],
@@ -170,7 +170,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2_1_master: {
     name: 'Kling 2.1 Master',
     description: 'Мастер версия Kling v2.1 с продвинутыми возможностями',
-    endpoint: '/v1/ai/image-to-video/kling-v2-1-master',
+    endpoint: '/ai/image-to-video/kling-v2-1-master',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -181,7 +181,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2_1_pro: {
     name: 'Kling Pro v2.1',
     description: 'Премиум генерация видео из изображений',
-    endpoint: '/v1/ai/image-to-video/kling-v2-1-pro',
+    endpoint: '/ai/image-to-video/kling-v2-1-pro',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['image_tail', 'prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -192,7 +192,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2_1_std: {
     name: 'Kling Std v2.1',
     description: 'Стандартная генерация видео из изображений',
-    endpoint: '/v1/ai/image-to-video/kling-v2-1-std',
+    endpoint: '/ai/image-to-video/kling-v2-1-std',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -203,7 +203,7 @@ export const FREEPIK_VIDEO_MODELS = {
   pixverse_v5: {
     name: 'PixVerse V5',
     description: 'Универсальная генерация видео с разными стилями',
-    endpoint: '/v1/ai/image-to-video/pixverse-v5',
+    endpoint: '/ai/image-to-video/pixverse-v5',
     supportedDurations: [5, 8],
     supportedResolutions: ['360p', '540p', '720p', '1080p'],
     requiredFields: ['prompt', 'image_url'],
@@ -215,7 +215,7 @@ export const FREEPIK_VIDEO_MODELS = {
   pixverse_v5_transition: {
     name: 'PixVerse V5 Transition',
     description: 'Переходы и анимации между двумя изображениями',
-    endpoint: '/v1/ai/image-to-video/pixverse-v5-transition',
+    endpoint: '/ai/image-to-video/pixverse-v5-transition',
     supportedDurations: [5, 8],
     requiredFields: ['start_image_url', 'end_image_url'],
     optionalFields: ['resolution', 'duration', 'prompt'],
@@ -226,7 +226,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2: {
     name: 'Kling v2',
     description: 'Базовая версия Kling v2',
-    endpoint: '/v1/ai/image-to-video/kling-v2',
+    endpoint: '/ai/image-to-video/kling-v2',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration'],
@@ -237,7 +237,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_pro_1_6: {
     name: 'Kling Pro 1.6',
     description: 'Профессиональная версия 1.6',
-    endpoint: '/v1/ai/image-to-video/kling-pro',
+    endpoint: '/ai/image-to-video/kling-pro',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -248,7 +248,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_std_1_6: {
     name: 'Kling Std 1.6',
     description: 'Стандартная версия 1.6',
-    endpoint: '/v1/ai/image-to-video/kling-std',
+    endpoint: '/ai/image-to-video/kling-std',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -259,7 +259,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_elements_pro_1_6: {
     name: 'Kling Elements Pro 1.6',
     description: 'Работа с несколькими изображениями (до 4)',
-    endpoint: '/v1/ai/image-to-video/kling-elements-pro',
+    endpoint: '/ai/image-to-video/kling-elements-pro',
     supportedDurations: [5, 10],
     requiredFields: ['images'],
     optionalFields: ['prompt', 'negative_prompt', 'duration', 'aspect_ratio'],
@@ -270,7 +270,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_elements_std_1_6: {
     name: 'Kling Elements Std 1.6',
     description: 'Стандартная версия Elements (до 4 изображений)',
-    endpoint: '/v1/ai/image-to-video/kling-elements-std',
+    endpoint: '/ai/image-to-video/kling-elements-std',
     supportedDurations: [5, 10],
     requiredFields: ['images'],
     optionalFields: ['prompt', 'negative_prompt', 'duration', 'aspect_ratio'],
@@ -281,7 +281,7 @@ export const FREEPIK_VIDEO_MODELS = {
   seedance_pro_1080p: {
     name: 'Seedance Pro 1080p',
     description: 'Профессиональная генерация видео',
-    endpoint: '/v1/ai/image-to-video/seedance-pro-1080p',
+    endpoint: '/ai/image-to-video/seedance-pro-1080p',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'duration'],
@@ -292,7 +292,7 @@ export const FREEPIK_VIDEO_MODELS = {
   wan_v2_2_720p: {
     name: 'Wan v2.2 720p',
     description: 'Модель Wan для генерации видео',
-    endpoint: '/v1/ai/image-to-video/wan-v2-2-720p',
+    endpoint: '/ai/image-to-video/wan-v2-2-720p',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'duration'],
