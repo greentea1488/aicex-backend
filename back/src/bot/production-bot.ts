@@ -519,12 +519,15 @@ bot.on("callback_query", async (ctx) => {
       break;
 
     case 'video_runway':
+      // Runway ML работает только в режиме Image-to-Video (требует обязательно изображение)
       UXHelpers.setUserState(userId, {
-        currentAction: 'waiting_video_prompt',
+        currentAction: 'waiting_runway_photo',
         data: { service: 'runway' }
       });
       await ctx.editMessageText(
-        "🚀 <b>Runway ML</b>\n\n📝 Отправьте описание видео которое хотите создать:\n\n💡 Пример: \"Летящий дрон над городом на закате\"",
+        "🚀 <b>Runway ML - Image to Video</b>\n\n" +
+        "📸 <b>Шаг 1:</b> Отправьте изображение для генерации видео\n\n" +
+        "💡 После отправки фото вы сможете добавить текстовый промпт для управления видео",
         {
           reply_markup: {
             inline_keyboard: [
@@ -716,6 +719,9 @@ bot.on("message:photo", async (ctx) => {
   
   if (userState?.currentAction === 'waiting_for_photo_video') {
     await handleVideoFromPhoto(ctx, userState.data?.service || 'freepik');
+  } else if (userState?.currentAction === 'waiting_runway_photo') {
+    // Runway ML - сохраняем фото и запрашиваем промпт
+    await handleRunwayPhoto(ctx);
   } else if (userState?.currentAction === 'vision_chat') {
     await handleGPTVision(ctx);
   } else {
@@ -790,6 +796,10 @@ bot.on("message:text", async (ctx) => {
       
     case 'waiting_video_prompt':
         await handleVideoGeneration(ctx, text, userState.data?.service || 'freepik', userState.data);
+      break;
+
+    case 'waiting_runway_prompt':
+      await handleRunwayPrompt(ctx, text);
       break;
       
       case 'waiting_midjourney_prompt':
@@ -1769,6 +1779,120 @@ process.on("SIGINT", async () => {
 });
 
 // 🎬 ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ ВИДЕО ИЗ ФОТО
+
+// 🚀 Обработка фото для Runway ML (Image-to-Video)
+async function handleRunwayPhoto(ctx: any) {
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    // Получаем фото
+    const photo = ctx.message.photo[ctx.message.photo.length - 1];
+    const file = await ctx.api.getFile(photo.file_id);
+    const imageUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+    
+    console.log('📸 Runway photo received:', {
+      userId,
+      imageUrl: imageUrl.substring(0, 50) + '...'
+    });
+
+    // Сохраняем URL изображения в состоянии и запрашиваем промпт
+    UXHelpers.setUserState(userId, {
+      currentAction: 'waiting_runway_prompt',
+      data: { 
+        service: 'runway',
+        imageUrl: imageUrl
+      }
+    });
+
+    await ctx.reply(
+      "✅ <b>Изображение получено!</b>\n\n" +
+      "📝 <b>Шаг 2:</b> Отправьте текстовый промпт для управления видео\n\n" +
+      "💡 Пример: \"камера медленно отдаляется, золотой час\"\n" +
+      "💡 Или просто отправьте \".\" для генерации без промпта",
+      { parse_mode: "HTML" }
+    );
+
+  } catch (error: any) {
+    console.error('❌ Error handling Runway photo:', error);
+    await ctx.reply(
+      "❌ Ошибка при обработке изображения. Попробуйте еще раз.",
+      { reply_markup: getMainMenu(ctx.from?.id) }
+    );
+  }
+}
+
+// 🚀 Обработка промпта для Runway ML (Image-to-Video)
+async function handleRunwayPrompt(ctx: any, prompt: string) {
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const userState = UXHelpers.getUserState(userId);
+    
+    if (!userState || !userState.data?.imageUrl) {
+      await ctx.reply("❌ Изображение не найдено. Попробуйте заново.");
+      return;
+    }
+
+    const imageUrl = userState.data.imageUrl;
+    const finalPrompt = prompt === '.' ? '' : prompt;
+
+    console.log('🎬 Starting Runway video generation:', {
+      userId,
+      imageUrl: imageUrl.substring(0, 50) + '...',
+      prompt: finalPrompt.substring(0, 50)
+    });
+
+    // Очищаем состояние пользователя
+    UXHelpers.clearUserState(userId);
+
+    await ctx.reply("🎬 Создаю видео через Runway ML... Это может занять несколько минут.");
+
+    // Получаем пользователя из БД
+    const user = await prisma.user.findUnique({
+      where: { telegramId: userId }
+    });
+
+    if (!user) {
+      await ctx.reply("❌ Пользователь не найден. Используйте /start");
+      return;
+    }
+
+    // Генерируем видео через Runway
+    const result = await aiManager.generateVideo(
+      finalPrompt,
+      'runway',
+      { telegramId: userId, currentTokens: user.tokens },
+      { imageUrl: imageUrl }
+    );
+
+    if (result.success && result.data?.url) {
+      await ctx.replyWithVideo(result.data.url, {
+        caption: "✅ <b>Видео готово!</b>\n\n🚀 Модель: Runway Gen-4 Turbo\n📝 Промпт: " + (finalPrompt || "без промпта"),
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: getNavigationButtons()
+        }
+      });
+    } else {
+      await UXHelpers.sendSmartErrorNotification(
+        ctx,
+        result.error || "Не удалось создать видео через Runway",
+        'generate_video'
+      );
+    }
+
+  } catch (error: any) {
+    console.error('❌ Error handling Runway prompt:', error);
+    await UXHelpers.sendSmartErrorNotification(
+      ctx,
+      "Произошла ошибка при генерации видео",
+      'generate_video'
+    );
+  }
+}
+
 async function handleVideoFromPhoto(ctx: any, service: string) {
   try {
     const userId = ctx.from?.id;
