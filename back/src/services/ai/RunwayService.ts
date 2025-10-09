@@ -50,15 +50,15 @@ export class RunwayService {
         model: request.model || 'gen4_turbo'
       });
 
-      // Используем правильный endpoint согласно документации
-      const endpoint = `${this.baseUrl}/image_to_video`;
+      // Используем text_to_video endpoint для генерации из текста
+      const endpoint = `${this.baseUrl}/text_to_video`;
       const requestBody = {
         model: request.model || 'gen4_turbo',
-        promptText: request.promptText, // Согласно документации Runway
-        ratio: request.ratio || '1280:720', // Обновлено согласно документации
+        prompt: request.promptText, // Для text_to_video используется 'prompt'
+        ratio: request.ratio || '1280:720',
         duration: request.duration || 5,
         seed: request.seed,
-        watermark: request.watermark !== false // По умолчанию true
+        watermark: request.watermark !== false
       };
 
       console.log('==================== RUNWAY API REQUEST ====================');
