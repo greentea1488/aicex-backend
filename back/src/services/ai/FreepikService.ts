@@ -416,7 +416,8 @@ export class FreepikService {
           promptEnhancement = await this.promptEnhancer.enhancePrompt(request.prompt, {
             style: request.promptStyle || 'photographic',
             quality: request.promptQuality || 'high',
-            language: 'ru'
+            language: 'ru',
+            model: model // Передаем модель для адаптации
           });
           finalPrompt = promptEnhancement.enhanced;
           
