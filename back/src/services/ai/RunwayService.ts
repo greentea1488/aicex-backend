@@ -2,10 +2,11 @@ import axios from 'axios';
 import { logger } from '../../utils/logger';
 
 export interface RunwayVideoRequest {
-  prompt: string;
-  model?: 'gen3a_turbo' | 'gen3';
+  promptText: string; // Согласно документации
+  promptImage?: string; // URL изображения для image-to-video
+  model?: 'gen4_turbo' | 'gen3a_turbo' | 'gen3'; // Обновленные модели
+  ratio?: '1280:720' | '720:1280' | '1408:768' | '768:1408' | '1920:1080' | '1080:1920'; // Согласно документации
   duration?: number; // 5 or 10 seconds
-  resolution?: '1280x768' | '768x1280' | '1408x768' | '768x1408';
   seed?: number;
   watermark?: boolean;
 }
@@ -39,8 +40,8 @@ export class RunwayService {
   async generateVideo(request: RunwayVideoRequest): Promise<RunwayResponse> {
     try {
       logger.info('Runway video generation started:', { 
-        prompt: request.prompt.substring(0, 100),
-        model: request.model || 'gen3a_turbo'
+        promptText: request.promptText.substring(0, 100),
+        model: request.model || 'gen4_turbo'
       });
 
       // Используем правильный endpoint согласно документации
@@ -49,17 +50,18 @@ export class RunwayService {
       const response = await axios.post(
         endpoint,
         {
-          model: request.model || 'gen3a_turbo',
-          prompt_text: request.prompt, // Согласно документации Runway
+          model: request.model || 'gen4_turbo',
+          promptText: request.promptText, // Согласно документации Runway
+          ratio: request.ratio || '1280:720', // Обновлено согласно документации
           duration: request.duration || 5,
-          resolution: request.resolution || '1280x768', // Оставляем resolution, не aspect_ratio
           seed: request.seed,
           watermark: request.watermark !== false // По умолчанию true
         },
         {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Runway-Version': '2024-11-06' // Согласно документации
           },
           timeout: 30000 // 30 секунд на создание задачи
         }
