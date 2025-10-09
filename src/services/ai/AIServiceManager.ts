@@ -555,10 +555,10 @@ export class AIServiceManager {
    */
   private async generateRunwayVideo(prompt: string, options?: any): Promise<GenerationResult> {
     const request: RunwayVideoRequest = {
-      prompt,
-      model: options?.model || 'gen3a_turbo',
+      promptText: prompt, // Обновлено согласно документации
+      model: options?.model || 'gen4_turbo', // Обновлено на новую модель
       duration: options?.duration || 5,
-      resolution: options?.resolution || '1280x768'
+      ratio: options?.ratio || '1280:720' // Обновлено согласно документации
     };
 
     const response = await this.runway.generateVideo(request);
