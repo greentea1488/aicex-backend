@@ -54,7 +54,7 @@ export class RunwayService {
       const endpoint = `${this.baseUrl}/text_to_video`;
       const requestBody = {
         model: request.model || 'gen4_turbo',
-        prompt: request.promptText, // Для text_to_video используется 'prompt'
+        promptText: request.promptText, // Runway использует 'promptText' для text_to_video
         ratio: request.ratio || '1280:720',
         duration: request.duration || 5,
         seed: request.seed,
