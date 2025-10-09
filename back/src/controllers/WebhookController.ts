@@ -1017,19 +1017,69 @@ export class WebhookController {
     mediaUrl?: string
   ): Promise<void> {
     try {
-      // Здесь будет логика отправки уведомления через Telegram бота
-      // Пока что просто логируем
-      logger.info('Task completion notification', {
+      console.log('📤 Notifying user about task completion:', {
         userId: task.userId,
-        telegramId: task.telegramId,
         taskId: task.taskId,
         status,
-        mediaUrl
+        mediaUrl,
+        taskType: task.type
       });
 
-      // TODO: Интегрировать с Telegram Bot API для отправки уведомлений
+      if (status !== 'completed' || !mediaUrl) {
+        console.log('⚠️ Task not completed or no media URL, skipping notification');
+        return;
+      }
+
+      // Получаем пользователя для telegramId
+      const user = await prisma.user.findUnique({ 
+        where: { id: task.userId } 
+      });
+
+      if (!user || !user.telegramId) {
+        console.log('❌ User not found or no telegramId');
+        return;
+      }
+
+      // Импортируем бота
+      const { bot } = await import('../bot/production-bot');
+      
+      console.log(`📤 Sending ${task.type || 'image'} to user ${user.telegramId}`);
+
+      // Отправляем результат в зависимости от типа
+      if (task.type === 'video') {
+        await bot.api.sendVideo(user.telegramId, mediaUrl, {
+          caption: `🎬 <b>Ваше видео готово!</b>\n\n📝 "${task.prompt}"\n🎨 ${task.model || 'Freepik Video'}\n💰 Потрачено: ${task.cost || 0} токенов`,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🔄 Создать еще', callback_data: 'photo_to_video_menu' },
+                { text: '📊 Статистика', callback_data: 'stats' }
+              ],
+              [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+            ]
+          }
+        });
+        console.log('✅ Video sent to user successfully');
+      } else {
+        await bot.api.sendPhoto(user.telegramId, mediaUrl, {
+          caption: `✅ <b>Изображение готово!</b>\n\n📝 "${task.prompt}"\n🎨 ${task.model || 'Freepik'}\n💰 Потрачено: ${task.cost || 0} токенов`,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🔄 Еще одно', callback_data: 'quick_image' },
+                { text: '📊 Статистика', callback_data: 'stats' }
+              ],
+              [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+            ]
+          }
+        });
+        console.log('✅ Image sent to user successfully');
+      }
 
     } catch (error) {
+      console.error('❌ Failed to notify user about task completion:', error);
       logger.error('Failed to notify user about task completion:', error);
     }
   }

@@ -1859,24 +1859,28 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
         createdAt: new Date()
       });
 
-      // Отправляем сообщение с прогресс-баром
-      const progressMessage = await ctx.reply(
-        `🎬 <b>Создаю видео...</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n\n${getProgressBar(0)}\n\n⏱️ Примерное время: 2-5 минут`,
+      // Отправляем сообщение о начале генерации
+      await ctx.reply(
+        `✅ <b>Видео создается!</b>\n\n📝 Промпт: "${prompt}"\n🎬 Модель: ${getVideoModelName(model)}\n\n⏱️ Примерное время: 2-5 минут\n\n💡 <i>Видео будет отправлено автоматически когда будет готово</i>`,
         {
           parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
+              [
+                { text: '🔄 Создать еще', callback_data: 'photo_to_video_menu' },
+                { text: '📊 Статистика', callback_data: 'stats' }
+              ],
               ...getNavigationButtons()
             ]
           }
         }
       );
       
-      // Запускаем мониторинг прогресса
-      monitorVideoProgress(ctx, progressMessage.message_id, result.data.id, model, prompt, userId);
-      
       // Очищаем состояние
       userStates.delete(userId);
+      
+      // ВАЖНО: Результат придет через webhook!
+      // WebhookController обработает ответ от Freepik и отправит видео пользователю
     } else {
       const errorMessage = result.error || 'Не удалось создать видео';
       await ctx.reply(`❌ <b>Ошибка создания видео</b>\n\n${errorMessage}`,
