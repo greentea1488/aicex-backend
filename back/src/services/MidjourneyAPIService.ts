@@ -146,7 +146,7 @@ export class MidjourneyAPIService {
         });
 
         // Списываем токены
-        await this.deductTokens(user.id, cost, requestId);
+        await this.deductTokens(user.id, cost, requestId.toString());
 
         logger.info('Midjourney generation started via Gen API', {
           requestId,
