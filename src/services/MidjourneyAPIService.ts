@@ -81,34 +81,31 @@ export class MidjourneyAPIService {
       });
 
       // Отправляем запрос в Gen API для Midjourney
-      // Согласно документации GenAPI: POST /v1/image/generations
+      // Согласно документации GenAPI: POST /v1/image/gen
       const requestBody: any = {
-        model: 'midjourney',  // ID модели согласно GenAPI
-        input: {  // Правильное поле согласно документации
-          prompt: this.buildPrompt(request),
-          aspect_ratio: request.aspect_ratio || '1:1'
-        },
-        callback_url: `${CONFIG.app.baseUrl}/api/webhooks/midjourney`  // GenAPI использует callback_url
+        prompt: this.buildPrompt(request),
+        aspect_ratio: request.aspect_ratio || '1:1',
+        webhook: `${CONFIG.app.baseUrl}/api/webhooks/midjourney`
       };
 
       // Добавляем опциональные параметры если они указаны
       if (request.seed !== undefined) {
-        requestBody.input.seed = request.seed;
+        requestBody.seed = request.seed;
       }
       
       if (request.negative_prompt) {
-        requestBody.input.negative_prompt = request.negative_prompt;
+        requestBody.negative_prompt = request.negative_prompt;
       }
 
       console.log('==================== MIDJOURNEY API REQUEST ====================');
       console.log('API URL:', this.apiUrl);
-      console.log('Endpoint:', `${this.apiUrl}/v1/image/generations`);
+      console.log('Endpoint:', `${this.apiUrl}/v1/image/gen`);
       console.log('Request Body:', JSON.stringify(requestBody, null, 2));
       console.log('Has API Key:', !!this.apiKey);
       console.log('===============================================================');
 
       const apiResponse = await axios.post(
-        `${this.apiUrl}/v1/image/generations`,  // Правильный endpoint согласно GenAPI
+        `${this.apiUrl}/v1/image/gen`,  // Правильный endpoint согласно GenAPI
         requestBody,
         {
           headers: {
@@ -195,7 +192,7 @@ export class MidjourneyAPIService {
 
   /**
    * Получает статус задачи через Gen API
-   * Согласно документации: GET /v1/image/generations?request_id={id}
+   * Согласно документации: GET /v1/image/status/{request_id}
    */
   async getTaskStatus(requestId: string): Promise<any> {
     try {
@@ -205,15 +202,12 @@ export class MidjourneyAPIService {
 
       console.log('==================== CHECKING MIDJOURNEY STATUS ====================');
       console.log('Request ID:', requestId);
-      console.log('Endpoint:', `${this.apiUrl}/v1/image/generations?request_id=${requestId}`);
+      console.log('Endpoint:', `${this.apiUrl}/v1/image/status/${requestId}`);
       console.log('===============================================================');
 
       const response = await axios.get(
-        `${this.apiUrl}/v1/image/generations`,  // Правильный endpoint
+        `${this.apiUrl}/v1/image/status/${requestId}`,  // Правильный endpoint для проверки статуса
         {
-          params: {
-            request_id: requestId  // Параметр в query string
-          },
           headers: {
             'Authorization': `Bearer ${this.apiKey}`
           }
@@ -227,8 +221,8 @@ export class MidjourneyAPIService {
 
       // GenAPI возвращает:
       // {
-      //   "status": "processing" | "failed" | "success",
-      //   "result": { "images": [...] }  // при success
+      //   "status": "processing" | "failed" | "completed",
+      //   "image_url": "..." // при completed
       // }
 
       return response.data;
