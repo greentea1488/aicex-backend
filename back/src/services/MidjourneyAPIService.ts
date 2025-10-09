@@ -79,27 +79,31 @@ export class MidjourneyAPIService {
       });
 
       // Отправляем запрос в Gen API для Midjourney
+      // Согласно документации GenAPI: POST /v1/image/generations
       const requestBody = {
-        model: 'midjourney',
-        prompt: this.buildPrompt(request),
-        parameters: {
+        model: 'midjourney',  // ID модели согласно GenAPI
+        input: {  // Правильное поле согласно документации
+          prompt: this.buildPrompt(request),
           aspect_ratio: request.aspect_ratio || '1:1',
-          quality: request.quality || 'high',
-          style: request.style || 'photorealistic'
+          seed: request.seed
         },
-        webhook_url: `${CONFIG.app.baseUrl}/api/webhooks/midjourney`,
-        webhook_secret: process.env.WEBHOOK_SECRET || 'default-secret'
+        callback_url: `${CONFIG.app.baseUrl}/api/webhooks/midjourney`  // GenAPI использует callback_url
       };
+
+      // Убираем undefined значения из input
+      if (!requestBody.input.seed) {
+        delete requestBody.input.seed;
+      }
 
       console.log('==================== MIDJOURNEY API REQUEST ====================');
       console.log('API URL:', this.apiUrl);
-      console.log('Endpoint:', `${this.apiUrl}/v1/generations`);
+      console.log('Endpoint:', `${this.apiUrl}/v1/image/generations`);
       console.log('Request Body:', JSON.stringify(requestBody, null, 2));
       console.log('Has API Key:', !!this.apiKey);
       console.log('===============================================================');
 
       const apiResponse = await axios.post(
-        `${this.apiUrl}/v1/generations`,
+        `${this.apiUrl}/v1/image/generations`,  // Правильный endpoint согласно GenAPI
         requestBody,
         {
           headers: {
@@ -114,23 +118,24 @@ export class MidjourneyAPIService {
       console.log('Response Data:', JSON.stringify(apiResponse.data, null, 2));
       console.log('===============================================================');
 
-      if (apiResponse.data.success || apiResponse.data.id) {
-        const taskId = apiResponse.data.id || apiResponse.data.task_id;
+      // GenAPI возвращает request_id при успешном создании задачи
+      if (apiResponse.data.request_id) {
+        const requestId = apiResponse.data.request_id;
 
-        // Обновляем задачу с ID от API
+        // Обновляем задачу с request_id от API
         await prisma.midjourneyTask.update({
           where: { id: task.id },
           data: {
-            taskId,
+            taskId: requestId,  // Сохраняем request_id
             status: 'processing'
           }
         });
 
         // Списываем токены
-        await this.deductTokens(user.id, cost, taskId);
+        await this.deductTokens(user.id, cost, requestId);
 
         logger.info('Midjourney generation started via Gen API', {
-          taskId,
+          requestId,
           userId: user.id,
           cost,
           prompt: request.prompt,
@@ -139,12 +144,12 @@ export class MidjourneyAPIService {
 
         return {
           success: true,
-          taskId,
-          estimatedTime: 90 // Gen API может быть немного дольше
+          taskId: requestId,  // Возвращаем request_id
+          estimatedTime: 90
         };
 
       } else {
-        throw new Error(`Gen API error: ${apiResponse.data.message || apiResponse.data.error}`);
+        throw new Error(`Gen API error: ${apiResponse.data.message || apiResponse.data.error || 'No request_id returned'}`);
       }
 
     } catch (error: any) {
@@ -185,21 +190,41 @@ export class MidjourneyAPIService {
 
   /**
    * Получает статус задачи через Gen API
+   * Согласно документации: GET /v1/image/generations?request_id={id}
    */
-  async getTaskStatus(taskId: string): Promise<any> {
+  async getTaskStatus(requestId: string): Promise<any> {
     try {
       if (!this.isConfigured()) {
         throw new Error('Gen API not configured');
       }
 
+      console.log('==================== CHECKING MIDJOURNEY STATUS ====================');
+      console.log('Request ID:', requestId);
+      console.log('Endpoint:', `${this.apiUrl}/v1/image/generations?request_id=${requestId}`);
+      console.log('===============================================================');
+
       const response = await axios.get(
-        `${this.apiUrl}/v1/generations/${taskId}`,
+        `${this.apiUrl}/v1/image/generations`,  // Правильный endpoint
         {
+          params: {
+            request_id: requestId  // Параметр в query string
+          },
           headers: {
             'Authorization': `Bearer ${this.apiKey}`
           }
         }
       );
+
+      console.log('==================== MIDJOURNEY STATUS RESPONSE ====================');
+      console.log('Status:', response.data.status);
+      console.log('Response Data:', JSON.stringify(response.data, null, 2));
+      console.log('===============================================================');
+
+      // GenAPI возвращает:
+      // {
+      //   "status": "processing" | "failed" | "success",
+      //   "result": { "images": [...] }  // при success
+      // }
 
       return response.data;
 
@@ -210,32 +235,12 @@ export class MidjourneyAPIService {
   }
 
   /**
-   * Строит промпт с учетом стиля и параметров
+   * Строит промпт (GenAPI для Midjourney принимает промпт как есть)
    */
   private buildPrompt(request: MidjourneyGenerationRequest): string {
-    let prompt = request.prompt;
-
-    // Добавляем стиль если указан
-    if (request.style && request.style !== 'default') {
-      const stylePrompts = {
-        'photorealistic': ', photorealistic, high quality, detailed',
-        'artistic': ', artistic style, creative, expressive',
-        'anime': ', anime style, manga, japanese art',
-        'cartoon': ', cartoon style, colorful, fun'
-      };
-
-      const styleAddition = stylePrompts[request.style as keyof typeof stylePrompts];
-      if (styleAddition) {
-        prompt += styleAddition;
-      }
-    }
-
-    // Добавляем параметры качества
-    if (request.quality === 'high') {
-      prompt += ', 4K, ultra detailed, masterpiece';
-    }
-
-    return prompt;
+    // GenAPI для Midjourney принимает промпт напрямую
+    // Все параметры стиля/качества передаются через input параметры
+    return request.prompt;
   }
 
   /**
