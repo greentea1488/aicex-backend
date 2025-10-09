@@ -39,6 +39,12 @@ export class RunwayService {
    */
   async generateVideo(request: RunwayVideoRequest): Promise<RunwayResponse> {
     try {
+      console.log('==================== RUNWAY VIDEO GENERATION START ====================');
+      console.log('Original Request:', JSON.stringify(request, null, 2));
+      console.log('API Key exists:', !!this.apiKey);
+      console.log('Base URL:', this.baseUrl);
+      console.log('===============================================================');
+
       logger.info('Runway video generation started:', { 
         promptText: request.promptText.substring(0, 100),
         model: request.model || 'gen4_turbo'
@@ -46,17 +52,28 @@ export class RunwayService {
 
       // Используем правильный endpoint согласно документации
       const endpoint = `${this.baseUrl}/image_to_video`;
+      const requestBody = {
+        model: request.model || 'gen4_turbo',
+        promptText: request.promptText, // Согласно документации Runway
+        ratio: request.ratio || '1280:720', // Обновлено согласно документации
+        duration: request.duration || 5,
+        seed: request.seed,
+        watermark: request.watermark !== false // По умолчанию true
+      };
+
+      console.log('==================== RUNWAY API REQUEST ====================');
+      console.log('Endpoint:', endpoint);
+      console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+      console.log('Headers:', {
+        'Authorization': `Bearer ${this.apiKey.substring(0, 10)}...`,
+        'Content-Type': 'application/json',
+        'X-Runway-Version': '2024-11-06'
+      });
+      console.log('===============================================================');
 
       const response = await axios.post(
         endpoint,
-        {
-          model: request.model || 'gen4_turbo',
-          promptText: request.promptText, // Согласно документации Runway
-          ratio: request.ratio || '1280:720', // Обновлено согласно документации
-          duration: request.duration || 5,
-          seed: request.seed,
-          watermark: request.watermark !== false // По умолчанию true
-        },
+        requestBody,
         {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
@@ -66,6 +83,12 @@ export class RunwayService {
           timeout: 30000 // 30 секунд на создание задачи
         }
       );
+
+      console.log('==================== RUNWAY API RESPONSE ====================');
+      console.log('Status:', response.status);
+      console.log('Status Text:', response.statusText);
+      console.log('Response Data:', JSON.stringify(response.data, null, 2));
+      console.log('===============================================================');
 
       logger.info('Runway task created:', response.data);
 
@@ -81,6 +104,19 @@ export class RunwayService {
       return await this.waitForCompletion(taskId);
 
     } catch (error: any) {
+      console.log('==================== RUNWAY API ERROR ====================');
+      console.log('Error Type:', error.constructor.name);
+      console.log('Error Message:', error.message);
+      console.log('Error Code:', error.code);
+      console.log('Response Status:', error.response?.status);
+      console.log('Response Status Text:', error.response?.statusText);
+      console.log('Response Data:', JSON.stringify(error.response?.data, null, 2));
+      console.log('Request URL:', error.config?.url);
+      console.log('Request Method:', error.config?.method);
+      console.log('Request Headers:', error.config?.headers);
+      console.log('Request Data:', error.config?.data);
+      console.log('===============================================================');
+
       logger.error('Runway video generation error:', error.response?.data || error.message);
       
       return {

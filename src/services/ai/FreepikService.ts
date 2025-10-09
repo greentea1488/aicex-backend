@@ -131,13 +131,13 @@ export const FREEPIK_ALTERNATIVE_ENDPOINTS = [
 ];
 
 // Модели для генерации видео (из Freepik API - заменяют Runway и Kling)
-// ВАЖНО: endpoint'ы БЕЗ /v1/ в начале, т.к. baseUrl уже содержит /v1
+// ВАЖНО: endpoint'ы С /v1/ в начале, т.к. baseUrl содержит /v1
 export const FREEPIK_VIDEO_MODELS = {
   // 🎬 Kling v2.5 Pro - Новейшая модель
   kling_v2_5_pro: {
     name: 'Kling 2.5 Pro',
     description: 'Кинематографические видео с улучшенным движением и детализацией',
-    endpoint: '/ai/image-to-video/kling-v2-5-pro',
+    endpoint: '/v1/ai/image-to-video/kling-v2-5-pro',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration'],
@@ -148,7 +148,7 @@ export const FREEPIK_VIDEO_MODELS = {
   minimax_hailuo_768p: {
     name: 'MiniMax Hailuo 02 768p',
     description: 'Качество 768p от Minimax',
-    endpoint: '/ai/image-to-video/minimax-hailuo-02-768p',
+    endpoint: '/v1/ai/image-to-video/minimax-hailuo-02-768p',
     supportedDurations: [6, 10],
     requiredFields: ['prompt', 'first_frame_image'],
     optionalFields: ['last_frame_image', 'prompt_optimizer', 'duration'],
@@ -159,7 +159,7 @@ export const FREEPIK_VIDEO_MODELS = {
   minimax_hailuo_1080p: {
     name: 'MiniMax Hailuo 02 1080p',
     description: 'Качество 1080p от Minimax (только 6 сек)',
-    endpoint: '/ai/image-to-video/minimax-hailuo-02-1080p',
+    endpoint: '/v1/ai/image-to-video/minimax-hailuo-02-1080p',
     supportedDurations: [6],
     requiredFields: ['prompt', 'first_frame_image'],
     optionalFields: ['last_frame_image', 'prompt_optimizer', 'duration'],
@@ -170,7 +170,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2_1_master: {
     name: 'Kling 2.1 Master',
     description: 'Мастер версия Kling v2.1 с продвинутыми возможностями',
-    endpoint: '/ai/image-to-video/kling-v2-1-master',
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-master',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -181,7 +181,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2_1_pro: {
     name: 'Kling Pro v2.1',
     description: 'Премиум генерация видео из изображений',
-    endpoint: '/ai/image-to-video/kling-v2-1-pro',
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-pro',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['image_tail', 'prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -192,7 +192,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2_1_std: {
     name: 'Kling Std v2.1',
     description: 'Стандартная генерация видео из изображений',
-    endpoint: '/ai/image-to-video/kling-v2-1-std',
+    endpoint: '/v1/ai/image-to-video/kling-v2-1-std',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -203,7 +203,7 @@ export const FREEPIK_VIDEO_MODELS = {
   pixverse_v5: {
     name: 'PixVerse V5',
     description: 'Универсальная генерация видео с разными стилями',
-    endpoint: '/ai/image-to-video/pixverse-v5',
+    endpoint: '/v1/ai/image-to-video/pixverse-v5',
     supportedDurations: [5, 8],
     supportedResolutions: ['360p', '540p', '720p', '1080p'],
     requiredFields: ['prompt', 'image_url'],
@@ -215,7 +215,7 @@ export const FREEPIK_VIDEO_MODELS = {
   pixverse_v5_transition: {
     name: 'PixVerse V5 Transition',
     description: 'Переходы и анимации между двумя изображениями',
-    endpoint: '/ai/image-to-video/pixverse-v5-transition',
+    endpoint: '/v1/ai/image-to-video/pixverse-v5-transition',
     supportedDurations: [5, 8],
     requiredFields: ['start_image_url', 'end_image_url'],
     optionalFields: ['resolution', 'duration', 'prompt'],
@@ -226,7 +226,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_v2: {
     name: 'Kling v2',
     description: 'Базовая версия Kling v2',
-    endpoint: '/ai/image-to-video/kling-v2',
+    endpoint: '/v1/ai/image-to-video/kling-v2',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration'],
@@ -237,7 +237,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_pro_1_6: {
     name: 'Kling Pro 1.6',
     description: 'Профессиональная версия 1.6',
-    endpoint: '/ai/image-to-video/kling-pro',
+    endpoint: '/v1/ai/image-to-video/kling-pro',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -248,7 +248,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_std_1_6: {
     name: 'Kling Std 1.6',
     description: 'Стандартная версия 1.6',
-    endpoint: '/ai/image-to-video/kling-std',
+    endpoint: '/v1/ai/image-to-video/kling-std',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'negative_prompt', 'cfg_scale', 'duration', 'static_mask', 'dynamic_masks'],
@@ -259,7 +259,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_elements_pro_1_6: {
     name: 'Kling Elements Pro 1.6',
     description: 'Работа с несколькими изображениями (до 4)',
-    endpoint: '/ai/image-to-video/kling-elements-pro',
+    endpoint: '/v1/ai/image-to-video/kling-elements-pro',
     supportedDurations: [5, 10],
     requiredFields: ['images'],
     optionalFields: ['prompt', 'negative_prompt', 'duration', 'aspect_ratio'],
@@ -270,7 +270,7 @@ export const FREEPIK_VIDEO_MODELS = {
   kling_elements_std_1_6: {
     name: 'Kling Elements Std 1.6',
     description: 'Стандартная версия Elements (до 4 изображений)',
-    endpoint: '/ai/image-to-video/kling-elements-std',
+    endpoint: '/v1/ai/image-to-video/kling-elements-std',
     supportedDurations: [5, 10],
     requiredFields: ['images'],
     optionalFields: ['prompt', 'negative_prompt', 'duration', 'aspect_ratio'],
@@ -281,7 +281,7 @@ export const FREEPIK_VIDEO_MODELS = {
   seedance_pro_1080p: {
     name: 'Seedance Pro 1080p',
     description: 'Профессиональная генерация видео',
-    endpoint: '/ai/image-to-video/seedance-pro-1080p',
+    endpoint: '/v1/ai/image-to-video/seedance-pro-1080p',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'duration'],
@@ -292,7 +292,7 @@ export const FREEPIK_VIDEO_MODELS = {
   wan_v2_2_720p: {
     name: 'Wan v2.2 720p',
     description: 'Модель Wan для генерации видео',
-    endpoint: '/ai/image-to-video/wan-v2-2-720p',
+    endpoint: '/v1/ai/image-to-video/wan-v2-2-720p',
     supportedDurations: [5, 10],
     requiredFields: ['image'],
     optionalFields: ['prompt', 'duration'],
@@ -345,12 +345,12 @@ export interface FreepikResponse {
 
 export class FreepikService {
   private apiKey: string;
-  private baseUrl = process.env.FREEPIK_API_URL || 'https://api.freepik.com';
+  private baseUrl = process.env.FREEPIK_API_URL || 'https://api.freepik.com/v1';
   private promptEnhancer: PromptEnhancerService;
   
   // Только один правильный базовый URL (endpoints уже содержат /v1/)
   private alternativeBaseUrls = [
-    'https://api.freepik.com',        // Официальный API URL (БЕЗ /v1 в конце!)
+    'https://api.freepik.com/v1',        // Официальный API URL (С /v1 в конце!)
   ];
 
   constructor() {

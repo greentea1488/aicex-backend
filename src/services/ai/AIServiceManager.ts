@@ -554,6 +554,11 @@ export class AIServiceManager {
    * Генерация видео через Runway
    */
   private async generateRunwayVideo(prompt: string, options?: any): Promise<GenerationResult> {
+    console.log('==================== RUNWAY VIDEO GENERATION START ====================');
+    console.log('Prompt:', prompt);
+    console.log('Options:', JSON.stringify(options, null, 2));
+    console.log('===============================================================');
+
     const request: RunwayVideoRequest = {
       promptText: prompt, // Обновлено согласно документации
       model: options?.model || 'gen4_turbo', // Обновлено на новую модель
@@ -561,7 +566,17 @@ export class AIServiceManager {
       ratio: options?.ratio || '1280:720' // Обновлено согласно документации
     };
 
+    console.log('==================== RUNWAY REQUEST ====================');
+    console.log('Request:', JSON.stringify(request, null, 2));
+    console.log('===============================================================');
+
     const response = await this.runway.generateVideo(request);
+    
+    console.log('==================== RUNWAY RESPONSE ====================');
+    console.log('Response success:', response.success);
+    console.log('Response data:', JSON.stringify(response.data, null, 2));
+    console.log('Response error:', response.error);
+    console.log('===============================================================');
     
     if (!response.success) {
       return {
