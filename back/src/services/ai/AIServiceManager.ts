@@ -304,10 +304,10 @@ export class AIServiceManager {
    */
   private async generateFreepikImage(prompt: string, options?: any): Promise<GenerationResult> {
     try {
-      // Отключаем enhancePrompt для русских промптов (это критично!)
+      // Включаем enhancePrompt для русских промптов - он переведет на английский!
       const isRussianPrompt = /[а-яё]/i.test(prompt);
-      // Если промпт русский - ВСЕГДА отключаем enhancePrompt, игнорируем options
-      const shouldEnhancePrompt = isRussianPrompt ? false : (options?.enhancePrompt !== false);
+      // Если промпт русский - ВСЕГДА включаем enhancePrompt для перевода на английский
+      const shouldEnhancePrompt = isRussianPrompt ? true : (options?.enhancePrompt !== false);
       
       const request: FreepikImageRequest = {
         prompt,
@@ -321,7 +321,7 @@ export class AIServiceManager {
       console.log('==================== RUSSIAN PROMPT CHECK ====================');
       console.log('Prompt:', prompt);
       console.log('Is Russian:', isRussianPrompt);
-      console.log('Enhance Prompt:', shouldEnhancePrompt);
+      console.log('Enhance Prompt:', shouldEnhancePrompt, isRussianPrompt ? '(will translate to English)' : '(original language)');
       console.log('Prompt Style:', request.promptStyle);
       console.log('Prompt Quality:', request.promptQuality);
       console.log('===============================================================');
