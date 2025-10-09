@@ -401,7 +401,9 @@ export class FreepikService {
       let finalPrompt = request.prompt;
       let promptEnhancement = null;
       
-      if (request.enhancePrompt !== false) { // По умолчанию включено
+      // КРИТИЧНО: enhancePrompt должно быть явно true, чтобы улучшать промпт
+      // Если undefined или false - НЕ улучшаем (для русских промптов)
+      if (request.enhancePrompt === true) {
         console.log('==================== PROMPT ENHANCEMENT START ====================');
         console.log('Original Prompt:', request.prompt);
         console.log('Enhancement Options:', {
@@ -984,7 +986,11 @@ export class FreepikService {
         case 'minimax_hailuo_1080p':
           requestData.prompt = prompt || 'Create a cinematic video';
           requestData.first_frame_image = imageUrl;
-          requestData.prompt_optimizer = true;
+          // Отключаем prompt_optimizer для русских промптов
+          const isRussianPrompt = /[а-яё]/i.test(prompt || '');
+          if (!isRussianPrompt) {
+            requestData.prompt_optimizer = true;
+          }
           // MiniMax 1080p поддерживает только 6 секунд
           if (model === 'minimax_hailuo_1080p') {
             requestData.duration = 6;

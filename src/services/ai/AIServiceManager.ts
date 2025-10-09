@@ -304,14 +304,27 @@ export class AIServiceManager {
    */
   private async generateFreepikImage(prompt: string, options?: any): Promise<GenerationResult> {
     try {
+      // Отключаем enhancePrompt для русских промптов (это критично!)
+      const isRussianPrompt = /[а-яё]/i.test(prompt);
+      // Если промпт русский - ВСЕГДА отключаем enhancePrompt, игнорируем options
+      const shouldEnhancePrompt = isRussianPrompt ? false : (options?.enhancePrompt !== false);
+      
       const request: FreepikImageRequest = {
         prompt,
         aspect_ratio: options?.aspect_ratio || '1:1',
         model: options?.model || 'seedream',
-        enhancePrompt: options?.enhancePrompt !== false, // По умолчанию включено
-        promptStyle: options?.promptStyle || 'photographic',
-        promptQuality: options?.promptQuality || 'high'
+        enhancePrompt: shouldEnhancePrompt,
+        promptStyle: isRussianPrompt ? undefined : (options?.promptStyle || 'photographic'),
+        promptQuality: isRussianPrompt ? undefined : (options?.promptQuality || 'high')
       };
+      
+      console.log('==================== RUSSIAN PROMPT CHECK ====================');
+      console.log('Prompt:', prompt);
+      console.log('Is Russian:', isRussianPrompt);
+      console.log('Enhance Prompt:', shouldEnhancePrompt);
+      console.log('Prompt Style:', request.promptStyle);
+      console.log('Prompt Quality:', request.promptQuality);
+      console.log('===============================================================');
 
       console.log('==================== AI SERVICE MANAGER FREEPIK START ====================');
       console.log('Request:', JSON.stringify(request, null, 2));
