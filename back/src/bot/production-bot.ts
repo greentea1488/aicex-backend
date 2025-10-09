@@ -1587,6 +1587,7 @@ async function handleMidjourneyQuick(ctx: any, userId: number) {
 async function handleMidjourneyTextInput(ctx: any, text: string, model: string) {
   const userId = ctx.from?.id;
   const startTime = Date.now();
+  let progressMsg: any = null;
 
   try {
     // Создаем задачу в очереди
@@ -1611,7 +1612,7 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
     }
 
     // Показываем простое сообщение о начале генерации
-    const progressMsg = await ctx.reply('🎨 Генерирую изображение...');
+    progressMsg = await ctx.reply('🎨 Генерирую изображение...');
 
     // Вызываем Midjourney API
     const result = await midjourneyService.generateImage({
@@ -1624,10 +1625,12 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
     const duration = Math.floor((Date.now() - startTime) / 1000);
 
     // Удаляем сообщение о прогрессе
-    try {
-      await ctx.api.deleteMessage(progressMsg.chat.id, progressMsg.message_id);
-    } catch (e) {
-      // Игнорируем ошибку удаления
+    if (progressMsg) {
+      try {
+        await ctx.api.deleteMessage(progressMsg.chat.id, progressMsg.message_id);
+      } catch (e) {
+        // Игнорируем ошибку удаления
+      }
     }
 
     if (result.success && result.taskId) {
@@ -1689,10 +1692,12 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
     console.error("❌ Midjourney generation error:", error);
     
     // Удаляем сообщение о прогрессе если оно есть
-    try {
-      await ctx.api.deleteMessage(progressMsg.chat.id, progressMsg.message_id);
-    } catch (e) {
-      // Игнорируем ошибку удаления
+    if (progressMsg) {
+      try {
+        await ctx.api.deleteMessage(progressMsg.chat.id, progressMsg.message_id);
+      } catch (e) {
+        // Игнорируем ошибку удаления
+      }
     }
     
     // Показываем понятную ошибку пользователю
