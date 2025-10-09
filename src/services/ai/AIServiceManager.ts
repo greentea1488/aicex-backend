@@ -560,11 +560,23 @@ export class AIServiceManager {
     console.log('===============================================================');
 
     const request: RunwayVideoRequest = {
-      promptText: prompt, // Обновлено согласно документации
-      model: options?.model || 'gen4_turbo', // Обновлено на новую модель
+      promptText: prompt,
+      model: options?.model || 'gen4_turbo',
       duration: options?.duration || 5,
-      ratio: options?.ratio || '1280:720' // Обновлено согласно документации
+      ratio: options?.ratio || '16:9' // Согласно документации: "16:9" | "9:16" | "1:1"
     };
+
+    // Если есть imageUrl - добавляем promptImage
+    if (options?.imageUrl) {
+      request.promptImage = options.imageUrl;
+      console.log('==================== IMAGE TO VIDEO MODE ====================');
+      console.log('Image URL:', options.imageUrl);
+      console.log('===============================================================');
+    } else {
+      console.log('==================== TEXT TO VIDEO MODE ====================');
+      console.log('No image provided, generating from text only');
+      console.log('===============================================================');
+    }
 
     console.log('==================== RUNWAY REQUEST ====================');
     console.log('Request:', JSON.stringify(request, null, 2));

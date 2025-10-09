@@ -2,10 +2,10 @@ import axios from 'axios';
 import { logger } from '../../utils/logger';
 
 export interface RunwayVideoRequest {
-  promptText: string; // Согласно документации
-  promptImage?: string; // URL изображения для image-to-video
-  model?: 'gen4_turbo' | 'gen3a_turbo' | 'gen3'; // Обновленные модели
-  ratio?: '1280:720' | '720:1280' | '1408:768' | '768:1408' | '1920:1080' | '1080:1920'; // Согласно документации
+  promptText: string; // Текстовый промпт (обязательный)
+  promptImage?: string; // URL или base64 изображения для image-to-video (опциональный)
+  model?: 'gen4_turbo' | 'gen4_aleph' | 'gen3a_turbo' | 'gen3'; // Модели согласно документации
+  ratio?: '16:9' | '9:16' | '1:1'; // Согласно документации Runway
   duration?: number; // 5 or 10 seconds
   seed?: number;
   watermark?: boolean;
@@ -43,23 +43,37 @@ export class RunwayService {
       console.log('Original Request:', JSON.stringify(request, null, 2));
       console.log('API Key exists:', !!this.apiKey);
       console.log('Base URL:', this.baseUrl);
+      console.log('Has Image:', !!request.promptImage);
       console.log('===============================================================');
 
       logger.info('Runway video generation started:', { 
         promptText: request.promptText.substring(0, 100),
+        hasImage: !!request.promptImage,
         model: request.model || 'gen4_turbo'
       });
 
-      // Используем text_to_video endpoint для генерации из текста
-      const endpoint = `${this.baseUrl}/text_to_video`;
-      const requestBody = {
+      // Согласно документации Runway, используем /v1/image_to_video для всех случаев
+      // Если есть изображение - добавляем promptImage, если нет - просто promptText
+      const hasImage = !!request.promptImage;
+      const endpoint = `${this.baseUrl}/image_to_video`;
+      
+      const requestBody: any = {
         model: request.model || 'gen4_turbo',
-        promptText: request.promptText, // Runway использует 'promptText' для text_to_video
-        ratio: request.ratio || '1280:720',
+        promptText: request.promptText,
         duration: request.duration || 5,
-        seed: request.seed,
+        ratio: request.ratio || '16:9', // Согласно документации: "16:9" | "9:16" | "1:1"
         watermark: request.watermark !== false
       };
+
+      // Если есть seed - добавляем
+      if (request.seed !== undefined) {
+        requestBody.seed = request.seed;
+      }
+
+      // Если есть изображение - добавляем promptImage
+      if (hasImage) {
+        requestBody.promptImage = request.promptImage;
+      }
 
       console.log('==================== RUNWAY API REQUEST ====================');
       console.log('Endpoint:', endpoint);
@@ -417,9 +431,9 @@ export class RunwayService {
       return { valid: false, error: 'Duration must be 5 or 10 seconds' };
     }
 
-    const validRatios = ['1280:720', '720:1280', '1408:768', '768:1408', '1920:1080', '1080:1920'];
+    const validRatios = ['16:9', '9:16', '1:1'];
     if (request.ratio && !validRatios.includes(request.ratio)) {
-      return { valid: false, error: 'Invalid ratio' };
+      return { valid: false, error: 'Invalid ratio. Must be "16:9", "9:16", or "1:1"' };
     }
 
     return { valid: true };
