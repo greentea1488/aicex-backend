@@ -500,7 +500,7 @@ export class AIServiceManager {
             success: true,
             data: {
               type: 'video',
-              url: response.data?.videos?.[0]?.url || response.data?.video_url,
+              url: response.data?.videos?.[0]?.url,
               metadata: {
                 id: response.data?.id,
                 status: response.data?.status,
