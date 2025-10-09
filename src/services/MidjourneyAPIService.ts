@@ -109,7 +109,7 @@ export class MidjourneyAPIService {
       console.log('Endpoint:', `${this.apiUrl}/api/v1/networks/midjourney`);
       console.log('Request Body:', JSON.stringify(requestBody, null, 2));
       console.log('Has API Key:', !!this.apiKey);
-      console.log('🚀 Using CORRECT GenAPI endpoint from documentation!');
+      console.log('🚀 RAILWAY TEST: Using CORRECT GenAPI endpoint from documentation!');
       console.log('===============================================================');
 
       // POST запрос согласно примеру в документации
