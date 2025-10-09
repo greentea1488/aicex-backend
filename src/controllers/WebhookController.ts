@@ -1057,10 +1057,18 @@ export class WebhookController {
         taskType: task.type
       });
 
-      if (status !== 'completed' || !mediaUrl) {
-        console.log('⚠️ Task not completed or no media URL, skipping notification');
+      const isCompleted = status === 'completed' || status === 'COMPLETED';
+      
+      if (!isCompleted || !mediaUrl) {
+        console.log('⚠️ Task not completed or no media URL, skipping notification', {
+          status,
+          isCompleted,
+          mediaUrl: mediaUrl?.substring(0, 50)
+        });
         return;
       }
+      
+      console.log('✅ Task completed with media URL, proceeding with notification');
 
       // Получаем пользователя для telegramId
       const user = await prisma.user.findUnique({ 
