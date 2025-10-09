@@ -9,6 +9,8 @@ export interface MidjourneyGenerationRequest {
   aspect_ratio?: string;
   quality?: string;
   style?: string;
+  seed?: number;  // Опциональный параметр для детерминизма
+  negative_prompt?: string;  // Опциональный негативный промпт
   userId: number;
   telegramId: number;
 }
@@ -80,19 +82,22 @@ export class MidjourneyAPIService {
 
       // Отправляем запрос в Gen API для Midjourney
       // Согласно документации GenAPI: POST /v1/image/generations
-      const requestBody = {
+      const requestBody: any = {
         model: 'midjourney',  // ID модели согласно GenAPI
         input: {  // Правильное поле согласно документации
           prompt: this.buildPrompt(request),
-          aspect_ratio: request.aspect_ratio || '1:1',
-          seed: request.seed
+          aspect_ratio: request.aspect_ratio || '1:1'
         },
         callback_url: `${CONFIG.app.baseUrl}/api/webhooks/midjourney`  // GenAPI использует callback_url
       };
 
-      // Убираем undefined значения из input
-      if (!requestBody.input.seed) {
-        delete requestBody.input.seed;
+      // Добавляем опциональные параметры если они указаны
+      if (request.seed !== undefined) {
+        requestBody.input.seed = request.seed;
+      }
+      
+      if (request.negative_prompt) {
+        requestBody.input.negative_prompt = request.negative_prompt;
       }
 
       console.log('==================== MIDJOURNEY API REQUEST ====================');
