@@ -60,10 +60,21 @@ export class PromptEnhancerService {
       });
 
       // Вызываем GPT для улучшения промпта
+      console.log('==================== CALLING GPT FOR ENHANCEMENT ====================');
+      console.log('System prompt length:', systemPrompt.length);
+      console.log('User prompt:', userPrompt);
+      console.log('===============================================================');
+      
       const response = await this.openai.chat([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ], 'prompt-enhancer');
+      
+      console.log('==================== GPT RESPONSE ====================');
+      console.log('Response success:', response.success);
+      console.log('Response content:', response.content);
+      console.log('Response error:', response.error);
+      console.log('===============================================================');
 
       if (!response.success || !response.content) {
         throw new Error('Failed to enhance prompt');
@@ -87,7 +98,13 @@ export class PromptEnhancerService {
       return enhancedPrompt;
 
     } catch (error: any) {
-      logger.error('Prompt Enhancer error:', error);
+      logger.error('🔥 Prompt Enhancer ERROR:', error);
+      console.log('==================== PROMPT ENHANCER ERROR ====================');
+      console.log('Error:', error);
+      console.log('Error message:', error.message);
+      console.log('Error stack:', error.stack);
+      console.log('Using fallback prompt');
+      console.log('===============================================================');
       
       // Возвращаем оригинальный промпт с базовыми улучшениями
       return this.createFallbackPrompt(originalPrompt, options);
