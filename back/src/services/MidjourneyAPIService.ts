@@ -81,29 +81,27 @@ export class MidjourneyAPIService {
       });
 
       // Отправляем запрос в Gen API для Midjourney
-      // Согласно официальной документации GenAPI
+      // Согласно официальной документации GenAPI - минимальный набор параметров
       const requestBody: any = {
-        model: request.model || '7.0',  // Версия Midjourney (7.0 или 6.1)
         prompt: this.buildPrompt(request),
-        aspectRatio: request.aspect_ratio || '1:1',  // camelCase как в документации
-        chaos: 30,
-        quality: '1',
-        stop: 100,
-        stylize: 1000,
-        tile: false,
-        weird: 0,
-        translate_input: true,  // Автоматический перевод русских промптов
-        upgrade_prompt: false,
         callback_url: `${CONFIG.app.baseUrl}/api/webhooks/midjourney`
       };
 
-      // Добавляем опциональные параметры если они указаны
+      // Добавляем опциональные параметры (согласно документации)
+      if (request.model) {
+        requestBody.model = request.model;
+      }
+      
+      if (request.aspect_ratio && request.aspect_ratio !== '1:1') {
+        requestBody.aspectRatio = request.aspect_ratio;  // camelCase!
+      }
+      
       if (request.seed !== undefined) {
         requestBody.seed = request.seed;
       }
       
       if (request.negative_prompt) {
-        requestBody.negative_prompt = request.negative_prompt;
+        requestBody.no = request.negative_prompt;  // Параметр 'no' согласно документации
       }
 
       console.log('==================== MIDJOURNEY API REQUEST ====================');
@@ -113,8 +111,9 @@ export class MidjourneyAPIService {
       console.log('Has API Key:', !!this.apiKey);
       console.log('===============================================================');
 
+      // POST запрос согласно примеру в документации
       const apiResponse = await axios.post(
-        `${this.apiUrl}/api/v1/networks/midjourney`,  // Правильный endpoint согласно документации GenAPI
+        `${this.apiUrl}/api/v1/networks/midjourney`,
         requestBody,
         {
           headers: {
