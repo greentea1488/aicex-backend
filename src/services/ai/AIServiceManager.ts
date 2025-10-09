@@ -474,10 +474,52 @@ export class AIServiceManager {
       throw new Error('Image URL is required for Freepik video generation');
     }
 
+    // Включаем enhancePrompt для русских промптов - он переведет на английский!
+    const isRussianPrompt = /[а-яё]/i.test(prompt);
+    let finalPrompt = prompt;
+    
+    if (isRussianPrompt) {
+      console.log('==================== VIDEO RUSSIAN PROMPT CHECK ====================');
+      console.log('Video Prompt:', prompt);
+      console.log('Is Russian:', isRussianPrompt);
+      console.log('Will enhance for translation to English');
+      console.log('===============================================================');
+      
+      // Используем FreepikService для улучшения промпта (он уже имеет PromptEnhancerService)
+      try {
+        // Вызываем generateVideoFromImage напрямую, он уже имеет логику улучшения промпта
+        const response = await this.freepik.generateVideoFromImage(
+          options.image,
+          prompt,
+          options?.model || 'kling_v2_5_pro',
+          options?.duration || 5
+        );
+        
+        if (response.success) {
+          return {
+            success: true,
+            data: {
+              type: 'video',
+              url: response.data?.videos?.[0]?.url || response.data?.video_url,
+              metadata: {
+                id: response.data?.id,
+                status: response.data?.status,
+                videos: response.data?.videos,
+                service: 'freepik'
+              }
+            },
+            tokensUsed: options?.tokensUsed || 15
+          };
+        }
+      } catch (error) {
+        console.log('⚠️ Video prompt enhancement failed, using direct call:', error);
+      }
+    }
+
     const request: FreepikVideoRequest = {
       image: options.image,
       duration: options?.duration || '5',
-      prompt,
+      prompt: finalPrompt,
       model: options?.model || 'kling-v2'
     };
 

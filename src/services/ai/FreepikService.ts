@@ -958,6 +958,34 @@ export class FreepikService {
         duration
       });
 
+      // Улучшаем промпт если он на русском языке
+      let finalPrompt = prompt;
+      if (prompt && /[а-яё]/i.test(prompt)) {
+        console.log('==================== VIDEO PROMPT ENHANCEMENT START ====================');
+        console.log('Original Video Prompt:', prompt);
+        console.log('Video Model:', model);
+        console.log('===============================================================');
+        
+        try {
+          const promptEnhancement = await this.promptEnhancer.enhancePrompt(prompt, {
+            style: 'photographic',
+            quality: 'high',
+            language: 'ru',
+            model: model // Передаем модель для адаптации
+          });
+          finalPrompt = promptEnhancement.enhanced;
+          
+          console.log('==================== VIDEO PROMPT ENHANCED ====================');
+          console.log('Original:', promptEnhancement.original);
+          console.log('Enhanced:', promptEnhancement.enhanced);
+          console.log('Improvements:', promptEnhancement.improvements);
+          console.log('===============================================================');
+        } catch (error) {
+          console.log('⚠️ Video prompt enhancement failed, using original:', error);
+          finalPrompt = prompt;
+        }
+      }
+
       const requestData: any = {};
       
       // Добавляем webhook только если BACKEND_URL настроен
@@ -985,10 +1013,10 @@ export class FreepikService {
         // MiniMax модели требуют prompt и first_frame_image
         case 'minimax_hailuo_768p':
         case 'minimax_hailuo_1080p':
-          requestData.prompt = prompt || 'Create a cinematic video';
+          requestData.prompt = finalPrompt || 'Create a cinematic video';
           requestData.first_frame_image = imageUrl;
-          // Отключаем prompt_optimizer для русских промптов
-          const isRussianPrompt = /[а-яё]/i.test(prompt || '');
+          // Отключаем prompt_optimizer для русских промптов (теперь не нужно, так как промпт уже на английском)
+          const isRussianPrompt = /[а-яё]/i.test(finalPrompt || '');
           if (!isRussianPrompt) {
             requestData.prompt_optimizer = true;
           }
@@ -1002,7 +1030,7 @@ export class FreepikService {
 
         // PixVerse V5 требует prompt и image_url
         case 'pixverse_v5':
-          requestData.prompt = prompt || 'Create a cinematic video';
+          requestData.prompt = finalPrompt || 'Create a cinematic video';
           requestData.image_url = imageUrl;
           requestData.resolution = '1080p';
           requestData.duration = duration && [5, 8].includes(duration) ? duration : 5;
@@ -1012,7 +1040,7 @@ export class FreepikService {
         case 'pixverse_v5_transition':
           requestData.start_image_url = imageUrl;
           requestData.end_image_url = imageUrl; // Можно добавить второе изображение позже
-          if (prompt) requestData.prompt = prompt;
+          if (finalPrompt) requestData.prompt = finalPrompt;
           requestData.duration = duration && [5, 8].includes(duration) ? duration : 5;
           break;
 
@@ -1020,7 +1048,7 @@ export class FreepikService {
         case 'kling_elements_pro_1_6':
         case 'kling_elements_std_1_6':
           requestData.images = [imageUrl];
-          if (prompt) requestData.prompt = prompt;
+          if (finalPrompt) requestData.prompt = finalPrompt;
           requestData.duration = duration && [5, 10].includes(duration) ? String(duration) : "5";
           requestData.aspect_ratio = 'widescreen_16_9';
           break;
@@ -1028,7 +1056,7 @@ export class FreepikService {
         // Все остальные Kling модели используют image
         case 'kling_v2_5_pro':
           requestData.image = imageUrl;
-          if (prompt) requestData.prompt = prompt;
+          if (finalPrompt) requestData.prompt = finalPrompt;
           requestData.cfg_scale = 0.5;
           // Kling v2.5 Pro поддерживает только 5s и 10s
           requestData.duration = duration && [5, 10].includes(duration) ? String(duration) : "5";
@@ -1037,7 +1065,7 @@ export class FreepikService {
         default:
           // Для всех остальных моделей (Kling Pro/Std 1.6, 2.1, v2, Seedance, Wan)
           requestData.image = imageUrl;
-          if (prompt) requestData.prompt = prompt;
+          if (finalPrompt) requestData.prompt = finalPrompt;
           
           // Добавляем cfg_scale для Kling моделей
           if (model.includes('kling')) {
