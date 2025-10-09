@@ -246,30 +246,59 @@ export class UXHelpers {
         message: 'Некорректный промпт',
         suggestion: 'Попробуйте более описательный промпт на английском языке',
         retryable: false
+      },
+      'database_error': {
+        type: 'database_error',
+        message: 'Временная техническая проблема',
+        suggestion: 'Попробуйте еще раз через минуту',
+        retryable: true
+      },
+      'api_error': {
+        type: 'api_error',
+        message: 'Сервис временно недоступен',
+        suggestion: 'Попробуйте позже или используйте другой AI сервис',
+        retryable: true,
+        fallbackAction: 'suggest_alternatives'
       }
     };
 
-    // Определяем тип ошибки по сообщению
-    const errorMessage = error.message?.toLowerCase() || '';
+    // Извлекаем понятное сообщение об ошибке
+    let errorMessage = '';
     
-    if (errorMessage.includes('token') || errorMessage.includes('баланс')) {
-      return errorMap['insufficient_tokens'];
-    } else if (errorMessage.includes('model') || errorMessage.includes('модель')) {
-      return errorMap['model_unavailable'];
-    } else if (errorMessage.includes('rate') || errorMessage.includes('лимит')) {
-      return errorMap['rate_limit'];
-    } else if (errorMessage.includes('network') || errorMessage.includes('сеть')) {
-      return errorMap['network_error'];
-    } else if (errorMessage.includes('prompt') || errorMessage.includes('промпт')) {
-      return errorMap['invalid_prompt'];
+    if (typeof error === 'string') {
+      errorMessage = error.toLowerCase();
+    } else if (error?.message) {
+      errorMessage = error.message.toLowerCase();
+    } else if (error?.error) {
+      errorMessage = error.error.toLowerCase();
+    } else {
+      errorMessage = String(error).toLowerCase();
     }
 
-    // Дефолтная ошибка
+    // Специальная обработка для известных ошибок
+    if (errorMessage.includes('token') || errorMessage.includes('баланс') || errorMessage.includes('недостаточно')) {
+      return errorMap['insufficient_tokens'];
+    } else if (errorMessage.includes('model') || errorMessage.includes('модель') || errorMessage.includes('недоступен')) {
+      return errorMap['model_unavailable'];
+    } else if (errorMessage.includes('rate') || errorMessage.includes('лимит') || errorMessage.includes('превышен')) {
+      return errorMap['rate_limit'];
+    } else if (errorMessage.includes('network') || errorMessage.includes('сеть') || errorMessage.includes('timeout')) {
+      return errorMap['network_error'];
+    } else if (errorMessage.includes('prompt') || errorMessage.includes('промпт') || errorMessage.includes('некорректный')) {
+      return errorMap['invalid_prompt'];
+    } else if (errorMessage.includes('prisma') || errorMessage.includes('database') || errorMessage.includes('connection')) {
+      return errorMap['database_error'];
+    } else if (errorMessage.includes('api') || errorMessage.includes('endpoint') || errorMessage.includes('service')) {
+      return errorMap['api_error'];
+    }
+
+    // Дефолтная ошибка - скрываем технические детали
     return {
       type: 'unknown',
-      message: 'Произошла неизвестная ошибка',
-      suggestion: 'Попробуйте еще раз или обратитесь в поддержку',
-      retryable: true
+      message: 'Произошла техническая ошибка',
+      suggestion: 'Попробуйте еще раз или используйте другой AI сервис',
+      retryable: true,
+      fallbackAction: 'suggest_alternatives'
     };
   }
 
