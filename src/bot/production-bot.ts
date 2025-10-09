@@ -1687,6 +1687,15 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
 
   } catch (error) {
     console.error("❌ Midjourney generation error:", error);
+    
+    // Удаляем сообщение о прогрессе если оно есть
+    try {
+      await ctx.api.deleteMessage(progressMsg.chat.id, progressMsg.message_id);
+    } catch (e) {
+      // Игнорируем ошибку удаления
+    }
+    
+    // Показываем понятную ошибку пользователю
     await UXHelpers.sendSmartErrorNotification(ctx, error);
     UXHelpers.clearUserState(userId);
   }
