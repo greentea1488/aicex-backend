@@ -582,17 +582,44 @@ export class WebhookController {
         return;
       }
 
+      console.log('🔍 Searching for Freepik task in DB:', task_id);
+
       // Находим задачу в БД
       const task = await prisma.freepikTask.findFirst({
         where: { taskId: task_id },
         include: { user: true }
       });
 
+      console.log('🔍 Freepik task search result:', {
+        found: !!task,
+        taskId: task?.id,
+        userId: task?.userId,
+        userTelegramId: task?.user?.telegramId,
+        taskType: task?.type,
+        taskModel: task?.model
+      });
+
       if (!task) {
+        console.error('❌ Freepik task not found in DB!', { taskId: task_id });
+        
+        // Попробуем найти все задачи этого пользователя для отладки
+        const allTasks = await prisma.freepikTask.findMany({
+          take: 5,
+          orderBy: { createdAt: 'desc' }
+        });
+        console.log('📋 Last 5 Freepik tasks in DB:', allTasks.map(t => ({
+          id: t.id,
+          taskId: t.taskId,
+          userId: t.userId,
+          type: t.type
+        })));
+        
         logger.error('Freepik task not found', { taskId: task_id });
         res.status(404).json({ error: 'Task not found' });
         return;
       }
+      
+      console.log('✅ Freepik task found in DB');
 
       // Обновляем статус задачи
       const updateData: any = {
