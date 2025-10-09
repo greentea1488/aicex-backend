@@ -79,8 +79,8 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
     description: 'Ultra-realistic, high-resolution images (Freepik exclusive)',
     endpoint: '/v1/ai/mystic',                     // Специфичный endpoint
     fallbackEndpoint: '/v1/ai/text-to-image',
-    model: 'realism',                              // Mystic требует model: 'realism', 'fluid' или 'zen'
-    requiresModelParam: true                       // Передаем model в параметре
+    // Убираем model: 'realism' - он искажает результат для русских промптов
+    requiresModelParam: false                      // НЕ передаем model параметр
   },
   
   // Classic Fast - базовая быстрая генерация
