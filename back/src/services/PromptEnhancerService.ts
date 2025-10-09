@@ -68,7 +68,7 @@ export class PromptEnhancerService {
       const response = await this.openai.chat([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
-      ], 'prompt-enhancer');
+      ], 'gpt-4o');
       
       console.log('==================== GPT RESPONSE ====================');
       console.log('Response success:', response.success);
@@ -250,7 +250,19 @@ A majestic horse galloping through a misty field at dusk, cinematic wide shot, g
    */
   private parseEnhancedPrompt(gptResponse: string, originalPrompt: string): EnhancedPrompt {
     try {
-      // Ищем улучшенный промпт
+      // Ищем улучшенный промпт в новом формате
+      const improvedMatch = gptResponse.match(/✨ Improved prompt \(EN\):\s*([^\n]+)/);
+      if (improvedMatch && improvedMatch[1]) {
+        return {
+          original: originalPrompt,
+          enhanced: improvedMatch[1].trim(),
+          improvements: ['Переведено на английский язык', 'Добавлены технические детали', 'Улучшена композиция'],
+          style: 'photographic',
+          quality: 'high'
+        };
+      }
+
+      // Fallback - ищем улучшенный промпт в старом формате
       const enhancedMatch = gptResponse.match(/ENHANCED_PROMPT:\s*(.+?)(?=\nIMPROVEMENTS:|$)/s);
       const enhanced = enhancedMatch ? enhancedMatch[1].trim() : originalPrompt;
 
