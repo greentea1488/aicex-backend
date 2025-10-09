@@ -230,14 +230,6 @@ function getAllKlingModelsMenu(page: number = 0) {
   return { inline_keyboard: keyboard };
 }
 
-// 📊 Состояния пользователей
-const userStates = new Map<number, {
-  state: string;
-  service: string;
-  model?: string;
-  data?: any;
-}>();
-
 // 🧭 Универсальная функция для создания кнопок навигации
 function getNavigationButtons(backCallback?: string, includeHome: boolean = true) {
   const buttons: any[] = [];
@@ -345,10 +337,9 @@ bot.on("callback_query", async (ctx) => {
   // Обработка выбора конкретной модели для видео из фото
   if (data.startsWith('freepik_vid_')) {
     const modelId = data.replace('freepik_vid_', '');
-    userStates.set(userId, { 
-      state: 'waiting_for_photo_video', 
-      service: 'freepik',
-      model: modelId
+    UXHelpers.setUserState(userId, {
+      currentAction: 'waiting_for_photo_video',
+      data: { service: 'freepik', model: modelId }
     });
     await ctx.editMessageText(
       `🎬 <b>${getVideoModelName(modelId)}</b>\n\n📸 Отправьте фото для создания видео:\n\n💡 <i>Модель автоматически создаст видео на основе вашего изображения</i>`,
@@ -528,10 +519,9 @@ bot.on("callback_query", async (ctx) => {
       break;
 
     case 'video_runway':
-      userStates.set(userId, { 
-        state: 'waiting_video_prompt', 
-        service: 'runway',
-        data: { service: 'runway' } // Добавляем service в data для корректной обработки
+      UXHelpers.setUserState(userId, {
+        currentAction: 'waiting_video_prompt',
+        data: { service: 'runway' }
       });
       await ctx.editMessageText(
         "🚀 <b>Runway ML</b>\n\n📝 Отправьте описание видео которое хотите создать:\n\n💡 Пример: \"Летящий дрон над городом на закате\"",
@@ -581,7 +571,10 @@ bot.on("callback_query", async (ctx) => {
       break;
 
     case 'chat_gpt4':
-      userStates.set(userId, { state: 'chatting', service: 'gpt4' });
+      UXHelpers.setUserState(userId, {
+        currentAction: 'chatting',
+        data: { service: 'gpt4' }
+      });
       await ctx.editMessageText(
         "🧠 <b>ChatGPT-4</b>\n\n💬 Теперь можете задавать любые вопросы!\n\n📝 Отправьте сообщение для начала диалога.\n\n🛑 Напишите \"стоп\" для завершения.",
         {
@@ -659,10 +652,9 @@ bot.on("callback_query", async (ctx) => {
         const model = getVideoModelById(modelId);
         
         if (model) {
-          userStates.set(userId, { 
-            state: 'waiting_video_prompt', 
-            service: 'freepik', 
-            data: { model: modelId, endpoint: model.endpoint } 
+          UXHelpers.setUserState(userId, {
+            currentAction: 'waiting_video_prompt',
+            data: { service: 'freepik', model: modelId, endpoint: model.endpoint }
           });
           
           await ctx.editMessageText(
@@ -720,11 +712,11 @@ bot.on("message:photo", async (ctx) => {
   
   console.log("📸 Photo received from user:", userId);
   
-  const userState = userStates.get(userId);
+  const userState = UXHelpers.getUserState(userId);
   
-  if (userState?.state === 'waiting_for_photo_video') {
-    await handleVideoFromPhoto(ctx, userState.service);
-  } else if (userState?.state === 'vision_chat') {
+  if (userState?.currentAction === 'waiting_for_photo_video') {
+    await handleVideoFromPhoto(ctx, userState.data?.service || 'freepik');
+  } else if (userState?.currentAction === 'vision_chat') {
     await handleGPTVision(ctx);
   } else {
     // Предлагаем варианты использования фото
@@ -1653,7 +1645,6 @@ async function handleBackToMain(ctx: any, userId: number) {
   try {
     // Очищаем ВСЕ состояния пользователя
     UXHelpers.clearUserState(userId);
-    userStates.delete(userId);
     stateManager.endSession(userId.toString());
     
     const message = `🏠 <b>Главное меню</b>\n\nВыберите действие:`;
@@ -1781,9 +1772,9 @@ process.on("SIGINT", async () => {
 async function handleVideoFromPhoto(ctx: any, service: string) {
   try {
     const userId = ctx.from?.id;
-    const userState = userStates.get(userId);
+    const userState = UXHelpers.getUserState(userId);
     
-    if (!userState || userState.state !== 'waiting_for_photo_video') {
+    if (!userState || userState.currentAction !== 'waiting_for_photo_video') {
       await ctx.reply("❌ Неожиданное состояние. Попробуйте заново.");
       return;
     }
@@ -1794,7 +1785,7 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
     const imageUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
     
     const prompt = ctx.message.caption || "Create a cinematic video from this image";
-    let model = userState.model || 'kling_v2_5_pro';
+    let model = userState.data?.model || 'kling_v2_5_pro';
     
     // Конвертируем callback ID в FreepikService ID  
     const modelMapping: Record<string, string> = {
@@ -1912,7 +1903,7 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
       );
       
       // Очищаем состояние
-      userStates.delete(userId);
+      UXHelpers.clearUserState(userId);
       
       // ВАЖНО: Результат придет через webhook!
       // WebhookController обработает ответ от Freepik и отправит видео пользователю
