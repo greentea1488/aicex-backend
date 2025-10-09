@@ -8,6 +8,7 @@ import { UXHelpers } from "./utils/UXHelpers";
 import { StateManager } from "./utils/StateManager";
 import { TaskQueue } from "./utils/TaskQueue";
 import { MidjourneyAPIService } from "../services/MidjourneyAPIService";
+import axios from "axios";
 
 const bot = new Bot(process.env.BOT_TOKEN!);
 const aiManager = new AIServiceManager();
@@ -1796,17 +1797,26 @@ async function handleRunwayPhoto(ctx: any) {
       imageUrl: imageUrl.substring(0, 50) + '...'
     });
 
-    // Сохраняем URL изображения в состоянии и запрашиваем промпт
+    // Скачиваем изображение и конвертируем в base64
+    // Runway требует правильный Content-Type, а Telegram отдает application/octet-stream
+    await ctx.reply("⏳ Обрабатываю изображение...");
+    
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const base64Image = `data:image/jpeg;base64,${Buffer.from(response.data).toString('base64')}`;
+    
+    console.log('📸 Converted to base64:', base64Image.substring(0, 100) + '...');
+
+    // Сохраняем base64 изображение в состоянии и запрашиваем промпт
     UXHelpers.setUserState(userId, {
       currentAction: 'waiting_runway_prompt',
       data: { 
         service: 'runway',
-        imageUrl: imageUrl
+        imageUrl: base64Image  // Теперь base64 вместо URL
       }
     });
 
     await ctx.reply(
-      "✅ <b>Изображение получено!</b>\n\n" +
+      "✅ <b>Изображение обработано!</b>\n\n" +
       "📝 <b>Шаг 2:</b> Отправьте текстовый промпт для управления видео\n\n" +
       "💡 Пример: \"камера медленно отдаляется, золотой час\"\n" +
       "💡 Или просто отправьте \".\" для генерации без промпта",
