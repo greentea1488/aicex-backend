@@ -18,6 +18,62 @@ const midjourneyService = new MidjourneyAPIService();
 
 console.log("🤖 Starting AICEX Production Bot with enhanced UX...");
 
+// 🎯 НАСТРОЙКА КОМАНД БОТА (Slash Commands Menu)
+async function setupBotCommands() {
+  try {
+    // Список команд для всех языков (билингвальный)
+    const commands = [
+      { command: "start", description: "🚀 Start / Начать" },
+      { command: "menu", description: "📋 Main menu / Главное меню" },
+      { command: "image", description: "🎨 Generate image / Генерация изображения" },
+      { command: "video", description: "🎬 Generate video / Генерация видео" },
+      { command: "chat", description: "💬 AI Chat / Диалог с ИИ" },
+      { command: "help", description: "❓ Help / Помощь" },
+    ];
+
+    // 1) По умолчанию (все чаты)
+    await bot.api.setMyCommands(commands);
+
+    // 2) Только приватные чаты
+    await bot.api.setMyCommands(commands, {
+      scope: { type: "all_private_chats" },
+    });
+
+    // 3) Русская локализация
+    await bot.api.setMyCommands([
+      { command: "start", description: "🚀 Начать работу с ботом" },
+      { command: "menu", description: "📋 Главное меню" },
+      { command: "image", description: "🎨 Генерация изображения" },
+      { command: "video", description: "🎬 Генерация видео" },
+      { command: "chat", description: "💬 Диалог с ИИ" },
+      { command: "help", description: "❓ Помощь и информация" },
+    ], {
+      language_code: "ru",
+    });
+
+    // 4) Английская локализация
+    await bot.api.setMyCommands([
+      { command: "start", description: "🚀 Start the bot" },
+      { command: "menu", description: "📋 Main menu" },
+      { command: "image", description: "🎨 Generate image" },
+      { command: "video", description: "🎬 Generate video" },
+      { command: "chat", description: "💬 AI Chat" },
+      { command: "help", description: "❓ Help and info" },
+    ], {
+      language_code: "en",
+    });
+
+    // Показать кнопку "Меню" с командами в чате
+    await bot.api.setChatMenuButton({
+      menu_button: { type: "commands" },
+    });
+
+    console.log("✅ Bot commands menu configured successfully");
+  } catch (error) {
+    console.error("❌ Failed to setup bot commands:", error);
+  }
+}
+
 // 🎯 УЛУЧШЕННОЕ ГЛАВНОЕ МЕНЮ с быстрыми действиями
 function getMainMenu(userId?: number) {
   return UXHelpers.getSmartMainMenu(userId);
@@ -315,6 +371,116 @@ bot.command("start", async (ctx) => {
 
   } catch (error) {
     console.error("❌ Start error:", error);
+    await UXHelpers.sendSmartErrorNotification(ctx, error);
+  }
+});
+
+// 📋 КОМАНДА /menu - Главное меню
+bot.command("menu", async (ctx) => {
+  console.log("📨 /menu from user:", ctx.from?.id);
+  
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.reply(
+      "📋 <b>Главное меню</b>\n\nВыберите действие:",
+      {
+        reply_markup: getMainMenu(userId),
+        parse_mode: "HTML"
+      }
+    );
+  } catch (error) {
+    console.error("❌ Menu error:", error);
+    await UXHelpers.sendSmartErrorNotification(ctx, error);
+  }
+});
+
+// 🎨 КОМАНДА /image - Генерация изображения
+bot.command("image", async (ctx) => {
+  console.log("📨 /image from user:", ctx.from?.id);
+  
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.reply(
+      "🎨 <b>Генерация изображения</b>\n\nВыберите сервис:",
+      {
+        reply_markup: imageMenu,
+        parse_mode: "HTML"
+      }
+    );
+  } catch (error) {
+    console.error("❌ Image error:", error);
+    await UXHelpers.sendSmartErrorNotification(ctx, error);
+  }
+});
+
+// 🎬 КОМАНДА /video - Генерация видео
+bot.command("video", async (ctx) => {
+  console.log("📨 /video from user:", ctx.from?.id);
+  
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.reply(
+      "🎬 <b>Генерация видео</b>\n\nВыберите сервис:",
+      {
+        reply_markup: videoMenu,
+        parse_mode: "HTML"
+      }
+    );
+  } catch (error) {
+    console.error("❌ Video error:", error);
+    await UXHelpers.sendSmartErrorNotification(ctx, error);
+  }
+});
+
+// 💬 КОМАНДА /chat - Диалог с ИИ
+bot.command("chat", async (ctx) => {
+  console.log("📨 /chat from user:", ctx.from?.id);
+  
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.reply(
+      "💬 <b>Диалог с ИИ</b>\n\nВыберите модель:",
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "💬 ChatGPT-4", callback_data: "chat_gpt4" },
+              { text: "🎓 ChatGPT-4 Mini", callback_data: "chat_gpt4_mini" }
+            ],
+            [
+              { text: "🔍 GPT Vision", callback_data: "start_vision_chat" }
+            ],
+            ...getNavigationButtons()
+          ]
+        },
+        parse_mode: "HTML"
+      }
+    );
+  } catch (error) {
+    console.error("❌ Chat error:", error);
+    await UXHelpers.sendSmartErrorNotification(ctx, error);
+  }
+});
+
+// ❓ КОМАНДА /help - Помощь
+bot.command("help", async (ctx) => {
+  console.log("📨 /help from user:", ctx.from?.id);
+  
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await showHelp(ctx, userId);
+  } catch (error) {
+    console.error("❌ Help error:", error);
     await UXHelpers.sendSmartErrorNotification(ctx, error);
   }
 });
@@ -1761,6 +1927,9 @@ export async function startProductionBot() {
     
     const me = await bot.api.getMe();
     console.log("✅ Bot info:", me);
+    
+    // Настраиваем меню команд
+    await setupBotCommands();
     
     await bot.start();
     console.log("✅ Production bot started successfully!");
