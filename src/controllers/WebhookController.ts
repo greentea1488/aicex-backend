@@ -567,11 +567,12 @@ export class WebhookController {
       
       logger.info('🔥 Received Freepik webhook', { body: req.body });
 
-      const { task_id, status, result } = req.body;
+      const { task_id, status, result, generated } = req.body;
       
       console.log('==================== FREEPIK WEBHOOK PARSED ====================');
       console.log('Task ID:', task_id);
       console.log('Status:', status);
+      console.log('Generated:', JSON.stringify(generated, null, 2));
       console.log('Result:', JSON.stringify(result, null, 2));
       console.log('===============================================================');
 
@@ -601,22 +602,26 @@ export class WebhookController {
       };
 
       // Если генерация завершена успешно
-      if (status === 'completed' && result) {
+      if (status === 'COMPLETED' || status === 'completed') {
         console.log('==================== FREEPIK WEBHOOK COMPLETED ====================');
-        console.log('Result Images:', result.images);
-        console.log('Result Videos:', result.videos);
+        console.log('Generated array:', generated);
+        console.log('Result:', result);
         console.log('===============================================================');
         
-        if (result.images && result.images.length > 0) {
+        // Freepik использует массив generated, а не result.images/videos
+        if (generated && generated.length > 0) {
+          updateData.imageUrl = generated[0]; // Может быть URL изображения или видео
+          console.log('🔥 Setting media URL from generated:', generated[0]);
+        } else if (result?.images && result.images.length > 0) {
           updateData.imageUrl = result.images[0].url;
-          console.log('🔥 Setting image URL from images:', result.images[0].url);
-        } else if (result.videos && result.videos.length > 0) {
-          updateData.imageUrl = result.videos[0].url; // Для видео тоже используем imageUrl
-          console.log('🔥 Setting image URL from videos:', result.videos[0].url);
+          console.log('🔥 Setting image URL from result.images:', result.images[0].url);
+        } else if (result?.videos && result.videos.length > 0) {
+          updateData.imageUrl = result.videos[0].url;
+          console.log('🔥 Setting video URL from result.videos:', result.videos[0].url);
         } else {
-          console.log('⚠️ No images or videos found in completed result');
+          console.log('⚠️ No media found in completed webhook');
         }
-      } else if (status === 'failed') {
+      } else if (status === 'FAILED' || status === 'failed') {
         updateData.error = result?.error || 'Generation failed';
         console.log('❌ Freepik generation failed:', updateData.error);
       }
