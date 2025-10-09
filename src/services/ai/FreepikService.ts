@@ -79,8 +79,8 @@ export const FREEPIK_IMAGE_MODELS: Record<string, FreepikImageModelConfig> = {
     description: 'Ultra-realistic, high-resolution images (Freepik exclusive)',
     endpoint: '/v1/ai/mystic',                     // Специфичный endpoint
     fallbackEndpoint: '/v1/ai/text-to-image',
-    // Убираем model: 'realism' - он искажает результат для русских промптов
-    requiresModelParam: false                      // НЕ передаем model параметр
+    model: 'realism',                              // Mystic требует model: 'realism', 'fluid' или 'zen'
+    requiresModelParam: true                       // Передаем model в параметре
   },
   
   // Classic Fast - базовая быстрая генерация
@@ -401,9 +401,9 @@ export class FreepikService {
       let finalPrompt = request.prompt;
       let promptEnhancement = null;
       
-      // КРИТИЧНО: enhancePrompt должно быть явно true, чтобы улучшать промпт
-      // Если undefined или false - НЕ улучшаем (для русских промптов)
-      if (request.enhancePrompt === true) {
+      // Включаем enhancePrompt для русских промптов - он переведет на английский!
+      // Если undefined или false - НЕ улучшаем (только для английских промптов)
+      if (request.enhancePrompt !== false) {
         console.log('==================== PROMPT ENHANCEMENT START ====================');
         console.log('Original Prompt:', request.prompt);
         console.log('Enhancement Options:', {
