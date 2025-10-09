@@ -1844,6 +1844,37 @@ async function handleVideoFromPhoto(ctx: any, service: string) {
     });
 
     if (result.success && result.data?.id) {
+      // Получаем внутренний userId из БД
+      const user = await prisma.user.findUnique({
+        where: { telegramId: userId }
+      });
+
+      if (!user) {
+        await ctx.reply("❌ Ошибка: пользователь не найден в базе данных");
+        return;
+      }
+
+      // ВАЖНО: Сохраняем задачу в FreepikTask таблицу для webhook
+      await prisma.freepikTask.create({
+        data: {
+          userId: user.id, // Внутренний ID пользователя
+          taskId: result.data.id,
+          prompt,
+          model,
+          type: 'video',
+          status: 'processing',
+          cost: 10 // Примерная стоимость генерации видео
+        }
+      });
+
+      console.log('✅ FreepikTask saved to DB:', {
+        taskId: result.data.id,
+        userId: user.id,
+        telegramId: userId,
+        model,
+        type: 'video'
+      });
+
       // Сохраняем задачу в очередь
       const task = await taskQueue.addTask({
         id: `video_${Date.now()}_${userId}`,
