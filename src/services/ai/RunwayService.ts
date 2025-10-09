@@ -5,7 +5,7 @@ export interface RunwayVideoRequest {
   promptText: string; // Текстовый промпт (обязательный)
   promptImage?: string; // URL или base64 изображения для image-to-video (опциональный)
   model?: 'gen4_turbo' | 'gen4_aleph' | 'gen3a_turbo' | 'gen3'; // Модели согласно документации
-  ratio?: '16:9' | '9:16' | '1:1'; // Согласно документации Runway
+  ratio?: '1280:720' | '720:1280' | '1104:832' | '832:1104' | '960:960' | '1584:672'; // Согласно API Runway (в пикселях)
   duration?: number; // 5 or 10 seconds
   seed?: number;
   watermark?: boolean;
@@ -61,7 +61,7 @@ export class RunwayService {
         model: request.model || 'gen4_turbo',
         promptText: request.promptText,
         duration: request.duration || 5,
-        ratio: request.ratio || '16:9', // Согласно документации: "16:9" | "9:16" | "1:1"
+        ratio: request.ratio || '1280:720', // По умолчанию 16:9 в пикселях
         watermark: request.watermark !== false
       };
 
@@ -431,9 +431,9 @@ export class RunwayService {
       return { valid: false, error: 'Duration must be 5 or 10 seconds' };
     }
 
-    const validRatios = ['16:9', '9:16', '1:1'];
+    const validRatios = ['1280:720', '720:1280', '1104:832', '832:1104', '960:960', '1584:672'];
     if (request.ratio && !validRatios.includes(request.ratio)) {
-      return { valid: false, error: 'Invalid ratio. Must be "16:9", "9:16", or "1:1"' };
+      return { valid: false, error: 'Invalid ratio. Must be one of: 1280:720, 720:1280, 1104:832, 832:1104, 960:960, 1584:672' };
     }
 
     return { valid: true };

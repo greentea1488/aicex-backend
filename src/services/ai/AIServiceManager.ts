@@ -563,7 +563,7 @@ export class AIServiceManager {
       promptText: prompt,
       model: options?.model || 'gen4_turbo',
       duration: options?.duration || 5,
-      ratio: options?.ratio || '16:9' // Согласно документации: "16:9" | "9:16" | "1:1"
+      ratio: options?.ratio || '1280:720' // По умолчанию 16:9 в пикселях
     };
 
     // Если есть imageUrl - добавляем promptImage
