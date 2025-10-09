@@ -528,7 +528,11 @@ bot.on("callback_query", async (ctx) => {
       break;
 
     case 'video_runway':
-      userStates.set(userId, { state: 'waiting_video_prompt', service: 'runway' });
+      userStates.set(userId, { 
+        state: 'waiting_video_prompt', 
+        service: 'runway',
+        data: { service: 'runway' } // Добавляем service в data для корректной обработки
+      });
       await ctx.editMessageText(
         "🚀 <b>Runway ML</b>\n\n📝 Отправьте описание видео которое хотите создать:\n\n💡 Пример: \"Летящий дрон над городом на закате\"",
         {
