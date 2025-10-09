@@ -62,7 +62,7 @@ export class RunwayService {
         promptText: request.promptText,
         duration: request.duration || 5,
         ratio: request.ratio || '1280:720', // По умолчанию 16:9 в пикселях
-        watermark: request.watermark !== false
+        watermark: false // Всегда без watermark
       };
 
       // Если есть seed - добавляем
@@ -159,7 +159,7 @@ export class RunwayService {
           duration: options?.duration || 5,
           ratio: options?.ratio || '1280:720',
           seed: options?.seed,
-          watermark: options?.watermark !== false
+          watermark: false // Всегда без watermark
         },
         {
           headers: {
