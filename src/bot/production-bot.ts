@@ -1592,14 +1592,6 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
     // Создаем задачу в очереди
     const task = stateManager.createTask(userId, 'image', 'midjourney', text, { model });
 
-    // Показываем прогресс
-    await UXHelpers.showProgress(ctx, {
-      stage: 'Подготовка к генерации',
-      progress: 10,
-      estimatedTime: 90,
-      message: 'Проверяю баланс токенов...'
-    });
-
     // Получаем пользователя
     const user = await prisma.user.findUnique({
       where: { telegramId: userId }
@@ -1618,12 +1610,8 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
       throw new Error(`Недостаточно токенов. Требуется: ${cost}, доступно: ${user.tokens}`);
     }
 
-    await UXHelpers.showProgress(ctx, {
-      stage: 'Генерация изображения',
-      progress: 30,
-      estimatedTime: 70,
-      message: 'Отправляю запрос в Midjourney через Gen API...'
-    });
+    // Показываем простое сообщение о начале генерации
+    const progressMsg = await ctx.reply('🎨 Генерирую изображение...');
 
     // Вызываем Midjourney API
     const result = await midjourneyService.generateImage({
@@ -1635,24 +1623,21 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
 
     const duration = Math.floor((Date.now() - startTime) / 1000);
 
+    // Удаляем сообщение о прогрессе
+    try {
+      await ctx.api.deleteMessage(progressMsg.chat.id, progressMsg.message_id);
+    } catch (e) {
+      // Игнорируем ошибку удаления
+    }
+
     if (result.success && result.taskId) {
-      await UXHelpers.showProgress(ctx, {
-        stage: 'Завершение',
-        progress: 100,
-        estimatedTime: 0,
-        message: 'Задача создана успешно!'
-      });
-
-      // Небольшая задержка для показа финального прогресса
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const message = `✅ <b>Задача создана успешно!</b>\n\n` +
+      // Показываем успешное сообщение без лишних технических деталей
+      const message = `✅ <b>Изображение создается!</b>\n\n` +
         `📝 Промпт: "${text}"\n` +
         `🖼️ Модель: Midjourney ${model}\n` +
-        `💰 Потрачено токенов: ${cost}\n` +
-        `⏱️ Время создания: ${UXHelpers.formatTime(duration)}\n\n` +
+        `💰 Потрачено токенов: ${cost}\n\n` +
         `⏳ Генерация займет примерно 1-2 минуты.\n` +
-        `🔄 Статус будет обновлен автоматически.`;
+        `🔄 Результат придет автоматически.`;
 
       await ctx.reply(message, {
         parse_mode: "HTML",
@@ -1676,7 +1661,17 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
       });
 
     } else {
-      throw new Error(result.error || 'Неизвестная ошибка');
+      // Показываем понятную ошибку пользователю
+      await ctx.reply(`❌ ${result.error || 'Произошла ошибка при создании изображения'}`, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '🔄 Попробовать снова', callback_data: 'midjourney_7.0' },
+              { text: '🏠 Главная', callback_data: 'back_to_main' }
+            ]
+          ]
+        }
+      });
     }
 
     // Обновляем состояние задачи
