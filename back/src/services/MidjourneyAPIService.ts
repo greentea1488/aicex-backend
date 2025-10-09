@@ -140,7 +140,7 @@ export class MidjourneyAPIService {
         await prisma.midjourneyTask.update({
           where: { id: task.id },
           data: {
-            taskId: requestId,  // Сохраняем request_id
+            taskId: requestId.toString(),  // Преобразуем число в строку для Prisma
             status: 'processing'
           }
         });
@@ -184,15 +184,18 @@ export class MidjourneyAPIService {
       let errorMessage = 'Unknown error';
       
       if (error.response?.status === 404) {
-        errorMessage = 'Midjourney API endpoint not found. Please check GEN_API_URL configuration.';
+        errorMessage = '🔧 Сервис Midjourney временно недоступен\n\n💡 Попробуйте позже или используйте другой AI сервис';
       } else if (error.response?.status === 401) {
-        errorMessage = 'Invalid Midjourney API key. Please check GEN_API_KEY configuration.';
+        errorMessage = '🔑 Проблема с авторизацией GenAPI\n\n💡 Обратитесь к администратору';
       } else if (error.response?.status === 402) {
-        errorMessage = 'Insufficient credits in Midjourney account.';
+        const apiErrorMessage = error.response?.data?.error || 'У Вас недостаточно средств на балансе';
+        errorMessage = `💰 Недостаточно средств на GenAPI\n\n${apiErrorMessage}\n\n💡 Попробуйте пополнить баланс GenAPI или используйте другой AI сервис`;
+      } else if (error.response?.status === 429) {
+        errorMessage = '⏰ Превышен лимит запросов GenAPI\n\n💡 Попробуйте позже или используйте другой AI сервис';
       } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        errorMessage = `❌ Ошибка GenAPI: ${error.response.data.message}`;
       } else if (error.message) {
-        errorMessage = error.message;
+        errorMessage = `❌ Ошибка: ${error.message}`;
       }
       
       return {
