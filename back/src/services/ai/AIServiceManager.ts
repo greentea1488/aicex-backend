@@ -26,6 +26,7 @@ export class AIServiceManager {
   private freepik: FreepikService;
   private openai: OpenAIService;
   private runway: RunwayService;
+  private currentUserContext?: UserContext;
 
   // Стоимость в токенах для разных операций
   private readonly TOKEN_COSTS = {
@@ -59,6 +60,8 @@ export class AIServiceManager {
     userContext: UserContext,
     options?: any
   ): Promise<GenerationResult> {
+    // Сохраняем userContext для использования в методах
+    this.currentUserContext = userContext;
     try {
       const tokenCost = this.getTokenCost(service, 'image');
       
@@ -327,6 +330,33 @@ export class AIServiceManager {
       console.log('==================== AI SERVICE MANAGER FREEPIK RESPONSE ====================');
       console.log('Response:', JSON.stringify(response, null, 2));
       console.log('===============================================================');
+      
+      // Сохраняем задачу в FreepikTask для webhook если есть task_id
+      if (response.success && response.data?.id && this.currentUserContext) {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { telegramId: this.currentUserContext.telegramId }
+          });
+          
+          if (user) {
+            await prisma.freepikTask.create({
+              data: {
+                userId: user.id,
+                taskId: response.data.id,
+                prompt,
+                model: request.model || 'seedream',
+                type: 'image',
+                status: 'processing',
+                cost: 5
+              }
+            });
+            console.log('✅ FreepikTask saved to DB for image generation:', response.data.id);
+          }
+        } catch (dbError) {
+          console.error('Failed to save FreepikTask:', dbError);
+          // Продолжаем даже при ошибке сохранения
+        }
+      }
       
       if (!response.success) {
         logger.warn('Freepik generation failed, trying DALL-E fallback:', response.error);
