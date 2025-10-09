@@ -79,19 +79,28 @@ export class MidjourneyAPIService {
       });
 
       // Отправляем запрос в Gen API для Midjourney
+      const requestBody = {
+        model: 'midjourney',
+        prompt: this.buildPrompt(request),
+        parameters: {
+          aspect_ratio: request.aspect_ratio || '1:1',
+          quality: request.quality || 'high',
+          style: request.style || 'photorealistic'
+        },
+        webhook_url: `${CONFIG.app.baseUrl}/api/webhooks/midjourney`,
+        webhook_secret: process.env.WEBHOOK_SECRET || 'default-secret'
+      };
+
+      console.log('==================== MIDJOURNEY API REQUEST ====================');
+      console.log('API URL:', this.apiUrl);
+      console.log('Endpoint:', `${this.apiUrl}/v1/generations`);
+      console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+      console.log('Has API Key:', !!this.apiKey);
+      console.log('===============================================================');
+
       const apiResponse = await axios.post(
         `${this.apiUrl}/v1/generations`,
-        {
-          model: 'midjourney',
-          prompt: this.buildPrompt(request),
-          parameters: {
-            aspect_ratio: request.aspect_ratio || '1:1',
-            quality: request.quality || 'high',
-            style: request.style || 'photorealistic'
-          },
-          webhook_url: `${CONFIG.app.baseUrl}/api/webhooks/midjourney`,
-          webhook_secret: process.env.WEBHOOK_SECRET || 'default-secret'
-        },
+        requestBody,
         {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
@@ -99,6 +108,11 @@ export class MidjourneyAPIService {
           }
         }
       );
+
+      console.log('==================== MIDJOURNEY API RESPONSE ====================');
+      console.log('Status:', apiResponse.status);
+      console.log('Response Data:', JSON.stringify(apiResponse.data, null, 2));
+      console.log('===============================================================');
 
       if (apiResponse.data.success || apiResponse.data.id) {
         const taskId = apiResponse.data.id || apiResponse.data.task_id;
@@ -133,11 +147,38 @@ export class MidjourneyAPIService {
         throw new Error(`Gen API error: ${apiResponse.data.message || apiResponse.data.error}`);
       }
 
-    } catch (error) {
+    } catch (error: any) {
+      console.log('==================== MIDJOURNEY API ERROR ====================');
+      console.log('Error Type:', error.constructor.name);
+      console.log('Error Message:', error.message);
+      console.log('Error Code:', error.code);
+      console.log('Response Status:', error.response?.status);
+      console.log('Response Status Text:', error.response?.statusText);
+      console.log('Response Data:', JSON.stringify(error.response?.data, null, 2));
+      console.log('Request URL:', error.config?.url);
+      console.log('Request Method:', error.config?.method);
+      console.log('===============================================================');
+
       logger.error('Midjourney generation failed:', error);
+      
+      // Формируем понятное сообщение об ошибке
+      let errorMessage = 'Unknown error';
+      
+      if (error.response?.status === 404) {
+        errorMessage = 'Midjourney API endpoint not found. Please check GEN_API_URL configuration.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Invalid Midjourney API key. Please check GEN_API_KEY configuration.';
+      } else if (error.response?.status === 402) {
+        errorMessage = 'Insufficient credits in Midjourney account.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       };
     }
   }
