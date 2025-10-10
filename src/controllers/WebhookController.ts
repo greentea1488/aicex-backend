@@ -1084,15 +1084,27 @@ export class WebhookController {
       
       console.log(`📤 Sending ${task.type || 'image'} to user ${user.telegramId}`);
 
+      // Рассчитываем время генерации
+      const duration = task.createdAt ? Math.floor((Date.now() - new Date(task.createdAt).getTime()) / 1000) : 0;
+      const timeStr = duration > 0 ? `\n⏱️ Время: ${Math.floor(duration / 60)} мин ${duration % 60} сек` : '';
+
+      // Определяем сервис для отображения
+      let serviceName = task.model || 'AI';
+      if (task.type === 'video') {
+        serviceName = task.model?.includes('runway') ? 'Runway ML' : task.model || 'Freepik Video';
+      } else {
+        serviceName = task.model?.includes('midjourney') ? `Midjourney ${task.model}` : task.model || 'Freepik';
+      }
+
       // Отправляем результат в зависимости от типа
       if (task.type === 'video') {
         await bot.api.sendVideo(user.telegramId, mediaUrl, {
-          caption: `🎬 <b>Ваше видео готово!</b>\n\n📝 "${task.prompt}"\n🎨 ${task.model || 'Freepik Video'}\n💰 Потрачено: ${task.cost || 0} токенов`,
+          caption: `✨ <b>Видео готово!</b>\n\n📝 "${task.prompt}"\n🎬 ${serviceName}\n💰 Потрачено: ${task.cost || 0} токенов${timeStr}`,
           parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
               [
-                { text: '🔄 Создать еще', callback_data: 'photo_to_video_menu' },
+                { text: '🔄 Еще одно', callback_data: 'generate_video' },
                 { text: '📊 Статистика', callback_data: 'stats' }
               ],
               [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
@@ -1102,12 +1114,12 @@ export class WebhookController {
         console.log('✅ Video sent to user successfully');
       } else {
         await bot.api.sendPhoto(user.telegramId, mediaUrl, {
-          caption: `✅ <b>Изображение готово!</b>\n\n📝 "${task.prompt}"\n🎨 ${task.model || 'Freepik'}\n💰 Потрачено: ${task.cost || 0} токенов`,
+          caption: `✨ <b>Изображение готово!</b>\n\n📝 "${task.prompt}"\n🖼️ ${serviceName}\n💰 Потрачено: ${task.cost || 0} токенов${timeStr}`,
           parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
               [
-                { text: '🔄 Еще одно', callback_data: 'quick_image' },
+                { text: '🔄 Еще одно', callback_data: 'generate_image' },
                 { text: '📊 Статистика', callback_data: 'stats' }
               ],
               [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
