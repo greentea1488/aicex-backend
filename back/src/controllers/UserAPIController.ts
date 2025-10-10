@@ -467,7 +467,7 @@ export class UserAPIController {
               prompt: true,
               imageUrl: true,
               status: true,
-              tokensUsed: true,
+              cost: true,
               createdAt: true,
               model: true
             }
@@ -486,7 +486,7 @@ export class UserAPIController {
               prompt: true,
               imageUrl: true,
               status: true,
-              tokensUsed: true,
+              cost: true,
               createdAt: true,
               model: true
             }
@@ -505,7 +505,7 @@ export class UserAPIController {
               prompt: true,
               videoUrl: true,
               status: true,
-              tokensUsed: true,
+              cost: true,
               createdAt: true
             }
           })
@@ -527,7 +527,7 @@ export class UserAPIController {
             type: type,
             prompt: task.prompt,
             resultUrl: task.imageUrl || task.videoUrl,
-            tokensUsed: task.tokensUsed || 0,
+            tokensUsed: task.cost || 0,
             status: task.status,
             createdAt: task.createdAt,
             model: task.model || null
