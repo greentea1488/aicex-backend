@@ -70,9 +70,24 @@
                   <img 
                     :src="generation.resultUrl" 
                     :alt="generation.prompt"
-                    class="w-full h-full object-cover"
+                    :data-generation-id="generation.id"
+                    class="w-full h-full object-cover transition-opacity duration-300"
                     loading="lazy"
+                    @load="onImageLoad"
+                    @error="onImageError"
                   />
+                  
+                  <!-- Loading placeholder -->
+                  <div v-if="imageLoading[generation.id]" class="absolute inset-0 bg-gradient-to-br from-purple-800/30 to-blue-800/30 flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white/60"></div>
+                  </div>
+                  
+                  <!-- Error placeholder -->
+                  <div v-if="imageErrors[generation.id]" class="absolute inset-0 bg-gradient-to-br from-red-800/30 to-orange-800/30 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
                   
                   <!-- Download button -->
                   <button 
@@ -153,6 +168,10 @@ const hasNextPage = ref(false)
 const totalGenerations = ref(0)
 const tokensSpent = ref(0)
 
+// Отслеживание загрузки изображений
+const imageLoading = ref<Record<string, boolean>>({})
+const imageErrors = ref<Record<string, boolean>>({})
+
 // Computed
 const getServiceName = (service: string) => {
   const names: Record<string, string> = {
@@ -224,6 +243,25 @@ const downloadImage = async (url: string, filename: string) => {
   }
 }
 
+// Обработчики загрузки изображений
+const onImageLoad = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  const generationId = img.getAttribute('data-generation-id')
+  if (generationId) {
+    imageLoading.value[generationId] = false
+    imageErrors.value[generationId] = false
+  }
+}
+
+const onImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  const generationId = img.getAttribute('data-generation-id')
+  if (generationId) {
+    imageLoading.value[generationId] = false
+    imageErrors.value[generationId] = true
+  }
+}
+
 const loadGenerations = async (page = 1, append = false) => {
   try {
     loading.value = true
@@ -258,6 +296,12 @@ const loadGenerations = async (page = 1, append = false) => {
       } else {
         generations.value = data.history
       }
+      
+      // Инициализируем состояние загрузки изображений
+      data.history.forEach((generation: any) => {
+        imageLoading.value[generation.id] = true
+        imageErrors.value[generation.id] = false
+      })
       
       hasNextPage.value = data.pagination.hasNext
       currentPage.value = page
