@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 import { prisma } from '../utils/prismaClient';
+import { UserService } from '../services/UserService';
 
 /**
  * Middleware для проверки JWT токена
@@ -142,28 +143,8 @@ export const telegramAuthMiddleware = async (
 
     const userData = JSON.parse(userParam);
     
-    // Находим или создаем пользователя
-    let user = await prisma.user.findUnique({
-      where: { telegramId: userData.id }
-    });
-
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          telegramId: userData.id,
-          username: userData.username || 'unknown',
-          firstName: userData.first_name,
-          lastName: userData.last_name,
-          tokens: 10 // Стартовые токены
-        }
-      });
-
-      logger.info('New user created via Telegram auth', {
-        userId: user.id,
-        telegramId: user.telegramId,
-        username: user.username
-      });
-    }
+    // Используем единый сервис для создания/поиска пользователя
+    const user = await UserService.findOrCreateUser(userData);
 
     // Добавляем пользователя в request
     req.user = {

@@ -4,6 +4,7 @@ import { prisma } from '../utils/prismaClient';
 import { PaymentService } from '../services/PaymentService';
 import { MidjourneyAPIService } from '../services/MidjourneyAPIService';
 import { KlingAPIService } from '../services/KlingAPIService';
+import { UserService } from '../services/UserService';
 import { createAuthToken } from '../middlewares/auth';
 
 export class UserAPIController {
@@ -40,39 +41,8 @@ export class UserAPIController {
 
       const userData = JSON.parse(userParam);
 
-      // Находим или создаем пользователя
-      let user = await prisma.user.findUnique({
-        where: { telegramId: userData.id }
-      });
-
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            telegramId: userData.id,
-            username: userData.username || 'unknown',
-            firstName: userData.first_name,
-            lastName: userData.last_name,
-            tokens: 500 // Увеличиваем стартовые токены до 500
-          }
-        });
-
-        logger.info('New user registered', {
-          userId: user.id,
-          telegramId: user.telegramId,
-          tokens: user.tokens
-        });
-        
-        console.log('==================== NEW USER CREATED ====================');
-        console.log('User ID:', user.id);
-        console.log('Telegram ID:', user.telegramId);
-        console.log('Starting tokens:', user.tokens);
-        console.log('===============================================================');
-      } else {
-        console.log('==================== EXISTING USER LOGIN ====================');
-        console.log('User ID:', user.id);
-        console.log('Current tokens:', user.tokens);
-        console.log('===============================================================');
-      }
+      // Используем единый сервис для создания/поиска пользователя
+      const user = await UserService.findOrCreateUser(userData);
 
       // Создаем JWT токен
       const token = createAuthToken(user.id, user.telegramId);

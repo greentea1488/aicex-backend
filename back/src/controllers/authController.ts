@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../utils/prismaClient";
+import { UserService } from "../services/UserService";
 import { verifyTelegramInitData, parseInitData } from "../utils";
 import { config } from "dotenv";
 import { logger } from "../utils/logger";
