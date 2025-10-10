@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { PaymentService } from '../services/PaymentService';
+import { UserService } from '../services/UserService';
 import { prisma } from '../utils/prismaClient';
 import crypto from 'crypto';
 import { webhookCallback } from 'grammy';
@@ -28,16 +29,14 @@ export class WebhookController {
         logger.info(`Creating new user: ${telegramId} (@${telegramUser.username})`);
         
         try {
-          // Создаем нового пользователя
-          await prisma.user.create({
-            data: {
-              telegramId,
-              username: telegramUser.username || `user_${telegramId}`,
-              firstName: telegramUser.first_name || '',
-              lastName: telegramUser.last_name || '',
-              tokens: 10, // Стартовые токены
-              subscription: null
-            }
+          // Используем единый сервис для создания пользователя
+          await UserService.findOrCreateUser({
+            id: telegramId,
+            first_name: telegramUser.first_name || '',
+            last_name: telegramUser.last_name || '',
+            username: telegramUser.username || `user_${telegramId}`,
+            photo_url: telegramUser.photo_url,
+            language_code: telegramUser.language_code
           });
           
           logger.info(`✅ User created successfully: ${telegramId}`);
