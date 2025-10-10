@@ -187,15 +187,19 @@ const goBack = () => {
 
         <!-- Developer Credit -->
         <div class="mt-12 text-center">
-          <div class="inline-flex items-center space-x-2 px-4 py-2 bg-white/5 rounded-full backdrop-blur-sm border border-white/10">
+          <a 
+            href="https://t.me/fxdefxde" 
+            target="_blank"
+            class="inline-flex items-center space-x-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 cursor-pointer"
+          >
             <div class="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full animate-pulse"></div>
             <span class="text-xs text-white/60 font-medium tracking-wide">
               Developed by 
-              <span class="text-white/80 font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              <span class="text-white/80 font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent hover:from-cyan-300 hover:to-purple-300 transition-all">
                 Alexey Anikin
               </span>
             </span>
-          </div>
+          </a>
         </div>
       </div>
     </div>

@@ -63,12 +63,16 @@ import ToggleOnIcon from "@/assets/img/toggle_on.svg";
 
     <!-- Developer Credit -->
     <div class="mt-6 text-center">
-      <div class="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 rounded-full">
+      <a 
+        href="https://t.me/fxdefxde" 
+        target="_blank"
+        class="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 hover:bg-white/15 rounded-full transition-all duration-300 hover:scale-105 cursor-pointer"
+      >
         <span class="text-xs text-white/50 font-medium">
           Developed by 
-          <span class="text-white/70 font-semibold">Alexey Anikin</span>
+          <span class="text-white/70 font-semibold hover:text-white/90 transition-colors">Alexey Anikin</span>
         </span>
-      </div>
+      </a>
     </div>
   </div>
 </template>
