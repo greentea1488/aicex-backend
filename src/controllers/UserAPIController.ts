@@ -428,7 +428,7 @@ export class UserAPIController {
   }
 
   /**
-   * Получает историю генераций
+   * Получает историю генераций из всех сервисов
    */
   async getGenerationHistory(req: Request, res: Response): Promise<void> {
     try {
@@ -442,7 +442,6 @@ export class UserAPIController {
       console.log('Service:', service);
       console.log('Page:', page);
       console.log('Limit:', limit);
-      console.log('Headers:', req.headers);
       console.log('===============================================================');
 
       if (!userId) {
@@ -452,38 +451,101 @@ export class UserAPIController {
       }
 
       const skip = (page - 1) * limit;
+      const allGenerations: any[] = [];
 
-      // Формируем фильтр по сервису
-      const where: any = { userId };
-      if (service && service !== 'all') {
-        where.service = service;
+      // Получаем данные из всех таблиц генераций
+      const queries: Promise<any>[] = [];
+
+      // Freepik tasks
+      if (!service || service === 'freepik' || service === 'all') {
+        queries.push(
+          prisma.freepikTask.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              prompt: true,
+              imageUrl: true,
+              status: true,
+              tokensUsed: true,
+              createdAt: true,
+              model: true
+            }
+          })
+        );
       }
 
-      // Получаем историю генераций из GenerationHistory
-      const [history, total] = await Promise.all([
-        prisma.generationHistory.findMany({
-          where,
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-          select: {
-            id: true,
-            service: true,
-            type: true,
-            prompt: true,
-            resultUrl: true,
-            tokensUsed: true,
-            status: true,
-            createdAt: true
-          }
-        }),
-        prisma.generationHistory.count({ where })
-      ]);
+      // Midjourney tasks
+      if (!service || service === 'midjourney' || service === 'all') {
+        queries.push(
+          prisma.midjourneyTask.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              prompt: true,
+              imageUrl: true,
+              status: true,
+              tokensUsed: true,
+              createdAt: true,
+              model: true
+            }
+          })
+        );
+      }
+
+      // Runway tasks
+      if (!service || service === 'runway' || service === 'all') {
+        queries.push(
+          prisma.runwayTask.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              prompt: true,
+              videoUrl: true,
+              status: true,
+              tokensUsed: true,
+              createdAt: true
+            }
+          })
+        );
+      }
+
+      // Выполняем все запросы параллельно
+      const results = await Promise.all(queries);
+
+      // Объединяем результаты и добавляем метаданные
+      results.forEach((tasks, index) => {
+        const serviceName = index === 0 ? 'freepik' : index === 1 ? 'midjourney' : 'runway';
+        const type = serviceName === 'runway' ? 'video' : 'image';
+        
+        tasks.forEach((task: any) => {
+          allGenerations.push({
+            id: task.id,
+            service: serviceName,
+            type: type,
+            prompt: task.prompt,
+            resultUrl: task.imageUrl || task.videoUrl,
+            tokensUsed: task.tokensUsed || 0,
+            status: task.status,
+            createdAt: task.createdAt,
+            model: task.model || null
+          });
+        });
+      });
+
+      // Сортируем по дате создания (новые сначала)
+      allGenerations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      // Применяем пагинацию
+      const total = allGenerations.length;
+      const paginatedGenerations = allGenerations.slice(skip, skip + limit);
 
       console.log('==================== GENERATION HISTORY RESULT ====================');
       console.log('Total generations:', total);
-      console.log('History count:', history.length);
-      console.log('History:', history);
+      console.log('History count:', paginatedGenerations.length);
+      console.log('Services:', ['freepik', 'midjourney', 'runway'].filter((_, i) => results[i]?.length > 0));
       console.log('===============================================================');
 
       logger.info('Generation history fetched:', {
@@ -492,11 +554,12 @@ export class UserAPIController {
         page,
         limit,
         total,
-        historyCount: history.length
+        historyCount: paginatedGenerations.length,
+        servicesUsed: ['freepik', 'midjourney', 'runway']
       });
 
       res.json({
-        history,
+        history: paginatedGenerations,
         pagination: {
           page,
           limit,
