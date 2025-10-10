@@ -11,7 +11,7 @@ export interface TelegramUserData {
 }
 
 export class UserService {
-  private static readonly DEFAULT_STARTING_TOKENS = 500; // Единые стартовые токены для всех
+  private static readonly DEFAULT_STARTING_TOKENS = 100; // Единые стартовые токены для всех
 
   /**
    * Находит или создает пользователя с едиными настройками
