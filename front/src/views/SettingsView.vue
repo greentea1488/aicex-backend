@@ -184,8 +184,22 @@ const goBack = () => {
     </div>
     </div>
   </div>
+
+        <!-- Developer Credit -->
+        <div class="mt-12 text-center">
+          <div class="inline-flex items-center space-x-2 px-4 py-2 bg-white/5 rounded-full backdrop-blur-sm border border-white/10">
+            <div class="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full animate-pulse"></div>
+            <span class="text-xs text-white/60 font-medium tracking-wide">
+              Developed by 
+              <span class="text-white/80 font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                Alexey Anikin
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
-    </div>
+  </div>
 </template>
 
 <style scoped>

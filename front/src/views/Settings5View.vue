@@ -248,6 +248,16 @@ import ToggleOnIcon from "@/assets/img/toggle_on.svg";
         <button class="text-center text-blue-900 font-medium">Показать промпт</button>
       </div>
     </div>
+
+    <!-- Developer Credit -->
+    <div class="mt-8 text-center">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 rounded-full">
+        <span class="text-xs text-white/50 font-medium">
+          Developed by 
+          <span class="text-white/70 font-semibold">Alexey Anikin</span>
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 

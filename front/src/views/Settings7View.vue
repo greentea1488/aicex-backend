@@ -32,6 +32,16 @@ import ToggleOff from "@/assets/img/toggle_off.svg";
     <div class="bg-white rounded-3xl text-blue-900 text-center mt-2 py-2 font-medium w-full">
       <button class="w-full">Сохранить</button>
     </div>
+
+    <!-- Developer Credit -->
+    <div class="mt-6 text-center">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 rounded-full">
+        <span class="text-xs text-white/50 font-medium">
+          Developed by 
+          <span class="text-white/70 font-semibold">Alexey Anikin</span>
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 
