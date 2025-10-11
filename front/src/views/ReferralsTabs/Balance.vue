@@ -125,55 +125,53 @@ onMounted(() => {
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Referral Balance -->
+      <!-- Total Referrals -->
       <div class="relative group">
         <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
         <div class="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 hover:bg-white/15 transition-all duration-500 hover:scale-105">
           <div class="text-center">
             <div class="w-12 h-12 bg-gradient-to-r from-emerald-400 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
               </svg>
             </div>
-            <div class="text-2xl font-bold text-white mb-1">{{ referralStats?.referralBalance || 0 }}</div>
-            <div class="text-gray-300 text-sm">Партнерский баланс</div>
+            <div class="text-2xl font-bold text-white mb-1">{{ referralStats?.totalReferrals || 0 }}</div>
+            <div class="text-gray-300 text-sm">Приглашено друзей</div>
           </div>
         </div>
       </div>
 
-      <!-- Total Sales -->
+      <!-- Earned Tokens -->
       <div class="relative group">
         <div class="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
         <div class="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 hover:bg-white/15 transition-all duration-500 hover:scale-105">
           <div class="text-center">
             <div class="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
               </svg>
             </div>
-            <div class="text-2xl font-bold text-white mb-1">{{ referralStats?.totalSales || 0 }}</div>
-            <div class="text-gray-300 text-sm">Всего продаж</div>
+            <div class="text-2xl font-bold text-white mb-1">{{ referralStats?.earnedTokens || 0 }}</div>
+            <div class="text-gray-300 text-sm">Заработано токенов</div>
           </div>
         </div>
       </div>
 
-      <!-- Sales Amount -->
+      <!-- Referral Bonus -->
       <div class="relative group">
         <div class="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
         <div class="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 hover:bg-white/15 transition-all duration-500 hover:scale-105">
           <div class="text-center">
             <div class="w-12 h-12 bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
               </svg>
             </div>
-            <div class="text-lg font-bold text-white mb-1">
-              {{ referralStats?.salesAmount?.rub || 0 }}₽
+            <div class="text-sm text-white mb-1 font-semibold">
+              +{{ referralStats?.referrerBonus || 100 }} токенов
             </div>
-            <div class="text-sm text-white mb-1">
-              {{ referralStats?.salesAmount?.eur || 0 }}€
-            </div>
-            <div class="text-gray-300 text-sm">Сумма продаж</div>
+            <div class="text-xs text-gray-400 mb-2">за каждого друга</div>
+            <div class="text-gray-300 text-sm">Бонус за реферала</div>
           </div>
         </div>
       </div>

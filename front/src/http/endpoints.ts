@@ -55,7 +55,7 @@ export const getUserSubscription = async (): Promise<AxiosResponse<{ subscriptio
 
 // Referral endpoints
 export const getReferralStats = async (): Promise<AxiosResponse<ReferralStats>> => {
-  return $api.get("/api/user/referral/stats");
+  return $api.get("/api/referrals/stats");
 };
 
 export const getUserReferrals = async (params?: {
@@ -72,7 +72,7 @@ export const getUserReferrals = async (params?: {
     };
   }>
 > => {
-  return $api.get("/api/user/referral/list", { params });
+  return $api.get("/api/referrals/list", { params });
 };
 
 // Payment endpoints
