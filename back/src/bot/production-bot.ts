@@ -8,6 +8,8 @@ import { UXHelpers } from "./utils/UXHelpers";
 import { StateManager } from "./utils/StateManager";
 import { TaskQueue } from "./utils/TaskQueue";
 import { MidjourneyAPIService } from "../services/MidjourneyAPIService";
+import { ReferralService } from "../services/ReferralService";
+import { UserService } from "../services/UserService";
 import axios from "axios";
 
 const bot = new Bot(process.env.BOT_TOKEN!);
@@ -310,22 +312,66 @@ bot.command("start", async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    // Создаем пользователя в БД
-    await prisma.user.upsert({
-      where: { telegramId: userId },
-      update: { 
-        username: ctx.from?.username || "",
-        firstName: ctx.from?.first_name || "",
-        lastName: ctx.from?.last_name || ""
-      },
-      create: {
-        telegramId: userId,
-        username: ctx.from?.username || "",
-        firstName: ctx.from?.first_name || "",
-        lastName: ctx.from?.last_name || "",
-        tokens: 50 // Стартовые токены
+    // Извлекаем реферальный код из параметров команды
+    const startPayload = ctx.match; // Текст после /start
+    let referrerTelegramId: number | null = null;
+
+    if (startPayload && typeof startPayload === 'string') {
+      const refMatch = startPayload.match(/^ref_(\d+)$/);
+      if (refMatch) {
+        referrerTelegramId = parseInt(refMatch[1]);
+        console.log(`🔗 Referral detected: ${referrerTelegramId}`);
       }
+    }
+
+    // Проверяем, существует ли пользователь
+    let existingUser = await prisma.user.findUnique({
+      where: { telegramId: userId }
     });
+
+    const isNewUser = !existingUser;
+
+    // Создаем или обновляем пользователя через UserService
+    const user = await UserService.findOrCreateUser({
+      id: userId,
+      first_name: ctx.from?.first_name || '',
+      last_name: ctx.from?.last_name,
+      username: ctx.from?.username
+    });
+
+    // Если новый пользователь и есть реферальный код
+    if (isNewUser && referrerTelegramId && user.id) {
+      const result = await ReferralService.processReferral(
+        user.id,
+        userId,
+        referrerTelegramId
+      );
+
+      if (result.success) {
+        // Отправляем уведомление новому пользователю
+        await ctx.reply(
+          `🎁 <b>Вы зарегистрировались по реферальной ссылке!</b>\n💰 Вам начислено +${result.refereeBonus} токенов бонусом`,
+          { parse_mode: 'HTML' }
+        );
+
+        // Получаем обновленного пользователя с новым балансом
+        const updatedUser = await prisma.user.findUnique({
+          where: { telegramId: userId },
+          select: { friendsReferred: true }
+        });
+
+        // Отправляем уведомление пригласившему
+        try {
+          await ctx.api.sendMessage(
+            referrerTelegramId,
+            `🎉 <b>Ваш друг присоединился к AICEX One!</b>\n\n💰 Вам начислено +${result.referrerBonus} токенов\n👥 Всего приглашено: ${(updatedUser?.friendsReferred || 0) + 1} друзей`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (e) {
+          console.error('Failed to notify referrer:', e);
+        }
+      }
+    }
 
     // Получаем рекомендации для пользователя
     const recommendations = await UXHelpers.getUserRecommendations(userId);
@@ -337,8 +383,8 @@ bot.command("start", async (ctx) => {
       welcomeMessage += `👋 С возвращением! У вас ${stats.totalGenerations} генераций\n`;
       welcomeMessage += `💰 Токенов: ${stats.currentBalance}\n\n`;
     } else {
-      welcomeMessage += `🎁 <b>Стартовый бонус:</b> 50 токенов\n`;
-      welcomeMessage += `🚀 <b>27 AI моделей</b> в одном боте\n\n`;
+      welcomeMessage += `🎁 <b>Стартовый бонус:</b> 100 токенов\n`;
+      welcomeMessage += `🚀 <b>30+ AI моделей</b> в одном боте\n\n`;
     }
 
     welcomeMessage += `🎯 <b>Быстрый старт:</b>\n`;
