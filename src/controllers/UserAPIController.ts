@@ -5,6 +5,7 @@ import { PaymentService } from '../services/PaymentService';
 import { MidjourneyAPIService } from '../services/MidjourneyAPIService';
 import { KlingAPIService } from '../services/KlingAPIService';
 import { UserService } from '../services/UserService';
+import { ReferralService } from '../services/ReferralService';
 import { createAuthToken } from '../middlewares/auth';
 
 export class UserAPIController {
@@ -773,6 +774,83 @@ export class UserAPIController {
 
     } catch (error) {
       logger.error('Get service options error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Получить реферальную статистику пользователя
+   */
+  async getReferralStats(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const stats = await ReferralService.getReferralStats(userId);
+
+      if (!stats) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      res.json(stats);
+
+    } catch (error) {
+      logger.error('Get referral stats error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Получить список рефералов пользователя
+   */
+  async getReferralList(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.userId;
+      const { page = 1, limit = 20 } = req.query;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const skip = (Number(page) - 1) * Number(limit);
+
+      const [referrals, totalCount] = await Promise.all([
+        prisma.user.findMany({
+          where: { referral: userId },
+          select: {
+            id: true,
+            username: true,
+            firstName: true,
+            createdAt: true,
+            tokens: true
+          },
+          skip,
+          take: Number(limit),
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.user.count({
+          where: { referral: userId }
+        })
+      ]);
+
+      res.json({
+        referrals,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total: totalCount,
+          pages: Math.ceil(totalCount / Number(limit))
+        }
+      });
+
+    } catch (error) {
+      logger.error('Get referral list error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   }

@@ -78,4 +78,13 @@ router.get('/services/:service/options', async (req, res) => {
   await userController.getServiceOptions(req, res);
 });
 
+// Реферальная программа
+router.get('/referrals/stats', async (req, res) => {
+  await userController.getReferralStats(req, res);
+});
+
+router.get('/referrals/list', async (req, res) => {
+  await userController.getReferralList(req, res);
+});
+
 export default router;
