@@ -739,11 +739,25 @@ export class WebhookController {
       console.log('🔍 Looking for Midjourney task in database:', { taskId: actualTaskId });
       
       // Сначала проверим, какие задачи есть в базе
-      const allTasks = await prisma.midjourneyTask.findMany({
-        where: { userId: "669231710" }, // Ищем задачи этого пользователя (userId - string)
-        select: { id: true, taskId: true, status: true, createdAt: true }
+      // userId в MidjourneyTask - это внутренний ID пользователя, а не telegramId
+      const user = await prisma.user.findUnique({
+        where: { telegramId: 669231710 },
+        select: { id: true }
       });
-      console.log('📋 All Midjourney tasks for user 669231710:', allTasks);
+      
+      if (user) {
+        const allTasks = await prisma.midjourneyTask.findMany({
+          where: { userId: user.id }, // Используем внутренний ID пользователя
+          select: { id: true, taskId: true, status: true, createdAt: true }
+        });
+        console.log('📋 All Midjourney tasks for user:', {
+          telegramId: 669231710,
+          internalUserId: user.id,
+          tasks: allTasks
+        });
+      } else {
+        console.log('❌ User not found in database for telegramId:', 669231710);
+      }
       
       const task = await prisma.midjourneyTask.findFirst({
         where: { taskId: actualTaskId },
