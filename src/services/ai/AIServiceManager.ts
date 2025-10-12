@@ -687,10 +687,18 @@ export class AIServiceManager {
 
       // Добавляем задачу в TaskQueue для polling
       console.log('🔄 Adding Runway task to TaskQueue...');
-      const { TaskQueue } = await import('../TaskQueue');
-      const taskQueue = new TaskQueue();
       
-      console.log('📊 TaskQueue instance created:', {
+      // Используем глобальный экземпляр TaskQueue
+      const taskQueue = (global as any).globalTaskQueue;
+      if (!taskQueue) {
+        console.error('❌ Global TaskQueue not initialized!');
+        return {
+          success: false,
+          error: 'TaskQueue not initialized'
+        };
+      }
+      
+      console.log('📊 Using global TaskQueue instance:', {
         hasVideoQueue: !!taskQueue['videoQueue'],
         hasImageQueue: !!taskQueue['imageQueue'],
         hasTextQueue: !!taskQueue['textQueue']

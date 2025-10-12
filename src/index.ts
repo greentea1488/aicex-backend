@@ -321,6 +321,10 @@ app.listen(PORT, "0.0.0.0", () => {
         logger.info("🔄 Initializing TaskQueue...");
         const { TaskQueue } = await import('./services/TaskQueue');
         const taskQueue = new TaskQueue();
+        
+        // Сохраняем глобальный экземпляр для использования в других модулях
+        (global as any).globalTaskQueue = taskQueue;
+        
         logger.info("✅ TaskQueue initialized successfully");
         
         // Принудительно создаем схему базы данных
