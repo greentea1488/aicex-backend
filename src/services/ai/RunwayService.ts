@@ -203,14 +203,19 @@ export class RunwayService {
    */
   async getTaskStatus(taskId: string): Promise<RunwayResponse> {
     try {
+      console.log('🔍 Checking Runway task status:', taskId);
+      
       const response = await axios.get(
         `${this.baseUrl}/tasks/${taskId}`,
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`
+            'Authorization': `Bearer ${this.apiKey}`,
+            'X-Runway-Version': '2024-11-06'
           }
         }
       );
+
+      console.log('📊 Runway status response:', JSON.stringify(response.data, null, 2));
 
       return {
         success: true,
@@ -218,6 +223,7 @@ export class RunwayService {
       };
 
     } catch (error: any) {
+      console.log('❌ Runway status check error:', error.response?.data || error.message);
       logger.error('Runway status check error:', error.response?.data || error.message);
       
       return {

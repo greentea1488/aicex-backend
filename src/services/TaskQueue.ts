@@ -308,17 +308,37 @@ export class TaskQueue {
    */
   private async processRunwayVideo(data: TaskData): Promise<TaskResult> {
     try {
-      // Здесь будет логика для Runway
+      logger.info('🎬 Processing Runway video generation:', {
+        userId: data.userId,
+        prompt: data.prompt,
+        taskId: data.taskId
+      });
+
       await this.updateTaskStatus(data, 'processing');
 
-      // Симуляция обработки
-      await new Promise(resolve => setTimeout(resolve, 60000)); // 1 минута
+      // Начинаем polling статуса задачи
+      const result = await this.pollRunwayTaskStatus(data.taskId, data.userId);
 
-      return {
-        success: true,
-        data: { message: 'Runway generation completed' },
-        videoUrl: 'https://example.com/runway-video.mp4'
-      };
+      if (result.success && result.videoUrl) {
+        await this.updateTaskStatus(data, 'completed');
+        
+        // Отправляем уведомление пользователю
+        await this.notifyUserAboutRunwayCompletion(data, result.videoUrl);
+        
+        return {
+          success: true,
+          data: { message: 'Runway generation completed' },
+          videoUrl: result.videoUrl
+        };
+      } else {
+        const errorMessage = result.error || 'Runway generation failed';
+        await this.updateTaskStatus(data, 'failed', errorMessage);
+        
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       logger.error('Runway video generation error:', error);
@@ -329,6 +349,69 @@ export class TaskQueue {
         error: errorMessage
       };
     }
+  }
+
+  /**
+   * Polling статуса задачи Runway
+   */
+  private async pollRunwayTaskStatus(taskId: string, userId: number, maxAttempts: number = 120): Promise<{ success: boolean; videoUrl?: string; error?: string }> {
+    const { RunwayService } = await import('./ai/RunwayService');
+    const runwayService = new RunwayService();
+    
+    logger.info(`🔄 Starting Runway polling for task ${taskId}, max attempts: ${maxAttempts}`);
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        logger.info(`📡 Runway polling attempt ${attempt}/${maxAttempts} for task ${taskId}`);
+        
+        const statusResponse = await runwayService.getTaskStatus(taskId);
+        
+        if (!statusResponse.success) {
+          logger.error(`Runway status check failed for task ${taskId}:`, statusResponse.error);
+          continue;
+        }
+        
+        const { status, output } = statusResponse.data;
+        logger.info(`📊 Runway task ${taskId} status:`, { status, hasOutput: !!output });
+        
+        if (status === 'Succeeded' && output && output.length > 0) {
+          logger.info(`✅ Runway task ${taskId} completed successfully`);
+          return {
+            success: true,
+            videoUrl: output[0]
+          };
+        }
+        
+        if (status === 'Failed') {
+          logger.error(`❌ Runway task ${taskId} failed`);
+          return {
+            success: false,
+            error: 'Video generation failed'
+          };
+        }
+        
+        // Ждем 5 секунд перед следующей проверкой
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+      } catch (error: any) {
+        logger.error(`Runway polling attempt ${attempt} failed:`, error.message);
+        
+        if (attempt === maxAttempts) {
+          return {
+            success: false,
+            error: 'Timeout waiting for video generation'
+          };
+        }
+        
+        // При ошибке ждем дольше
+        await new Promise(resolve => setTimeout(resolve, 10000));
+      }
+    }
+    
+    return {
+      success: false,
+      error: 'Max attempts reached for video generation'
+    };
   }
 
   /**
@@ -503,6 +586,52 @@ export class TaskQueue {
   private extractVideoUrl(content: string): string | undefined {
     const urlMatch = content.match(/https?:\/\/[^\s)]+\.(mp4|webm|avi|mov)/i);
     return urlMatch ? urlMatch[0] : undefined;
+  }
+
+  /**
+   * Отправляет уведомление пользователю о завершении Runway задачи
+   */
+  private async notifyUserAboutRunwayCompletion(data: TaskData, videoUrl: string): Promise<void> {
+    try {
+      // Получаем пользователя
+      const user = await prisma.user.findUnique({
+        where: { telegramId: data.userId }
+      });
+
+      if (!user || !user.telegramId) {
+        logger.error('User not found for Runway notification:', data.userId);
+        return;
+      }
+
+      // Импортируем бота
+      const { bot } = await import('../bot/production-bot');
+      
+      logger.info(`📤 Sending Runway video to user ${user.telegramId}`);
+
+      // Рассчитываем время генерации
+      const duration = data.createdAt ? Math.floor((Date.now() - new Date(data.createdAt).getTime()) / 1000) : 0;
+      const timeStr = duration > 0 ? `\n⏱️ Время: ${Math.floor(duration / 60)} мин ${duration % 60} сек` : '';
+
+      // Отправляем видео пользователю
+      await bot.api.sendVideo(user.telegramId, videoUrl, {
+        caption: `✨ <b>Видео готово!</b>\n\n📝 "${data.prompt}"\n🎬 Runway ML\n💰 Потрачено: ${data.cost || 0} токенов${timeStr}`,
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '🔄 Еще одно', callback_data: 'generate_video' },
+              { text: '📊 Статистика', callback_data: 'stats' }
+            ],
+            [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+          ]
+        }
+      });
+      
+      logger.info('✅ Runway video sent to user successfully');
+      
+    } catch (error) {
+      logger.error('Failed to send Runway video to user:', error);
+    }
   }
 
   /**
