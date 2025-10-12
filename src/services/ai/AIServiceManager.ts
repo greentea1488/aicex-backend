@@ -744,13 +744,13 @@ export class AIServiceManager {
       const { status, output } = statusResponse.data;
       console.log(`📊 Runway task ${taskId} status:`, { status, hasOutput: !!output });
 
-      if ((status === 'Succeeded' || status === 'SUCCEEDED') && output && output.length > 0) {
+      if (status === 'SUCCEEDED' && output && output.length > 0) {
         console.log(`✅ Runway task ${taskId} completed successfully`);
         await this.notifyUserAboutRunwayCompletion(taskId, userId, prompt, output[0], cost);
         return;
       }
 
-      if (status === 'Failed' || status === 'FAILED') {
+      if (status === 'FAILED') {
         console.error(`❌ Runway task ${taskId} failed`);
         await this.notifyUserAboutRunwayFailure(taskId, userId, prompt);
         return;
@@ -783,7 +783,7 @@ export class AIServiceManager {
       }
 
       // Импортируем bot
-      const { bot } = await import('../bot/production-bot');
+      const { bot } = await import('../../bot/production-bot');
       
       console.log(`📤 Sending Runway video to user ${user.telegramId}`);
       
@@ -817,7 +817,7 @@ export class AIServiceManager {
       }
 
       // Импортируем bot
-      const { bot } = await import('../bot/production-bot');
+      const { bot } = await import('../../bot/production-bot');
       
       await bot.api.sendMessage(user.telegramId, `❌ <b>Видео не удалось создать</b>\n\n📝 "${prompt}"\n🎬 Runway ML\n\nПопробуйте еще раз или обратитесь в поддержку.`, {
         parse_mode: "HTML",
