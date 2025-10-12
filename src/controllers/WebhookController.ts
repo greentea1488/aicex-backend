@@ -740,14 +740,24 @@ export class WebhookController {
         updatedAt: new Date()
       };
 
-      if (status === 'completed' && result?.image_url) {
-        updateData.imageUrl = result.image_url;
-        console.log('✅ Midjourney completed with image URL:', result.image_url.substring(0, 50) + '...');
+      if ((status === 'completed' || status === 'success') && result) {
+        // GenAPI отправляет массив изображений в поле result
+        if (Array.isArray(result) && result.length > 0) {
+          updateData.imageUrl = result[0]; // Берем первое изображение
+          console.log('✅ Midjourney completed with images:', { 
+            count: result.length, 
+            firstImage: result[0].substring(0, 50) + '...' 
+          });
+        } else if (result.image_url) {
+          // Fallback для других форматов
+          updateData.imageUrl = result.image_url;
+          console.log('✅ Midjourney completed with image URL:', result.image_url.substring(0, 50) + '...');
+        }
       } else if (status === 'failed') {
         updateData.error = result?.error || 'Generation failed';
         console.log('❌ Midjourney failed:', result?.error);
       } else {
-        console.log('⚠️ Midjourney status not completed or no image URL:', { status, hasImageUrl: !!result?.image_url });
+        console.log('⚠️ Midjourney status not completed or no result:', { status, hasResult: !!result });
       }
 
       await prisma.midjourneyTask.update({
@@ -756,7 +766,7 @@ export class WebhookController {
       });
 
       // Сохраняем в историю генераций при успешном завершении
-      if (status === 'completed' && updateData.imageUrl) {
+      if ((status === 'completed' || status === 'success') && updateData.imageUrl) {
         console.log('💾 Saving Midjourney to GenerationHistory:', {
           userId: task.userId,
           service: 'midjourney',
@@ -1033,6 +1043,7 @@ export class WebhookController {
       'pending': 'pending',
       'processing': 'processing',
       'completed': 'completed',
+      'success': 'completed', // ✅ GenAPI отправляет 'success' вместо 'completed'
       'failed': 'failed',
       'cancelled': 'failed'
     };
@@ -1075,7 +1086,7 @@ export class WebhookController {
         taskType: task.type
       });
 
-      const isCompleted = status === 'completed' || status === 'COMPLETED' || status === 'Succeeded';
+      const isCompleted = status === 'completed' || status === 'COMPLETED' || status === 'Succeeded' || status === 'success';
       
       if (!isCompleted || !mediaUrl) {
         console.log('⚠️ Task not completed or no media URL, skipping notification', {
