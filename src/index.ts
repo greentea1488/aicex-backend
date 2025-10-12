@@ -309,13 +309,19 @@ app.listen(PORT, "0.0.0.0", () => {
   // Setup global error handlers
   setupGlobalErrorHandlers();
   
-  // Запускаем инициализацию БД асинхронно, не блокируя сервер
+  // Запускаем инициализацию БД и TaskQueue асинхронно, не блокируя сервер
   (async () => {
     if (process.env.DATABASE_URL) {
       try {
         logger.info("🔄 Connecting to database...");
         await prisma.$connect();
         logger.info("✅ Database connected successfully");
+        
+        // Инициализируем TaskQueue для обработки задач
+        logger.info("🔄 Initializing TaskQueue...");
+        const { TaskQueue } = await import('./services/TaskQueue');
+        const taskQueue = new TaskQueue();
+        logger.info("✅ TaskQueue initialized successfully");
         
         // Принудительно создаем схему базы данных
         try {
