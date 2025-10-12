@@ -162,7 +162,7 @@ export class AIServiceManager {
           break;
           
         case 'runway':
-          result = await this.generateRunwayVideo(prompt, options);
+          result = await this.generateRunwayVideo(prompt, userContext, options);
           break;
           
         default:
@@ -556,16 +556,17 @@ export class AIServiceManager {
   /**
    * Генерация видео через Runway
    */
-  private async generateRunwayVideo(prompt: string, options?: any): Promise<GenerationResult> {
+  private async generateRunwayVideo(prompt: string, userContext: UserContext, options?: any): Promise<GenerationResult> {
     console.log('==================== RUNWAY VIDEO GENERATION START ====================');
     console.log('Prompt:', prompt);
+    console.log('UserContext:', JSON.stringify(userContext, null, 2));
     console.log('Options:', JSON.stringify(options, null, 2));
     console.log('===============================================================');
 
     try {
       // Получаем пользователя для создания задачи в БД
       const user = await prisma.user.findUnique({
-        where: { telegramId: options?.userContext?.telegramId }
+        where: { telegramId: userContext.telegramId }
       });
 
       if (!user) {
