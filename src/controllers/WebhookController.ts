@@ -723,16 +723,26 @@ export class WebhookController {
       }
 
       // Находим задачу в БД
+      console.log('🔍 Looking for Midjourney task in database:', { taskId: task_id });
       const task = await prisma.midjourneyTask.findFirst({
         where: { taskId: task_id },
         include: { user: true }
       });
 
       if (!task) {
+        console.log('❌ Midjourney task not found in database');
         logger.error('Midjourney task not found', { taskId: task_id });
         res.status(404).json({ error: 'Task not found' });
         return;
       }
+
+      console.log('✅ Found Midjourney task:', {
+        id: task.id,
+        userId: task.userId,
+        telegramId: task.telegramId,
+        status: task.status,
+        hasUser: !!task.user
+      });
 
       // Обновляем статус задачи
       const updateData: any = {
@@ -765,6 +775,11 @@ export class WebhookController {
         data: updateData
       });
 
+      console.log('💾 Updated Midjourney task in database:', {
+        taskId: task.id,
+        updateData: updateData
+      });
+
       // Сохраняем в историю генераций при успешном завершении
       if ((status === 'completed' || status === 'success') && updateData.imageUrl) {
         console.log('💾 Saving Midjourney to GenerationHistory:', {
@@ -793,6 +808,14 @@ export class WebhookController {
       }
 
       // Отправляем уведомление пользователю
+      console.log('📤 About to notify user about task completion:', {
+        taskId: task.taskId,
+        status: status,
+        hasImageUrl: !!updateData.imageUrl,
+        userId: task.userId,
+        telegramId: task.telegramId
+      });
+      
       await this.notifyUserAboutTaskCompletion(task, status, updateData.imageUrl);
 
       logger.info('Midjourney webhook processed successfully', {
@@ -1127,6 +1150,13 @@ export class WebhookController {
       }
 
       // Отправляем результат в зависимости от типа
+      console.log('📤 Sending media to user:', {
+        type: task.type || 'image',
+        mediaUrl: mediaUrl?.substring(0, 50) + '...',
+        telegramId: user.telegramId,
+        serviceName: serviceName
+      });
+
       if (task.type === 'video') {
         await bot.api.sendVideo(user.telegramId, mediaUrl, {
           caption: `✨ <b>Видео готово!</b>\n\n📝 "${task.prompt}"\n🎬 ${serviceName}\n💰 Потрачено: ${task.cost || 0} токенов${timeStr}`,
@@ -1156,7 +1186,10 @@ export class WebhookController {
             ]
           }
         });
-        console.log('✅ Image sent to user successfully');
+        console.log('✅ Image sent to user successfully:', {
+          telegramId: user.telegramId,
+          imageUrl: mediaUrl?.substring(0, 50) + '...'
+        });
       }
 
     } catch (error) {
