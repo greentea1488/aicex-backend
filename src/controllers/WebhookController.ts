@@ -770,7 +770,7 @@ export class WebhookController {
       try {
         console.log('🔍 Searching for task in database...');
         task = await prisma.midjourneyTask.findFirst({
-          where: { taskId: actualTaskId },
+          where: { taskId: actualTaskId.toString() }, // ✅ Преобразуем в строку
           include: { user: true }
         });
         console.log('🔍 Task search result:', task ? 'Found' : 'Not found');
