@@ -114,8 +114,15 @@ export class RunwayService {
         };
       }
 
-      // Ждем завершения генерации
-      return await this.waitForCompletion(taskId);
+      // ✅ Возвращаем успех сразу - результат придет через webhook
+      return {
+        success: true,
+        data: {
+          id: taskId,
+          status: 'PENDING',
+          progress: 0
+        }
+      };
 
     } catch (error: any) {
       console.log('==================== RUNWAY API ERROR ====================');
