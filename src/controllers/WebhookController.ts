@@ -707,6 +707,11 @@ export class WebhookController {
    */
   async handleMidjourneyWebhook(req: Request, res: Response): Promise<void> {
     try {
+      console.log('==================== MIDJOURNEY WEBHOOK RECEIVED ====================');
+      console.log('Headers:', JSON.stringify(req.headers, null, 2));
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+      console.log('===============================================================');
+      
       logger.info('Received Midjourney webhook', { body: req.body });
 
       const { task_id, status, result } = req.body;
@@ -737,8 +742,12 @@ export class WebhookController {
 
       if (status === 'completed' && result?.image_url) {
         updateData.imageUrl = result.image_url;
+        console.log('✅ Midjourney completed with image URL:', result.image_url.substring(0, 50) + '...');
       } else if (status === 'failed') {
         updateData.error = result?.error || 'Generation failed';
+        console.log('❌ Midjourney failed:', result?.error);
+      } else {
+        console.log('⚠️ Midjourney status not completed or no image URL:', { status, hasImageUrl: !!result?.image_url });
       }
 
       await prisma.midjourneyTask.update({
@@ -1028,7 +1037,9 @@ export class WebhookController {
       'cancelled': 'failed'
     };
 
-    return statusMap[status] || 'pending';
+    const mappedStatus = statusMap[status] || 'pending';
+    console.log('🔄 Mapping Midjourney status:', { original: status, mapped: mappedStatus });
+    return mappedStatus;
   }
 
   /**

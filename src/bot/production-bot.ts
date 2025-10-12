@@ -1696,12 +1696,13 @@ async function handleMidjourneyTextInput(ctx: any, text: string, model: string) 
         }
       });
 
-      // Отправляем уведомление об успехе
-      await UXHelpers.sendSuccessNotification(ctx, {
-        tokensUsed: cost,
-        service: `Midjourney ${model}`,
-        duration,
-        repeatAction: 'midjourney_quick'
+      // НЕ отправляем уведомление об успехе - изображение придет через webhook
+      console.log('✅ Midjourney generation started successfully:', {
+        taskId: result.taskId,
+        userId: userId,
+        prompt: text,
+        model: model,
+        cost: cost
       });
 
     } else {
