@@ -690,6 +690,12 @@ export class AIServiceManager {
       const { TaskQueue } = await import('../TaskQueue');
       const taskQueue = new TaskQueue();
       
+      console.log('📊 TaskQueue instance created:', {
+        hasVideoQueue: !!taskQueue['videoQueue'],
+        hasImageQueue: !!taskQueue['imageQueue'],
+        hasTextQueue: !!taskQueue['textQueue']
+      });
+      
       const taskData = {
         userId: user.telegramId,
         prompt: prompt,

@@ -35,6 +35,13 @@ export class TaskQueue {
       db: parseInt(process.env.REDIS_DB || '1') // Используем другую БД для очередей
     };
 
+    logger.info('TaskQueue initialization:', {
+      redisHost: redisConfig.host,
+      redisPort: redisConfig.port,
+      redisDb: redisConfig.db,
+      hasPassword: !!redisConfig.password
+    });
+
     // Создаем разные очереди для разных типов задач
     this.imageQueue = new Bull('image-generation', { redis: redisConfig });
     this.videoQueue = new Bull('video-generation', { redis: redisConfig });
@@ -42,12 +49,16 @@ export class TaskQueue {
 
     this.setupProcessors();
     this.setupEventHandlers();
+    
+    logger.info('TaskQueue initialized successfully');
   }
 
   /**
    * Настраивает обработчики задач
    */
   private setupProcessors(): void {
+    logger.info('Setting up TaskQueue processors...');
+    
     // Обработчик генерации изображений
     this.imageQueue.process('freepik-image', 3, async (job) => {
       return await this.processFreepikImage(job.data);
@@ -67,6 +78,7 @@ export class TaskQueue {
     });
 
     this.videoQueue.process('runway-video', 1, async (job) => {
+      logger.info('🎬 Runway video processor triggered for job:', job.id);
       return await this.processRunwayVideo(job.data);
     });
 
@@ -74,6 +86,8 @@ export class TaskQueue {
     this.textQueue.process('chatgpt-text', 10, async (job) => {
       return await this.processChatGPTText(job.data);
     });
+    
+    logger.info('TaskQueue processors setup complete');
   }
 
   /**
