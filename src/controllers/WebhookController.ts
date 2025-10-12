@@ -795,13 +795,19 @@ export class WebhookController {
    */
   async handleRunwayWebhook(req: Request, res: Response): Promise<void> {
     try {
-      logger.info('Received Runway webhook', { body: req.body });
+      console.log('==================== RUNWAY WEBHOOK RECEIVED ====================');
+      console.log('Headers:', req.headers);
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+      console.log('===============================================================');
+      
+      logger.info('🎬 Received Runway webhook', { body: req.body });
 
-      const { task_id, status, result } = req.body;
+      // Runway использует 'id' вместо 'task_id' и 'status' вместо 'result'
+      const { id: task_id, status, output, result } = req.body;
 
       if (!task_id) {
-        logger.error('Missing task_id in Runway webhook');
-        res.status(400).json({ error: 'Missing task_id' });
+        logger.error('Missing id in Runway webhook');
+        res.status(400).json({ error: 'Missing id' });
         return;
       }
 
@@ -824,9 +830,10 @@ export class WebhookController {
         updatedAt: new Date()
       };
 
-      if (status === 'completed' && result?.video_url) {
-        updateData.videoUrl = result.video_url;
-      } else if (status === 'failed') {
+      // Runway возвращает 'Succeeded' статус и 'output' с массивом видео URL
+      if (status === 'Succeeded' && output && output.length > 0) {
+        updateData.videoUrl = output[0]; // Берем первое видео
+      } else if (status === 'Failed' || status === 'failed') {
         updateData.error = result?.error || 'Generation failed';
       }
 
@@ -836,7 +843,7 @@ export class WebhookController {
       });
 
       // Сохраняем в историю генераций при успешном завершении
-      if (status === 'completed' && updateData.videoUrl) {
+      if (status === 'Succeeded' && updateData.videoUrl) {
         console.log('💾 Saving Runway to GenerationHistory:', {
           userId: task.userId,
           service: 'runway',
@@ -1031,7 +1038,8 @@ export class WebhookController {
     const statusMap: { [key: string]: string } = {
       'pending': 'CREATED',
       'processing': 'PROCESSING',
-      'completed': 'COMPLETED',
+      'Succeeded': 'COMPLETED',  // ✅ Runway использует 'Succeeded'
+      'Failed': 'FAILED',        // ✅ Runway использует 'Failed'
       'failed': 'FAILED',
       'cancelled': 'FAILED'
     };
@@ -1056,7 +1064,7 @@ export class WebhookController {
         taskType: task.type
       });
 
-      const isCompleted = status === 'completed' || status === 'COMPLETED';
+      const isCompleted = status === 'completed' || status === 'COMPLETED' || status === 'Succeeded';
       
       if (!isCompleted || !mediaUrl) {
         console.log('⚠️ Task not completed or no media URL, skipping notification', {

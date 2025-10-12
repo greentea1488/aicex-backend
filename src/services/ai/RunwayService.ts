@@ -62,7 +62,8 @@ export class RunwayService {
         promptText: request.promptText,
         duration: request.duration || 5,
         ratio: request.ratio || '1280:720', // По умолчанию 16:9 в пикселях
-        watermark: false // Всегда без watermark
+        watermark: false, // Всегда без watermark
+        callback_url: `${process.env.BASE_URL || 'https://aicexaibot-production.up.railway.app'}/api/webhooks/runway`
       };
 
       // Если есть seed - добавляем
