@@ -714,24 +714,37 @@ export class WebhookController {
       
       logger.info('Received Midjourney webhook', { body: req.body });
 
-      const { task_id, status, result } = req.body;
+      const { request_id, task_id, status, result } = req.body;
+      
+      console.log('🔍 Extracted webhook data:', {
+        request_id,
+        task_id,
+        status,
+        hasResult: !!result,
+        resultType: Array.isArray(result) ? 'array' : typeof result,
+        resultLength: Array.isArray(result) ? result.length : 'N/A'
+      });
 
-      if (!task_id) {
-        logger.error('Missing task_id in Midjourney webhook');
+      // GenAPI отправляет request_id, а не task_id
+      const actualTaskId = task_id || request_id;
+      
+      if (!actualTaskId) {
+        console.log('❌ Missing task_id and request_id in Midjourney webhook');
+        logger.error('Missing task_id and request_id in Midjourney webhook');
         res.status(400).json({ error: 'Missing task_id' });
         return;
       }
 
       // Находим задачу в БД
-      console.log('🔍 Looking for Midjourney task in database:', { taskId: task_id });
+      console.log('🔍 Looking for Midjourney task in database:', { taskId: actualTaskId });
       const task = await prisma.midjourneyTask.findFirst({
-        where: { taskId: task_id },
+        where: { taskId: actualTaskId },
         include: { user: true }
       });
 
       if (!task) {
         console.log('❌ Midjourney task not found in database');
-        logger.error('Midjourney task not found', { taskId: task_id });
+        logger.error('Midjourney task not found', { taskId: actualTaskId });
         res.status(404).json({ error: 'Task not found' });
         return;
       }
@@ -803,7 +816,7 @@ export class WebhookController {
         
         logger.info('✅ Midjourney generation saved to history', {
           userId: task.userId,
-          taskId: task_id
+          taskId: actualTaskId
         });
       }
 
@@ -819,7 +832,7 @@ export class WebhookController {
       await this.notifyUserAboutTaskCompletion(task, status, updateData.imageUrl);
 
       logger.info('Midjourney webhook processed successfully', {
-        taskId: task_id,
+        taskId: actualTaskId,
         status,
         userId: task.userId
       });
