@@ -697,9 +697,10 @@ export class AIServiceManager {
         success: true,
         data: {
           type: 'video',
+          url: 'processing', // Временный URL для показа прогресса
           taskId: taskId,
           status: 'PROCESSING',
-          message: 'Video generation started, result will be delivered via webhook'
+          message: 'Video generation started, result will be delivered automatically'
         }
       };
 

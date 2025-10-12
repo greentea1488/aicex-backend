@@ -2096,14 +2096,35 @@ async function handleRunwayPrompt(ctx: any, prompt: string) {
       { imageUrl: imageUrl }
     );
 
-    if (result.success && result.data?.url) {
-      await ctx.replyWithVideo(result.data.url, {
-        caption: "✅ <b>Видео готово!</b>\n\n🚀 Модель: Runway Gen-4 Turbo\n📝 Промпт: " + (finalPrompt || "без промпта"),
-        parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: getNavigationButtons()
-        }
-      });
+    if (result.success) {
+      if (result.data?.url && result.data.url !== 'processing') {
+        // Видео готово сразу
+        await ctx.replyWithVideo(result.data.url, {
+          caption: "✅ <b>Видео готово!</b>\n\n🚀 Модель: Runway Gen-4 Turbo\n📝 Промпт: " + (finalPrompt || "без промпта"),
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: getNavigationButtons()
+          }
+        });
+      } else {
+        // Видео обрабатывается, показываем прогресс
+        await ctx.reply(
+          "🎬 <b>Создаю видео через Runway ML...</b>\n\n" +
+          "📝 Промпт: " + (finalPrompt || "без промпта") + "\n" +
+          "🚀 Модель: Runway Gen-4 Turbo\n" +
+          "⏰ Время генерации: обычно 1-3 минуты\n\n" +
+          "✨ Готовое видео будет доставлено автоматически!",
+          {
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🔄 Еще одно', callback_data: 'generate_video' }],
+                [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+              ]
+            }
+          }
+        );
+      }
     } else {
       await UXHelpers.sendSmartErrorNotification(
         ctx,
