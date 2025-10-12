@@ -377,7 +377,9 @@ export class TaskQueue {
         const { status, output } = statusResponse.data;
         logger.info(`📊 Runway task ${taskId} status:`, { status, hasOutput: !!output });
         
-        if ((status === 'Succeeded' || status === 'SUCCEEDED') && output && output.length > 0) {
+        // Проверяем статус как строку (Runway API может возвращать разные форматы)
+        const statusStr = String(status);
+        if ((statusStr === 'Succeeded' || statusStr === 'SUCCEEDED') && output && output.length > 0) {
           logger.info(`✅ Runway task ${taskId} completed successfully`);
           return {
             success: true,
@@ -385,7 +387,7 @@ export class TaskQueue {
           };
         }
         
-        if (status === 'Failed' || status === 'FAILED') {
+        if (statusStr === 'Failed' || statusStr === 'FAILED') {
           logger.error(`❌ Runway task ${taskId} failed`);
           return {
             success: false,
