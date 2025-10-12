@@ -162,7 +162,22 @@ export class TaskQueue {
       delay: 0
     };
 
-    return await this.videoQueue.add(jobName, taskData, options);
+    logger.info('Adding video generation task to queue:', {
+      jobName,
+      service: taskData.service,
+      userId: taskData.userId,
+      taskId: taskData.taskId
+    });
+
+    const job = await this.videoQueue.add(jobName, taskData, options);
+    
+    logger.info('Video generation task added to queue:', {
+      jobId: job.id,
+      jobName,
+      taskId: taskData.taskId
+    });
+
+    return job;
   }
 
   /**
@@ -320,6 +335,7 @@ export class TaskQueue {
       await this.updateTaskStatus(data, 'processing');
 
       // Начинаем polling статуса задачи
+      logger.info('🔄 Starting Runway polling for task:', data.taskId);
       const result = await this.pollRunwayTaskStatus(data.taskId, data.userId);
 
       if (result.success && result.videoUrl) {

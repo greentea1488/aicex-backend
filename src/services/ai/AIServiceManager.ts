@@ -686,10 +686,11 @@ export class AIServiceManager {
       });
 
       // Добавляем задачу в TaskQueue для polling
+      console.log('🔄 Adding Runway task to TaskQueue...');
       const { TaskQueue } = await import('../TaskQueue');
       const taskQueue = new TaskQueue();
       
-      await taskQueue.addVideoGeneration({
+      const taskData = {
         userId: user.telegramId,
         prompt: prompt,
         model: options?.model || 'gen4_turbo',
@@ -698,9 +699,17 @@ export class AIServiceManager {
         taskId: taskId,
         createdAt: new Date(),
         cost: cost
+      };
+      
+      console.log('📝 TaskQueue data:', JSON.stringify(taskData, null, 2));
+      
+      const job = await taskQueue.addVideoGeneration(taskData);
+      
+      console.log('✅ Runway task added to TaskQueue for polling:', {
+        jobId: job.id,
+        taskId: taskId,
+        userId: user.telegramId
       });
-
-      console.log('✅ Runway task added to TaskQueue for polling');
 
       return {
         success: true,
