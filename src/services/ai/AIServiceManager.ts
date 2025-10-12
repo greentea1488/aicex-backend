@@ -694,7 +694,7 @@ export class AIServiceManager {
         userId: user.telegramId,
         prompt: prompt,
         model: options?.model || 'gen4_turbo',
-        service: 'runway',
+        service: 'runway' as const,
         type: 'image_to_video',
         taskId: taskId,
         createdAt: new Date(),
