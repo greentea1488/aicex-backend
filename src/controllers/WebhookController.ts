@@ -740,7 +740,7 @@ export class WebhookController {
       
       // Сначала проверим, какие задачи есть в базе
       const allTasks = await prisma.midjourneyTask.findMany({
-        where: { userId: 669231710 }, // Ищем задачи этого пользователя
+        where: { userId: "669231710" }, // Ищем задачи этого пользователя (userId - string)
         select: { id: true, taskId: true, status: true, createdAt: true }
       });
       console.log('📋 All Midjourney tasks for user 669231710:', allTasks);
