@@ -37,7 +37,7 @@ function validateEnvironment(): void {
  */
 export const CONFIG: AppConfig = {
   app: {
-    baseUrl: process.env.BASE_URL || 'http://localhost:3025',
+    baseUrl: process.env.BASE_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://aicexaibot-production.up.railway.app',
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
     environment: process.env.NODE_ENV || 'development'
   },
@@ -337,6 +337,7 @@ export function initializeConfig(): void {
   
   console.log('🔧 Configuration initialized:');
   console.log(`   Server: ${CONFIG.server.host}:${CONFIG.server.port}`);
+  console.log(`   Base URL: ${CONFIG.app.baseUrl}`);
   console.log(`   Database: ${CONFIG.database.url.replace(/\/\/.*@/, '//***@')}`);
   console.log(`   Redis: ${CONFIG.redis.host}:${CONFIG.redis.port}`);
   console.log(`   Enabled AI services: ${getEnabledAIServices().join(', ')}`);
