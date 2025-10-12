@@ -9,6 +9,9 @@ export interface TaskData {
   service: 'freepik' | 'midjourney' | 'runway' | 'chatgpt';
   type?: string;
   metadata?: any;
+  taskId?: string;  // ✅ ID задачи от API
+  createdAt?: Date; // ✅ Время создания задачи
+  cost?: number;    // ✅ Стоимость в токенах
 }
 
 export interface TaskResult {
@@ -374,7 +377,7 @@ export class TaskQueue {
         const { status, output } = statusResponse.data;
         logger.info(`📊 Runway task ${taskId} status:`, { status, hasOutput: !!output });
         
-        if (status === 'Succeeded' && output && output.length > 0) {
+        if ((status === 'Succeeded' || status === 'SUCCEEDED') && output && output.length > 0) {
           logger.info(`✅ Runway task ${taskId} completed successfully`);
           return {
             success: true,
@@ -382,7 +385,7 @@ export class TaskQueue {
           };
         }
         
-        if (status === 'Failed') {
+        if (status === 'Failed' || status === 'FAILED') {
           logger.error(`❌ Runway task ${taskId} failed`);
           return {
             success: false,
