@@ -1538,10 +1538,6 @@ async function handleMidjourneyMenu(ctx: any, userId: number) {
           { text: '⚡ Midjourney 6.1', callback_data: 'midjourney_6.1' }
         ],
         [
-          { text: '📋 Все модели', callback_data: 'midjourney_all_models' },
-          { text: '🎨 Быстрый старт', callback_data: 'midjourney_quick' }
-        ],
-        [
           { text: '⬅️ Назад', callback_data: 'back_to_main' }
         ]
       ]
@@ -1577,8 +1573,7 @@ async function handleMidjourneyGeneration(ctx: any, userId: number, model: strin
     const keyboard = {
       inline_keyboard: [
         [
-          { text: '⬅️ Назад к моделям', callback_data: 'midjourney_menu' },
-          { text: '🎨 Быстрый старт', callback_data: 'midjourney_quick' }
+          { text: '⬅️ Назад к моделям', callback_data: 'midjourney_menu' }
         ]
       ]
     };

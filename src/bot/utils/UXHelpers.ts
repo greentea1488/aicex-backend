@@ -314,7 +314,6 @@ export class UXHelpers {
     const keyboard = {
       inline_keyboard: [
         ...(smartError.retryable ? [[{ text: '🔄 Попробовать снова', callback_data: 'retry_last_action' }]] : []),
-        ...(smartError.fallbackAction ? [[{ text: '🔧 Альтернатива', callback_data: smartError.fallbackAction }]] : []),
         [{ text: '⬅️ Главное меню', callback_data: 'back_to_main' }]
       ]
     };
