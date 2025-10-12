@@ -12,6 +12,9 @@ export interface GenerationResult {
     urls?: string[];
     content?: string;
     metadata?: any;
+    taskId?: string;
+    status?: string;
+    message?: string;
   };
   error?: string;
   tokensUsed?: number;
@@ -667,10 +670,12 @@ export class AIServiceManager {
       await prisma.tokenHistory.create({
         data: {
           userId: user.id,
-          type: 'GENERATION',
+          type: 'SPEND_RUNWAY',
           amount: -cost,
           taskId: taskId,
-          description: `Runway video generation: ${prompt.substring(0, 50)}...`
+          description: `Runway video generation: ${prompt.substring(0, 50)}...`,
+          balanceBefore: user.tokens,
+          balanceAfter: user.tokens - cost
         }
       });
 
