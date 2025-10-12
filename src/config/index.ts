@@ -37,7 +37,7 @@ function validateEnvironment(): void {
  */
 export const CONFIG: AppConfig = {
   app: {
-    baseUrl: process.env.BASE_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://aicexaibot-production.up.railway.app',
+    baseUrl: process.env.BASE_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'https://aicexaibot-production.up.railway.app'),
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
     environment: process.env.NODE_ENV || 'development'
   },

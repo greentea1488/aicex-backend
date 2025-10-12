@@ -82,7 +82,8 @@ export class MidjourneyAPIService {
 
       // Отправляем запрос в Gen API для Midjourney
       // Согласно официальной документации GenAPI - минимальный набор параметров
-      const callbackUrl = `${CONFIG.app.baseUrl}/api/webhooks/midjourney`;
+      const baseUrl = CONFIG.app.baseUrl.startsWith('http') ? CONFIG.app.baseUrl : `https://${CONFIG.app.baseUrl}`;
+      const callbackUrl = `${baseUrl}/api/webhooks/midjourney`;
       console.log('🔗 Using callback URL:', callbackUrl);
       
       const requestBody: any = {
