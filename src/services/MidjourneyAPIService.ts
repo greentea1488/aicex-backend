@@ -141,6 +141,12 @@ export class MidjourneyAPIService {
       if (requestId) {
 
         // Обновляем задачу с request_id от API
+        console.log('💾 Updating Midjourney task in database:', {
+          taskId: task.id,
+          requestId: requestId,
+          requestIdString: requestId.toString()
+        });
+        
         await prisma.midjourneyTask.update({
           where: { id: task.id },
           data: {
@@ -148,6 +154,8 @@ export class MidjourneyAPIService {
             status: 'processing'
           }
         });
+        
+        console.log('✅ Midjourney task updated successfully');
 
         // Списываем токены
         await this.deductTokens(user.id, cost, requestId.toString());
