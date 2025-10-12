@@ -685,45 +685,13 @@ export class AIServiceManager {
         data: { tokens: user.tokens - cost }
       });
 
-      // Добавляем задачу в TaskQueue для polling
-      console.log('🔄 Adding Runway task to TaskQueue...');
+      // ВРЕМЕННОЕ РЕШЕНИЕ: прямая проверка статуса вместо TaskQueue
+      console.log('🔄 Starting direct Runway polling...');
       
-      // Используем глобальный экземпляр TaskQueue
-      const taskQueue = (global as any).globalTaskQueue;
-      if (!taskQueue) {
-        console.error('❌ Global TaskQueue not initialized!');
-        return {
-          success: false,
-          error: 'TaskQueue not initialized'
-        };
-      }
+      // Запускаем polling в фоне
+      this.startRunwayPolling(taskId, user.telegramId, prompt, cost);
       
-      console.log('📊 Using global TaskQueue instance:', {
-        hasVideoQueue: !!taskQueue['videoQueue'],
-        hasImageQueue: !!taskQueue['imageQueue'],
-        hasTextQueue: !!taskQueue['textQueue']
-      });
-      
-      const taskData = {
-        userId: user.telegramId,
-        prompt: prompt,
-        model: options?.model || 'gen4_turbo',
-        service: 'runway' as const,
-        type: 'image_to_video',
-        taskId: taskId,
-        createdAt: new Date(),
-        cost: cost
-      };
-      
-      console.log('📝 TaskQueue data:', JSON.stringify(taskData, null, 2));
-      
-      const job = await taskQueue.addVideoGeneration(taskData);
-      
-      console.log('✅ Runway task added to TaskQueue for polling:', {
-        jobId: job.id,
-        taskId: taskId,
-        userId: user.telegramId
-      });
+      console.log('✅ Runway polling started in background');
 
       return {
         success: true,
@@ -741,6 +709,128 @@ export class AIServiceManager {
         success: false,
         error: error.message || 'Unknown error occurred'
       };
+    }
+  }
+
+  /**
+   * Запускает polling статуса Runway задачи
+   */
+  private startRunwayPolling(taskId: string, userId: number, prompt: string, cost: number): void {
+    console.log('🎬 Starting Runway polling for task:', taskId);
+    
+    // Запускаем polling в фоне
+    setTimeout(async () => {
+      await this.pollRunwayTaskStatus(taskId, userId, prompt, cost);
+    }, 2000); // Начинаем через 2 секунды
+  }
+
+  /**
+   * Polling статуса Runway задачи
+   */
+  private async pollRunwayTaskStatus(taskId: string, userId: number, prompt: string, cost: number, attempt: number = 1, maxAttempts: number = 120): Promise<void> {
+    try {
+      console.log(`📡 Runway polling attempt ${attempt}/${maxAttempts} for task ${taskId}`);
+      
+      const statusResponse = await this.runway.getTaskStatus(taskId);
+      
+      if (!statusResponse.success) {
+        console.error(`Runway status check failed for task ${taskId}:`, statusResponse.error);
+        if (attempt < maxAttempts) {
+          setTimeout(() => this.pollRunwayTaskStatus(taskId, userId, prompt, cost, attempt + 1, maxAttempts), 5000);
+        }
+        return;
+      }
+
+      const { status, output } = statusResponse.data;
+      console.log(`📊 Runway task ${taskId} status:`, { status, hasOutput: !!output });
+
+      if ((status === 'Succeeded' || status === 'SUCCEEDED') && output && output.length > 0) {
+        console.log(`✅ Runway task ${taskId} completed successfully`);
+        await this.notifyUserAboutRunwayCompletion(taskId, userId, prompt, output[0], cost);
+        return;
+      }
+
+      if (status === 'Failed' || status === 'FAILED') {
+        console.error(`❌ Runway task ${taskId} failed`);
+        await this.notifyUserAboutRunwayFailure(taskId, userId, prompt);
+        return;
+      }
+
+      // Продолжаем polling
+      if (attempt < maxAttempts) {
+        setTimeout(() => this.pollRunwayTaskStatus(taskId, userId, prompt, cost, attempt + 1, maxAttempts), 5000);
+      } else {
+        console.error(`❌ Runway task ${taskId} timeout after ${maxAttempts} attempts`);
+      }
+
+    } catch (error: any) {
+      console.error(`Runway polling attempt ${attempt} failed:`, error.message);
+      if (attempt < maxAttempts) {
+        setTimeout(() => this.pollRunwayTaskStatus(taskId, userId, prompt, cost, attempt + 1, maxAttempts), 10000);
+      }
+    }
+  }
+
+  /**
+   * Уведомляет пользователя о завершении Runway задачи
+   */
+  private async notifyUserAboutRunwayCompletion(taskId: string, userId: number, prompt: string, videoUrl: string, cost: number): Promise<void> {
+    try {
+      const user = await prisma.user.findUnique({ where: { telegramId: userId } });
+      if (!user || !user.telegramId) {
+        console.error('User not found for Runway notification:', userId);
+        return;
+      }
+
+      // Импортируем bot
+      const { bot } = await import('../bot/production-bot');
+      
+      console.log(`📤 Sending Runway video to user ${user.telegramId}`);
+      
+      await bot.api.sendVideo(user.telegramId, videoUrl, {
+        caption: `✨ <b>Видео готово!</b>\n\n📝 "${prompt}"\n🎬 Runway ML\n💰 Потрачено: ${cost} токенов`,
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔄 Еще одно', callback_data: 'generate_video' }, { text: '📊 Статистика', callback_data: 'stats' }],
+            [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+          ]
+        }
+      });
+
+      console.log('✅ Runway video sent to user successfully');
+
+    } catch (error) {
+      console.error('Failed to send Runway video to user:', error);
+    }
+  }
+
+  /**
+   * Уведомляет пользователя о неудаче Runway задачи
+   */
+  private async notifyUserAboutRunwayFailure(taskId: string, userId: number, prompt: string): Promise<void> {
+    try {
+      const user = await prisma.user.findUnique({ where: { telegramId: userId } });
+      if (!user || !user.telegramId) {
+        console.error('User not found for Runway failure notification:', userId);
+        return;
+      }
+
+      // Импортируем bot
+      const { bot } = await import('../bot/production-bot');
+      
+      await bot.api.sendMessage(user.telegramId, `❌ <b>Видео не удалось создать</b>\n\n📝 "${prompt}"\n🎬 Runway ML\n\nПопробуйте еще раз или обратитесь в поддержку.`, {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔄 Попробовать еще раз', callback_data: 'generate_video' }],
+            [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+          ]
+        }
+      });
+
+    } catch (error) {
+      console.error('Failed to send Runway failure notification to user:', error);
     }
   }
 
