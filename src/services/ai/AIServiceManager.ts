@@ -559,60 +559,160 @@ export class AIServiceManager {
     console.log('Options:', JSON.stringify(options, null, 2));
     console.log('===============================================================');
 
-    const request: RunwayVideoRequest = {
-      promptText: prompt,
-      model: options?.model || 'gen4_turbo',
-      duration: options?.duration || 5,
-      ratio: options?.ratio || '1280:720' // По умолчанию 16:9 в пикселях
-    };
+    try {
+      // Получаем пользователя для создания задачи в БД
+      const user = await prisma.user.findUnique({
+        where: { telegramId: options?.userContext?.telegramId }
+      });
 
-    // Если есть imageUrl - добавляем promptImage
-    if (options?.imageUrl) {
-      request.promptImage = options.imageUrl;
-      console.log('==================== IMAGE TO VIDEO MODE ====================');
-      console.log('Image URL:', options.imageUrl);
-      console.log('===============================================================');
-    } else {
-      console.log('==================== TEXT TO VIDEO MODE ====================');
-      console.log('No image provided, generating from text only');
-      console.log('===============================================================');
-    }
-
-    console.log('==================== RUNWAY REQUEST ====================');
-    console.log('Request:', JSON.stringify(request, null, 2));
-    console.log('===============================================================');
-
-    const response = await this.runway.generateVideo(request);
-    
-    console.log('==================== RUNWAY RESPONSE ====================');
-    console.log('Response success:', response.success);
-    console.log('Response data:', JSON.stringify(response.data, null, 2));
-    console.log('Response error:', response.error);
-    console.log('===============================================================');
-    
-    if (!response.success) {
-      return {
-        success: false,
-        error: response.error || 'Runway video generation failed'
-      };
-    }
-
-    const videoUrl = response.data?.output?.[0];
-    if (!videoUrl) {
-      return {
-        success: false,
-        error: 'No video URL received from Runway'
-      };
-    }
-
-    return {
-      success: true,
-      data: {
-        type: 'video',
-        url: videoUrl,
-        metadata: response.data
+      if (!user) {
+        return {
+          success: false,
+          error: 'User not found'
+        };
       }
-    };
+
+      // Рассчитываем стоимость
+      const cost = 15; // Runway стоит 15 токенов
+      
+      // Проверяем баланс токенов
+      if (user.tokens < cost) {
+        return {
+          success: false,
+          error: `Insufficient tokens. Required: ${cost}, Available: ${user.tokens}`
+        };
+      }
+
+      // Создаем задачу в БД
+      const task = await prisma.runwayTask.create({
+        data: {
+          userId: user.id,
+          prompt: prompt,
+          model: options?.model || 'gen4_turbo',
+          type: 'image_to_video',
+          status: 'CREATED',
+          cost,
+          taskId: '' // Будет обновлен после создания в API
+        }
+      });
+
+      // Создаем запрос для Runway API
+      const request: RunwayVideoRequest = {
+        promptText: prompt,
+        model: options?.model || 'gen4_turbo',
+        duration: options?.duration || 5,
+        ratio: options?.ratio || '1280:720'
+      };
+
+      // Если есть imageUrl - добавляем promptImage
+      if (options?.imageUrl) {
+        request.promptImage = options.imageUrl;
+      }
+
+      console.log('==================== RUNWAY API REQUEST ====================');
+      console.log('Request:', JSON.stringify(request, null, 2));
+      console.log('===============================================================');
+
+      // Отправляем запрос в Runway API
+      const response = await this.runway.generateVideo(request);
+      
+      console.log('==================== RUNWAY API RESPONSE ====================');
+      console.log('Response success:', response.success);
+      console.log('Response data:', JSON.stringify(response.data, null, 2));
+      console.log('Response error:', response.error);
+      console.log('===============================================================');
+      
+      if (!response.success) {
+        // Обновляем статус задачи на FAILED
+        await prisma.runwayTask.update({
+          where: { id: task.id },
+          data: { 
+            status: 'FAILED',
+            error: response.error || 'Runway API error'
+          }
+        });
+        
+        return {
+          success: false,
+          error: response.error || 'Runway video generation failed'
+        };
+      }
+
+      const taskId = response.data?.id;
+      if (!taskId) {
+        await prisma.runwayTask.update({
+          where: { id: task.id },
+          data: { 
+            status: 'FAILED',
+            error: 'No task ID received from Runway'
+          }
+        });
+        
+        return {
+          success: false,
+          error: 'No task ID received from Runway'
+        };
+      }
+
+      // Обновляем задачу с taskId от API
+      await prisma.runwayTask.update({
+        where: { id: task.id },
+        data: { 
+          taskId,
+          status: 'PROCESSING'
+        }
+      });
+
+      // Списываем токены
+      await prisma.tokenHistory.create({
+        data: {
+          userId: user.id,
+          type: 'GENERATION',
+          amount: -cost,
+          taskId: taskId,
+          description: `Runway video generation: ${prompt.substring(0, 50)}...`
+        }
+      });
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { tokens: user.tokens - cost }
+      });
+
+      // Добавляем задачу в TaskQueue для polling
+      const { TaskQueue } = await import('../TaskQueue');
+      const taskQueue = new TaskQueue();
+      
+      await taskQueue.addVideoGeneration({
+        userId: user.telegramId,
+        prompt: prompt,
+        model: options?.model || 'gen4_turbo',
+        service: 'runway',
+        type: 'image_to_video',
+        taskId: taskId,
+        createdAt: new Date(),
+        cost: cost
+      });
+
+      console.log('✅ Runway task added to TaskQueue for polling');
+
+      return {
+        success: true,
+        data: {
+          type: 'video',
+          taskId: taskId,
+          status: 'PROCESSING',
+          message: 'Video generation started, result will be delivered via webhook'
+        }
+      };
+
+    } catch (error: any) {
+      console.error('❌ Runway video generation error:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error occurred'
+      };
+    }
   }
 
   /**
