@@ -740,29 +740,45 @@ export class WebhookController {
       
       // Сначала проверим, какие задачи есть в базе
       // userId в MidjourneyTask - это внутренний ID пользователя, а не telegramId
-      const user = await prisma.user.findUnique({
-        where: { telegramId: 669231710 },
-        select: { id: true }
-      });
-      
-      if (user) {
-        const allTasks = await prisma.midjourneyTask.findMany({
-          where: { userId: user.id }, // Используем внутренний ID пользователя
-          select: { id: true, taskId: true, status: true, createdAt: true }
+      try {
+        console.log('🔍 Looking for user in database...');
+        const user = await prisma.user.findUnique({
+          where: { telegramId: 669231710 },
+          select: { id: true }
         });
-        console.log('📋 All Midjourney tasks for user:', {
-          telegramId: 669231710,
-          internalUserId: user.id,
-          tasks: allTasks
-        });
-      } else {
-        console.log('❌ User not found in database for telegramId:', 669231710);
+        
+        if (user) {
+          console.log('✅ User found:', { telegramId: 669231710, internalUserId: user.id });
+          
+          const allTasks = await prisma.midjourneyTask.findMany({
+            where: { userId: user.id }, // Используем внутренний ID пользователя
+            select: { id: true, taskId: true, status: true, createdAt: true }
+          });
+          console.log('📋 All Midjourney tasks for user:', {
+            telegramId: 669231710,
+            internalUserId: user.id,
+            tasks: allTasks
+          });
+        } else {
+          console.log('❌ User not found in database for telegramId:', 669231710);
+        }
+      } catch (error) {
+        console.error('❌ Error querying user/tasks:', error);
       }
       
-      const task = await prisma.midjourneyTask.findFirst({
-        where: { taskId: actualTaskId },
-        include: { user: true }
-      });
+      let task;
+      try {
+        console.log('🔍 Searching for task in database...');
+        task = await prisma.midjourneyTask.findFirst({
+          where: { taskId: actualTaskId },
+          include: { user: true }
+        });
+        console.log('🔍 Task search result:', task ? 'Found' : 'Not found');
+      } catch (error) {
+        console.error('❌ Error searching for task:', error);
+        res.status(500).json({ error: 'Database error' });
+        return;
+      }
 
       if (!task) {
         console.log('❌ Midjourney task not found in database');
