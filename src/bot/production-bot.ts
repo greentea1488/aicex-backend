@@ -1222,37 +1222,79 @@ bot.on("message:audio", async (ctx) => {
       try {
         const { OpenAIService } = await import("../services/ai/OpenAIService");
         const openaiService = new OpenAIService();
-        const result = await openaiService.transcribeAudio(filePath, 'ru');
+        const transcriptionResult = await openaiService.transcribeAudio(filePath, 'ru');
         
-        if (result.success && result.content) {
-          logger.info(`✅ Transcribed: ${result.content.length} chars`);
+        if (transcriptionResult.success && transcriptionResult.content) {
+          logger.info(`✅ Transcribed: ${transcriptionResult.content.length} chars`);
           
+          // Показываем транскрипцию
           await ctx.reply(
-            `🎤 <b>Транскрипция:</b>\n\n${result.content}\n\n💬 Продолжайте диалог!`,
+            `🎤 <b>Распознано:</b> "${transcriptionResult.content}"\n\n🧠 Обрабатываю запрос...`,
             { parse_mode: 'HTML' }
           );
 
-          // Сохраняем транскрипцию в историю чата
+          // 🚀 ОТПРАВЛЯЕМ ТРАНСКРИПЦИЮ В CHATGPT КАК ПРОМПТ
           const existingHistory = userState?.data?.chatHistory || [];
-          const updatedHistory: ChatMessage[] = [
+          
+          const user = await prisma.user.findUnique({ where: { telegramId: userId } });
+          if (!user) {
+            await ctx.reply("❌ Пользователь не найден");
+            fileHandler.cleanupFile(filePath);
+            return;
+          }
+
+          const systemPrompt: ChatMessage = {
+            role: 'system',
+            content: userState?.data?.lastFileName 
+              ? `Ты - умный помощник. ${userState.data.lastFileName ? `У пользователя есть файл "${userState.data.lastFileName}".` : ''} Отвечай на вопросы с учетом контекста. Отвечай на русском.`
+              : 'Ты - умный помощник. Отвечай на русском языке с учетом контекста диалога.'
+          };
+
+          const messages: ChatMessage[] = [
+            systemPrompt,
             ...existingHistory,
-            {
-              role: "user",
-              content: `[Аудио: ${fileName}] Транскрипция: ${result.content}`
-            }
+            { role: 'user', content: transcriptionResult.content }
           ];
 
-          UXHelpers.setUserState(userId, {
-            currentAction: 'chatting',
-            data: { 
-              service: 'gpt4',
-              chatHistory: updatedHistory
-            }
+          logger.info(`🤖 Sending transcribed text to ChatGPT...`);
+          const chatResult = await aiManager.chatWithAI(messages, 'gpt4', {
+            telegramId: userId,
+            currentTokens: user.tokens
           });
-          
-          logger.info(`✅ Chat history updated with audio transcription`);
+
+          if (chatResult.success && chatResult.data?.content) {
+            logger.info(`✅ ChatGPT response: ${chatResult.data.content.length} chars`);
+            
+            await ctx.reply(
+              `🧠 <b>ChatGPT-4:</b>\n\n${chatResult.data.content}\n\n💰 Токенов: ${chatResult.tokensUsed}`,
+              { parse_mode: 'HTML' }
+            );
+
+            // Сохраняем в историю
+            const updatedHistory: ChatMessage[] = [
+              ...existingHistory,
+              { role: 'user', content: transcriptionResult.content },
+              { role: 'assistant', content: chatResult.data.content }
+            ];
+
+            const limitedHistory = updatedHistory.slice(-20);
+
+            UXHelpers.setUserState(userId, {
+              currentAction: 'chatting',
+              data: { 
+                ...userState?.data,
+                service: 'gpt4',
+                chatHistory: limitedHistory
+              }
+            });
+            
+            logger.info(`✅ Chat history updated: ${limitedHistory.length} messages`);
+          } else {
+            await ctx.reply(`❌ Ошибка ChatGPT: ${chatResult.error}`);
+          }
+
         } else {
-          await ctx.reply(`❌ Ошибка: ${result.error}`);
+          await ctx.reply(`❌ Ошибка транскрипции: ${transcriptionResult.error}`);
         }
 
         fileHandler.cleanupFile(filePath);
@@ -1309,37 +1351,79 @@ bot.on("message:voice", async (ctx) => {
       try {
         const { OpenAIService } = await import("../services/ai/OpenAIService");
         const openaiService = new OpenAIService();
-        const result = await openaiService.transcribeAudio(filePath, 'ru');
+        const transcriptionResult = await openaiService.transcribeAudio(filePath, 'ru');
         
-        if (result.success && result.content) {
-          logger.info(`✅ Transcribed: ${result.content.length} chars`);
+        if (transcriptionResult.success && transcriptionResult.content) {
+          logger.info(`✅ Transcribed: ${transcriptionResult.content.length} chars`);
           
+          // Показываем транскрипцию
           await ctx.reply(
-            `🎙️ <b>Транскрипция:</b>\n\n${result.content}\n\n💬 Продолжайте диалог!`,
+            `🎙️ <b>Распознано:</b> "${transcriptionResult.content}"\n\n🧠 Обрабатываю запрос...`,
             { parse_mode: 'HTML' }
           );
 
-          // Сохраняем в историю
+          // 🚀 ОТПРАВЛЯЕМ ТРАНСКРИПЦИЮ В CHATGPT
           const existingHistory = userState?.data?.chatHistory || [];
-          const updatedHistory: ChatMessage[] = [
+          
+          const user = await prisma.user.findUnique({ where: { telegramId: userId } });
+          if (!user) {
+            await ctx.reply("❌ Пользователь не найден");
+            fileHandler.cleanupFile(filePath);
+            return;
+          }
+
+          const systemPrompt: ChatMessage = {
+            role: 'system',
+            content: userState?.data?.lastFileName 
+              ? `Ты - умный помощник. ${userState.data.lastFileName ? `У пользователя есть файл "${userState.data.lastFileName}".` : ''} Отвечай на вопросы с учетом контекста. Отвечай на русском.`
+              : 'Ты - умный помощник. Отвечай на русском языке с учетом контекста диалога.'
+          };
+
+          const messages: ChatMessage[] = [
+            systemPrompt,
             ...existingHistory,
-            {
-              role: "user",
-              content: `[Голосовое сообщение] ${result.content}`
-            }
+            { role: 'user', content: transcriptionResult.content }
           ];
 
-          UXHelpers.setUserState(userId, {
-            currentAction: 'chatting',
-            data: { 
-              service: 'gpt4',
-              chatHistory: updatedHistory
-            }
+          logger.info(`🤖 Sending transcribed voice to ChatGPT...`);
+          const chatResult = await aiManager.chatWithAI(messages, 'gpt4', {
+            telegramId: userId,
+            currentTokens: user.tokens
           });
-          
-          logger.info(`✅ Chat history updated with voice`);
+
+          if (chatResult.success && chatResult.data?.content) {
+            logger.info(`✅ ChatGPT response: ${chatResult.data.content.length} chars`);
+            
+            await ctx.reply(
+              `🧠 <b>ChatGPT-4:</b>\n\n${chatResult.data.content}\n\n💰 Токенов: ${chatResult.tokensUsed}`,
+              { parse_mode: 'HTML' }
+            );
+
+            // Сохраняем в историю
+            const updatedHistory: ChatMessage[] = [
+              ...existingHistory,
+              { role: 'user', content: transcriptionResult.content },
+              { role: 'assistant', content: chatResult.data.content }
+            ];
+
+            const limitedHistory = updatedHistory.slice(-20);
+
+            UXHelpers.setUserState(userId, {
+              currentAction: 'chatting',
+              data: { 
+                ...userState?.data,
+                service: 'gpt4',
+                chatHistory: limitedHistory
+              }
+            });
+            
+            logger.info(`✅ Chat history updated: ${limitedHistory.length} messages`);
+          } else {
+            await ctx.reply(`❌ Ошибка ChatGPT: ${chatResult.error}`);
+          }
+
         } else {
-          await ctx.reply(`❌ Ошибка: ${result.error}`);
+          await ctx.reply(`❌ Ошибка транскрипции: ${transcriptionResult.error}`);
         }
 
         fileHandler.cleanupFile(filePath);
