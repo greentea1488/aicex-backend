@@ -617,17 +617,22 @@ bot.on("callback_query", async (ctx) => {
 
     // 🔄 РЕГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ (кнопка "Еще одно")
     case (data.startsWith('regenerate_image_') ? data : null): {
+      console.log(`🔄 REGENERATE CALLBACK: ${data} from user ${userId}`);
       const [, , service, model] = data.split('_');
-      const userState = UXHelpers.getUserState(userId);
+      console.log(`🔍 Parsed: service=${service}, model=${model}`);
       
-      logger.info(`🔄 Regenerate callback: service=${service}, model=${model}`);
-      logger.info(`🔍 User state: ${JSON.stringify(userState)}`);
+      const userState = UXHelpers.getUserState(userId);
+      console.log(`🔍 User state for ${userId}:`, JSON.stringify(userState, null, 2));
+      
+      // Проверяем состояние пользователя
+      console.log(`🔍 Checking state for user ${userId}`);
       
       if (userState?.data?.lastPrompt) {
-        logger.info(`✅ Found saved prompt: "${userState.data.lastPrompt}"`);
+        console.log(`✅ Found saved prompt: "${userState.data.lastPrompt}"`);
         await handleImageGeneration(ctx, userState.data.lastPrompt, service, { model });
       } else {
-        logger.warn(`❌ No saved prompt found for user ${userId}`);
+        console.log(`❌ No saved prompt found for user ${userId}`);
+        console.log(`❌ User state:`, userState);
         await UXHelpers.safeEditMessage(ctx,
           "❌ Не удалось найти предыдущий промпт. Выберите действие:",
           {
@@ -1701,6 +1706,8 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
   
   // 💡 СОХРАНЯЕМ СОСТОЯНИЕ СРАЗУ для кнопки "Еще одно"
   const model = data?.model || 'default';
+  console.log(`💾 SAVING STATE for user ${userId}: prompt="${prompt}", service="${service}", model="${model}"`);
+  
   UXHelpers.setUserState(userId, {
     currentAction: 'generating_image',
     data: { 
@@ -1710,7 +1717,9 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
     }
   });
   
-  logger.info(`💾 Saved state for regeneration: prompt="${prompt}", service="${service}", model="${model}"`);
+  // Проверяем что состояние сохранилось
+  const savedState = UXHelpers.getUserState(userId);
+  console.log(`💾 VERIFIED saved state:`, JSON.stringify(savedState, null, 2));
   
   try {
     // Создаем задачу в очереди
@@ -1828,6 +1837,7 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
       const modelText = data?.model ? ` (${data.model})` : '';
       
       // Обновляем состояние после успешной генерации
+      console.log(`✅ UPDATING STATE after successful generation for user ${userId}`);
       UXHelpers.setUserState(userId, {
         currentAction: 'image_generated',
         data: { 
@@ -1836,6 +1846,10 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
           lastModel: model
         }
       });
+      
+      // Проверяем что состояние обновилось
+      const updatedState = UXHelpers.getUserState(userId);
+      console.log(`✅ VERIFIED updated state:`, JSON.stringify(updatedState, null, 2));
 
       // ВАЖНО: Отправляем НОВОЕ сообщение с изображением
       // Это гарантирует уведомление даже если пользователь ушел в другое меню
