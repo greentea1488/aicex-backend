@@ -31,7 +31,7 @@ router.post("/make-admin", async (req, res) => {
     const updatedUser = await prisma.user.update({
       where: { telegramId: telegramId.toString() },
       data: { role: "ADMIN" },
-      select: { id: true, telegramId: true, role: true, name: true }
+      select: { id: true, telegramId: true, role: true, firstName: true, lastName: true }
     });
     
     logger.info(`User ${telegramId} is now ADMIN:`, updatedUser);
