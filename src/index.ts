@@ -39,6 +39,8 @@ import apiRoutes from "./routes/api";
 console.log("✅ apiRoutes loaded");
 import adminRoutes from "./routes/admin";
 console.log("✅ adminRoutes loaded");
+import adminPanelRoutes from "./routes/adminRoutes";
+console.log("✅ adminPanelRoutes loaded");
 import webhookRoutes from "./routes/webhooks";
 console.log("✅ webhookRoutes loaded");
 import freepikRoutes from "./routes/freepik";
@@ -140,6 +142,7 @@ try {
   app.use("/api/user", globalLimiter.middleware(), userRoutes);
   app.use("/api", globalLimiter.middleware(), apiRoutes);
   app.use("/api/admin", globalLimiter.middleware(), adminRoutes);
+  app.use("/api/admin-panel", globalLimiter.middleware(), adminPanelRoutes); // Новая админ-панель
   
   logger.info("✅ All routes loaded with rate limiting");
 } catch (error) {
