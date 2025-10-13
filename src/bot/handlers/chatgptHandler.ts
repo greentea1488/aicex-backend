@@ -130,6 +130,7 @@ export class ChatGPTHandler extends BaseAIHandler {
     const userId = ctx.from?.id.toString();
     if (!userId) return;
 
+    this.logger.info(`📎 Starting image analysis session for user ${userId}`);
     this.setUserState(userId, { action: 'image_analyze' });
 
     await this.safeEditMessage(ctx,
@@ -138,6 +139,7 @@ export class ChatGPTHandler extends BaseAIHandler {
     );
 
     this.sessionManager.createSession(userId, 'chatgpt_vision');
+    this.logger.info(`✅ ChatGPT vision session created for user ${userId}`);
   }
 
   // ⚙️ НАСТРОЙКИ CHATGPT
@@ -385,6 +387,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
   // 📁 МЕНЮ ОБРАБОТКИ ФАЙЛОВ
   async showFileProcessingMenu(ctx: Context) {
+    this.logger.info(`📁 Showing file processing menu to user ${ctx.from?.id}`);
     await this.safeEditMessage(ctx,
       "📁 Обработка файлов с ChatGPT\n\n" +
       "Выберите тип файла для обработки:\n\n" +
@@ -400,6 +403,7 @@ export class ChatGPTHandler extends BaseAIHandler {
     const userId = ctx.from?.id.toString();
     if (!userId) return;
 
+    this.logger.info(`📄 Starting document analysis session for user ${userId}`);
     this.setUserState(userId, { action: 'document_analysis' });
 
     await this.safeEditMessage(ctx,
@@ -410,6 +414,7 @@ export class ChatGPTHandler extends BaseAIHandler {
     );
 
     this.sessionManager.createSession(userId, 'chatgpt_document');
+    this.logger.info(`✅ ChatGPT document session created for user ${userId}`);
   }
 
   // 🎤 НАЧАТЬ ТРАНСКРИПЦИЮ АУДИО
@@ -417,6 +422,7 @@ export class ChatGPTHandler extends BaseAIHandler {
     const userId = ctx.from?.id.toString();
     if (!userId) return;
 
+    this.logger.info(`🎤 Starting audio transcription session for user ${userId}`);
     this.setUserState(userId, { action: 'audio_transcription' });
 
     await this.safeEditMessage(ctx,
@@ -428,5 +434,6 @@ export class ChatGPTHandler extends BaseAIHandler {
     );
 
     this.sessionManager.createSession(userId, 'chatgpt_audio');
+    this.logger.info(`✅ ChatGPT audio session created for user ${userId}`);
   }
 }

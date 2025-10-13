@@ -112,33 +112,41 @@ bot.on("callback_query:data", async ctx => {
   const data = ctx.callbackQuery.data;
   if (!data) return;
   
+  logger.info(`🔘 Callback received: "${data}" from user ${ctx.from?.id}`);
+  
   // Попытка маршрутизации через AI routers
   let handled = false;
   
   try {
     // Freepik router
     if (data.startsWith("freepik_")) {
+      logger.info(`🎨 Routing to Freepik router: ${data}`);
       handled = await freepikRouter.handleCallback(ctx);
     }
     // Runway router  
     else if (data.startsWith("runway_")) {
+      logger.info(`🚀 Routing to Runway router: ${data}`);
       handled = await runwayRouter.handleCallback(ctx);
     }
     // ChatGPT router
     else if (data.startsWith("chatgpt_")) {
+      logger.info(`🤖 Routing to ChatGPT router: ${data}`);
       handled = await chatgptRouter.handleCallback(ctx);
     }
     // Midjourney router
     else if (data.startsWith("midjourney_")) {
+      logger.info(`🖼️ Routing to Midjourney router: ${data}`);
       handled = await midjourneyRouter.handleCallback(ctx);
     }
     
     // Если не обработано - логируем
     if (!handled) {
-      logger.warn(`Unhandled callback: ${data}`);
+      logger.warn(`⚠️ Unhandled callback: ${data} - no router matched`);
+    } else {
+      logger.info(`✅ Callback handled successfully: ${data}`);
     }
   } catch (error) {
-    logger.error(`Error handling callback ${data}:`, error);
+    logger.error(`❌ Error handling callback ${data}:`, error);
     await ctx.reply("❌ Произошла ошибка при обработке команды");
   }
 });
@@ -148,31 +156,43 @@ bot.on("message:photo", async ctx => {
   const userId = ctx.from?.id.toString();
   if (!userId) return;
 
+  logger.info(`📸 Photo received from user ${userId}`);
+
   const session = sessionManager.getSession(userId);
+  logger.info(`🔍 Session check for photo: ${session ? `active (${session.aiProvider})` : 'none'}`);
+  
   if (session && session.aiProvider === 'chatgpt_vision') {
+    logger.info(`✅ ChatGPT Vision session active, processing image...`);
     try {
       const photo = ctx.message.photo[ctx.message.photo.length - 1];
       const file = await ctx.api.getFile(photo.file_id);
       const imageUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
       
+      logger.info(`📥 Image downloaded: ${imageUrl}`);
+      
       const prompt = ctx.message.caption || "Проанализируй это изображение и опиши что на нем изображено";
+      logger.info(`📝 Image analysis prompt: ${prompt}`);
       
       // Валидация промпта
       const validation = securityService.validatePrompt(prompt);
       if (!validation.valid) {
+        logger.warn(`❌ Prompt validation failed: ${validation.error}`);
         await ctx.reply(`❌ ${validation.error}`);
         return;
       }
       
       await ctx.reply("🔍 Анализирую изображение...");
+      logger.info(`🤖 Calling ChatGPT Vision API...`);
       
       const chatgptService = new (await import("./services/ai/ChatGPTService")).ChatGPTService();
       const result = await chatgptService.analyzeImage(imageUrl, prompt);
       
+      logger.info(`✅ ChatGPT Vision analysis completed, length: ${result.content.length}`);
+      
       await ctx.reply(`📸 **Анализ изображения GPT-4V:**\n\n${result.content}`);
       
     } catch (error: any) {
-      logger.error("Ошибка анализа изображения:", error);
+      logger.error("❌ Ошибка анализа изображения:", error);
       await ctx.reply(`❌ Ошибка анализа изображения: ${error.message}`);
     }
     return;
@@ -184,16 +204,24 @@ bot.on("message:document", async ctx => {
   const userId = ctx.from?.id.toString();
   if (!userId) return;
 
+  logger.info(`📄 Document received from user ${userId}`);
+
   const session = sessionManager.getSession(userId);
+  logger.info(`🔍 Session check for document: ${session ? `active (${session.aiProvider})` : 'none'}`);
+  
   if (session && session.aiProvider === 'chatgpt_document') {
+    logger.info(`✅ ChatGPT Document session active, processing...`);
     try {
       const document = ctx.message.document;
       const fileName = document.file_name || 'document';
       const fileSize = document.file_size || 0;
       
+      logger.info(`📋 Document info: name=${fileName}, size=${fileSize} bytes, mime=${document.mime_type}`);
+      
       // Проверка размера файла (макс 20 МБ)
       const maxSize = 20 * 1024 * 1024;
       if (fileSize > maxSize) {
+        logger.warn(`❌ Document too large: ${fileSize} > ${maxSize}`);
         await ctx.reply("❌ Файл слишком большой. Максимальный размер: 20 МБ");
         return;
       }
@@ -201,13 +229,17 @@ bot.on("message:document", async ctx => {
       await ctx.reply("📄 Обрабатываю документ...");
 
       // Скачиваем файл
+      logger.info(`📥 Downloading document...`);
       const { FileHandler } = await import("../utils/fileHandler");
       const fileHandler = new FileHandler();
       const { filePath, buffer } = await fileHandler.downloadFile(document.file_id);
+      logger.info(`✅ Document downloaded to: ${filePath}`);
 
       try {
         // Извлекаем текст из файла
+        logger.info(`📝 Extracting text from document...`);
         const fileContent = await fileHandler.extractText(filePath, document.mime_type);
+        logger.info(`✅ Text extracted, length: ${fileContent.length} chars`);
         
         // Ограничиваем размер контента (макс 15000 символов)
         const maxContentLength = 15000;
@@ -216,18 +248,23 @@ bot.on("message:document", async ctx => {
           : fileContent;
 
         const prompt = ctx.message.caption || "Проанализируй этот документ и дай краткое резюме";
+        logger.info(`📝 Analysis prompt: ${prompt}`);
 
         // Валидация промпта
         const validation = securityService.validatePrompt(prompt);
         if (!validation.valid) {
+          logger.warn(`❌ Prompt validation failed: ${validation.error}`);
           await ctx.reply(`❌ ${validation.error}`);
           fileHandler.cleanupFile(filePath);
           return;
         }
 
         // Анализируем файл с помощью ChatGPT
+        logger.info(`🤖 Calling ChatGPT for file analysis...`);
         const chatgptService = new (await import("./services/ai/ChatGPTService")).ChatGPTService();
         const result = await chatgptService.analyzeFile(truncatedContent, fileName, prompt, userId);
+        
+        logger.info(`✅ ChatGPT analysis completed, length: ${result.content.length}`);
 
         await ctx.reply(
           `📄 **Анализ документа "${fileName}":**\n\n${result.content}`,
@@ -236,6 +273,7 @@ bot.on("message:document", async ctx => {
 
         // Очищаем временный файл
         fileHandler.cleanupFile(filePath);
+        logger.info(`🗑️ Temporary file cleaned up`);
 
       } catch (error: any) {
         fileHandler.cleanupFile(filePath);
@@ -243,10 +281,12 @@ bot.on("message:document", async ctx => {
       }
 
     } catch (error: any) {
-      logger.error("Ошибка обработки документа:", error);
+      logger.error("❌ Ошибка обработки документа:", error);
       await ctx.reply(`❌ Ошибка обработки документа: ${error.message}`);
     }
     return;
+  } else {
+    logger.info(`ℹ️ Document received but no chatgpt_document session active`);
   }
 });
 
@@ -255,16 +295,24 @@ bot.on("message:audio", async ctx => {
   const userId = ctx.from?.id.toString();
   if (!userId) return;
 
+  logger.info(`🎤 Audio received from user ${userId}`);
+
   const session = sessionManager.getSession(userId);
+  logger.info(`🔍 Session check for audio: ${session ? `active (${session.aiProvider})` : 'none'}`);
+  
   if (session && session.aiProvider === 'chatgpt_audio') {
+    logger.info(`✅ ChatGPT Audio session active, transcribing...`);
     try {
       const audio = ctx.message.audio;
       const fileName = audio.file_name || 'audio';
       const fileSize = audio.file_size || 0;
       
+      logger.info(`🎵 Audio info: name=${fileName}, size=${fileSize} bytes, mime=${audio.mime_type}`);
+      
       // Проверка размера файла (макс 25 МБ для Whisper)
       const maxSize = 25 * 1024 * 1024;
       if (fileSize > maxSize) {
+        logger.warn(`❌ Audio too large: ${fileSize} > ${maxSize}`);
         await ctx.reply("❌ Файл слишком большой. Максимальный размер для аудио: 25 МБ");
         return;
       }
@@ -272,14 +320,19 @@ bot.on("message:audio", async ctx => {
       await ctx.reply("🎤 Транскрибирую аудио...");
 
       // Скачиваем файл
+      logger.info(`📥 Downloading audio...`);
       const { FileHandler } = await import("../utils/fileHandler");
       const fileHandler = new FileHandler();
       const { filePath } = await fileHandler.downloadFile(audio.file_id);
+      logger.info(`✅ Audio downloaded to: ${filePath}`);
 
       try {
         // Транскрибируем аудио с помощью Whisper
+        logger.info(`🎙️ Calling Whisper API for transcription...`);
         const chatgptService = new (await import("./services/ai/ChatGPTService")).ChatGPTService();
         const result = await chatgptService.transcribeAudio(filePath);
+        
+        logger.info(`✅ Whisper transcription completed, length: ${result.content.length}`);
 
         await ctx.reply(
           `🎤 **Транскрипция аудио "${fileName}":**\n\n${result.content}`,
@@ -288,6 +341,7 @@ bot.on("message:audio", async ctx => {
 
         // Очищаем временный файл
         fileHandler.cleanupFile(filePath);
+        logger.info(`🗑️ Audio file cleaned up`);
 
       } catch (error: any) {
         fileHandler.cleanupFile(filePath);
@@ -295,10 +349,12 @@ bot.on("message:audio", async ctx => {
       }
 
     } catch (error: any) {
-      logger.error("Ошибка транскрипции аудио:", error);
+      logger.error("❌ Ошибка транскрипции аудио:", error);
       await ctx.reply(`❌ Ошибка транскрипции аудио: ${error.message}`);
     }
     return;
+  } else {
+    logger.info(`ℹ️ Audio received but no chatgpt_audio session active`);
   }
 });
 
@@ -307,15 +363,24 @@ bot.on("message:voice", async ctx => {
   const userId = ctx.from?.id.toString();
   if (!userId) return;
 
+  logger.info(`🎙️ Voice message received from user ${userId}`);
+
   const session = sessionManager.getSession(userId);
+  logger.info(`🔍 Session check for voice: ${session ? `active (${session.aiProvider})` : 'none'}`);
+  
   if (session && session.aiProvider === 'chatgpt_audio') {
+    logger.info(`✅ ChatGPT Audio session active, transcribing voice...`);
     try {
       const voice = ctx.message.voice;
       const fileSize = voice.file_size || 0;
+      const duration = voice.duration || 0;
+      
+      logger.info(`🎙️ Voice info: duration=${duration}s, size=${fileSize} bytes, mime=${voice.mime_type}`);
       
       // Проверка размера файла (макс 25 МБ для Whisper)
       const maxSize = 25 * 1024 * 1024;
       if (fileSize > maxSize) {
+        logger.warn(`❌ Voice too large: ${fileSize} > ${maxSize}`);
         await ctx.reply("❌ Голосовое сообщение слишком большое. Максимальный размер: 25 МБ");
         return;
       }
@@ -323,14 +388,19 @@ bot.on("message:voice", async ctx => {
       await ctx.reply("🎙️ Транскрибирую голосовое сообщение...");
 
       // Скачиваем файл
+      logger.info(`📥 Downloading voice message...`);
       const { FileHandler } = await import("../utils/fileHandler");
       const fileHandler = new FileHandler();
       const { filePath } = await fileHandler.downloadFile(voice.file_id);
+      logger.info(`✅ Voice downloaded to: ${filePath}`);
 
       try {
         // Транскрибируем голосовое сообщение с помощью Whisper
+        logger.info(`🎙️ Calling Whisper API for voice transcription...`);
         const chatgptService = new (await import("./services/ai/ChatGPTService")).ChatGPTService();
         const result = await chatgptService.transcribeAudio(filePath);
+        
+        logger.info(`✅ Voice transcription completed, length: ${result.content.length}`);
 
         await ctx.reply(
           `🎙️ **Транскрипция голосового сообщения:**\n\n${result.content}`,
@@ -339,6 +409,7 @@ bot.on("message:voice", async ctx => {
 
         // Очищаем временный файл
         fileHandler.cleanupFile(filePath);
+        logger.info(`🗑️ Voice file cleaned up`);
 
       } catch (error: any) {
         fileHandler.cleanupFile(filePath);
@@ -346,10 +417,12 @@ bot.on("message:voice", async ctx => {
       }
 
     } catch (error: any) {
-      logger.error("Ошибка транскрипции голосового сообщения:", error);
+      logger.error("❌ Ошибка транскрипции голосового сообщения:", error);
       await ctx.reply(`❌ Ошибка транскрипции голосового сообщения: ${error.message}`);
     }
     return;
+  } else {
+    logger.info(`ℹ️ Voice received but no chatgpt_audio session active`);
   }
 });
 
