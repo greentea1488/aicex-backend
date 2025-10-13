@@ -624,15 +624,46 @@ bot.on("callback_query", async (ctx) => {
       const userState = UXHelpers.getUserState(userId);
       console.log(`🔍 User state for ${userId}:`, JSON.stringify(userState, null, 2));
       
-      // Проверяем состояние пользователя
-      console.log(`🔍 Checking state for user ${userId}`);
-      
       if (userState?.data?.lastPrompt) {
         console.log(`✅ Found saved prompt: "${userState.data.lastPrompt}"`);
-        await handleImageGeneration(ctx, userState.data.lastPrompt, service, { model });
+        
+        // Устанавливаем состояние ожидания промпта с предзаполненным текстом
+        UXHelpers.setUserState(userId, {
+          currentAction: 'waiting_image_prompt',
+          data: { 
+            service: service,
+            model: model,
+            prefilledPrompt: userState.data.lastPrompt
+          }
+        });
+        
+        // Показываем меню с предзаполненным промптом
+        await UXHelpers.safeEditMessage(ctx,
+          `🎨 <b>Генерация изображения</b>\n\n` +
+          `📝 Промпт: "${userState.data.lastPrompt}"\n\n` +
+          `Выберите модель или измените промпт:`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '🔥 Seedream v3 (быстро)', callback_data: 'freepik_img_seedream' },
+                  { text: '⚡ Flux Pro (качество)', callback_data: 'freepik_img_flux-pro' }
+                ],
+                [
+                  { text: '🎭 Mystic', callback_data: 'freepik_img_mystic' },
+                  { text: '🏃 Classic Fast', callback_data: 'freepik_img_classic-fast' }
+                ],
+                [
+                  { text: '📋 Все модели', callback_data: 'image_freepik' },
+                  { text: '⬅️ Назад', callback_data: 'generate_image' }
+                ]
+              ]
+            },
+            parse_mode: "HTML"
+          }
+        );
       } else {
         console.log(`❌ No saved prompt found for user ${userId}`);
-        console.log(`❌ User state:`, userState);
         await UXHelpers.safeEditMessage(ctx,
           "❌ Не удалось найти предыдущий промпт. Выберите действие:",
           {
@@ -995,23 +1026,35 @@ bot.on("callback_query", async (ctx) => {
         const model = getImageModelById(modelId);
         
         if (model) {
+          const userState = UXHelpers.getUserState(userId);
+          const prefilledPrompt = userState?.data?.prefilledPrompt;
+          
           // Используем UXHelpers для консистентности
           UXHelpers.setUserState(userId, { 
             currentAction: 'waiting_image_prompt', 
             data: { service: 'freepik', model: modelId, endpoint: model.endpoint } 
           });
           
-          await ctx.editMessageText(
-            `${model.isNew ? '🆕 ' : ''}<b>${model.name}</b>\n\n${model.description}\n\n📝 Отправьте описание изображения:\n\n💡 Пример: "красивый закат над океаном"`,
-            {
-              reply_markup: {
-                inline_keyboard: [
-                  [{ text: '⬅️ К моделям', callback_data: 'image_freepik' }]
-                ]
-              },
-              parse_mode: "HTML"
-            }
-          );
+          let messageText = `${model.isNew ? '🆕 ' : ''}<b>${model.name}</b>\n\n${model.description}\n\n`;
+          
+          if (prefilledPrompt) {
+            messageText += `📝 <b>Предзаполненный промпт:</b> "${prefilledPrompt}"\n\n`;
+            messageText += `✅ Для использования этого промпта просто отправьте любое сообщение\n`;
+            messageText += `📝 Для изменения промпта отправьте новый текст:\n\n`;
+          } else {
+            messageText += `📝 Отправьте описание изображения:\n\n`;
+          }
+          
+          messageText += `💡 Пример: "красивый закат над океаном"`;
+          
+          await ctx.editMessageText(messageText, {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '⬅️ К моделям', callback_data: 'image_freepik' }]
+              ]
+            },
+            parse_mode: "HTML"
+          });
         }
       }
       // 🎬 ОБРАБОТКА ВЫБОРА МОДЕЛЕЙ ВИДЕО
@@ -1558,7 +1601,25 @@ bot.on("message:text", async (ctx) => {
   // Обработка по состояниям
     switch (userState.currentAction) {
     case 'waiting_image_prompt':
-        await handleImageGeneration(ctx, text, userState.data?.service || 'freepik', userState.data);
+        // Если есть предзаполненный промпт и пользователь отправил короткое сообщение (например, "да", "ок", "хорошо")
+        const prefilledPrompt = userState.data?.prefilledPrompt;
+        const isShortConfirmation = text.length <= 10 && (
+          text.toLowerCase().includes('да') || 
+          text.toLowerCase().includes('ок') || 
+          text.toLowerCase().includes('хорошо') ||
+          text.toLowerCase().includes('yes') ||
+          text.toLowerCase().includes('ok')
+        );
+        
+        if (prefilledPrompt && isShortConfirmation) {
+          // Используем предзаполненный промпт
+          console.log(`✅ Using prefilled prompt: "${prefilledPrompt}"`);
+          await handleImageGeneration(ctx, prefilledPrompt, userState.data?.service || 'freepik', userState.data);
+        } else {
+          // Используем новый промпт от пользователя
+          console.log(`📝 Using new prompt: "${text}"`);
+          await handleImageGeneration(ctx, text, userState.data?.service || 'freepik', userState.data);
+        }
       break;
       
     case 'waiting_video_prompt':
