@@ -190,18 +190,46 @@ export class UXHelpers {
       timestamp: Date.now()
     };
 
-    this.userStates.set(userId, {
+    const newState = {
       ...currentState,
       ...state,
       timestamp: Date.now()
+    };
+
+    console.log(`💾 UXHelpers.setUserState(${userId}):`, {
+      currentState,
+      newState,
+      mapSize: this.userStates.size
     });
+
+    this.userStates.set(userId, newState);
+    
+    console.log(`💾 State saved, map now has ${this.userStates.size} users`);
   }
 
   static getUserState(userId: number): UserState | undefined {
     const state = this.userStates.get(userId);
-    if (state && Date.now() - state.timestamp < this.STATE_TIMEOUT) {
+    const now = Date.now();
+    
+    console.log(`🔍 UXHelpers.getUserState(${userId}):`, {
+      stateExists: !!state,
+      timestamp: state?.timestamp,
+      age: state ? now - state.timestamp : 'N/A',
+      timeout: this.STATE_TIMEOUT,
+      withinTimeout: state ? (now - state.timestamp < this.STATE_TIMEOUT) : false
+    });
+    
+    if (state && now - state.timestamp < this.STATE_TIMEOUT) {
+      console.log(`✅ State found and valid for user ${userId}`);
       return state;
     }
+    
+    if (state) {
+      console.log(`⏰ State expired for user ${userId} (age: ${now - state.timestamp}ms > ${this.STATE_TIMEOUT}ms)`);
+    } else {
+      console.log(`❌ No state found for user ${userId}`);
+    }
+    
     this.clearUserState(userId);
     return undefined;
   }
