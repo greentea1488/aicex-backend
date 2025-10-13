@@ -2,6 +2,7 @@ import { Context } from 'grammy';
 import { MidjourneyService, MidjourneyGenerationRequest } from '../services/ai/MidjourneyService';
 import { SessionManager } from '../services/SessionManager';
 import { prisma } from '../../utils/prismaClient';
+import { safeEditMessage } from '../utils/UXHelpers';
 import {
   midjourneyMainMenu,
   midjourneyGenerateMenu,
@@ -37,7 +38,7 @@ export class MidjourneyHandler {
    * Показывает главное меню Midjourney
    */
   async showMainMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '🎨 **Midjourney AI - Генерация изображений**\n\n' +
       'Создавайте потрясающие изображения с помощью самой мощной нейросети для генерации картинок!\n\n' +
       '✨ **Возможности:**\n' +
@@ -58,7 +59,7 @@ export class MidjourneyHandler {
    * Показывает меню генерации
    */
   async showGenerateMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '🎨 **Генерация изображения**\n\n' +
       'Выберите способ генерации:\n\n' +
       '🚀 **Быстрая генерация** - готовые шаблоны\n' +
@@ -74,7 +75,7 @@ export class MidjourneyHandler {
    * Показывает меню настроек
    */
   async showSettingsMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '⚙️ **Настройки Midjourney**\n\n' +
       'Настройте параметры генерации:\n\n' +
       '🤖 **Модель** - версия Midjourney\n' +
@@ -104,7 +105,7 @@ export class MidjourneyHandler {
     text += '• **6.1** - стабильная, хорошее качество\n';
     text += '• **5.x** - классические версии';
 
-    await ctx.editMessageText(text, {
+    await safeEditMessage(ctx, text, {
       parse_mode: 'Markdown',
       reply_markup: midjourneyModelsMenu
     });
@@ -121,7 +122,7 @@ export class MidjourneyHandler {
       text += `**${style.name}** - ${style.description}\n`;
     });
 
-    await ctx.editMessageText(text, {
+    await safeEditMessage(ctx, text, {
       parse_mode: 'Markdown',
       reply_markup: midjourneyStylesMenu
     });
@@ -138,7 +139,7 @@ export class MidjourneyHandler {
       text += `**${ratio.name}** - ${ratio.description}\n`;
     });
 
-    await ctx.editMessageText(text, {
+    await safeEditMessage(ctx, text, {
       parse_mode: 'Markdown',
       reply_markup: midjourneyAspectRatiosMenu
     });
@@ -155,7 +156,7 @@ export class MidjourneyHandler {
       text += `**${quality.name}** - ${quality.description}\n`;
     });
 
-    await ctx.editMessageText(text, {
+    await safeEditMessage(ctx, text, {
       parse_mode: 'Markdown',
       reply_markup: midjourneyQualityMenu
     });
@@ -165,7 +166,7 @@ export class MidjourneyHandler {
    * Показывает меню истории
    */
   async showHistoryMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '📊 **История генераций**\n\n' +
       'Просмотрите ваши предыдущие генерации:\n\n' +
       '📋 **Последние 10** - недавние работы\n' +
@@ -182,7 +183,7 @@ export class MidjourneyHandler {
    * Показывает меню помощи
    */
   async showHelpMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '❓ **Помощь по Midjourney**\n\n' +
       '📖 **Как использовать** - инструкции\n' +
       '💡 **Примеры промптов** - готовые шаблоны\n' +
@@ -198,7 +199,7 @@ export class MidjourneyHandler {
    * Показывает меню быстрой генерации
    */
   async showQuickGenMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '🚀 **Быстрая генерация**\n\n' +
       'Выберите категорию для быстрого старта:\n\n' +
       '👤 **Портрет** - люди и лица\n' +
@@ -218,7 +219,7 @@ export class MidjourneyHandler {
    * Показывает меню конфигурации
    */
   async showConfigureMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '⚙️ **Конфигурация генерации**\n\n' +
       'Настройте все параметры:\n\n' +
       '🤖 **Модель** - версия Midjourney\n' +
@@ -237,7 +238,7 @@ export class MidjourneyHandler {
    * Показывает меню примеров
    */
   async showExamplesMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '💡 **Примеры промптов**\n\n' +
       'Готовые шаблоны для вдохновения:\n\n' +
       '👤 **Портреты** - люди и лица\n' +
@@ -257,7 +258,7 @@ export class MidjourneyHandler {
    * Показывает меню тарифов
    */
   async showPricingMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       '💰 **Тарифы Midjourney**\n\n' +
       '💎 **Midjourney 7.0** - 8₽ за генерацию\n' +
       '• Новейшая версия\n' +
@@ -403,7 +404,7 @@ export class MidjourneyHandler {
       // Создаем сессию для генерации
       await this.sessionManager.createSession(telegramId.toString(), 'midjourney_generate');
       
-      await ctx.editMessageText(
+      await safeEditMessage(ctx, 
         '🎨 **Генерация изображения Midjourney**\n\n' +
         '📝 **Введите описание изображения:**\n\n' +
         '💡 **Примеры:**\n' +
@@ -464,7 +465,7 @@ export class MidjourneyHandler {
       };
 
       // Отправляем запрос
-      await ctx.editMessageText('🎨 **Генерация изображения...**\n\n⏳ Обрабатываем ваш запрос...');
+      await safeEditMessage(ctx, '🎨 **Генерация изображения...**\n\n⏳ Обрабатываем ваш запрос...');
 
       const result = await this.midjourneyService.generateImage(request);
 
@@ -499,7 +500,7 @@ export class MidjourneyHandler {
 
         await ctx.answerCallbackQuery('✅ Изображение сгенерировано!');
       } else {
-        await ctx.editMessageText(
+        await safeEditMessage(ctx, 
           `❌ **Ошибка генерации**\n\n${result.error || 'Неизвестная ошибка'}`,
           { parse_mode: 'Markdown' }
         );
@@ -526,7 +527,7 @@ export class MidjourneyHandler {
       });
 
       if (tasks.length === 0) {
-        await ctx.editMessageText(
+        await safeEditMessage(ctx, 
           '📊 **История генераций**\n\n' +
           'У вас пока нет генераций.\n' +
           'Создайте первое изображение!',
@@ -543,7 +544,7 @@ export class MidjourneyHandler {
         text += `   💰 ${task.cost}₽ - ${task.createdAt.toLocaleDateString()}\n\n`;
       });
 
-      await ctx.editMessageText(text, { parse_mode: 'Markdown' });
+      await safeEditMessage(ctx, text, { parse_mode: 'Markdown' });
     } catch (error) {
       console.error('Error showing history:', error);
       await ctx.answerCallbackQuery('❌ Ошибка при загрузке истории');
@@ -611,6 +612,6 @@ export class MidjourneyHandler {
     text += '• Указывайте освещение и настроение\n';
     text += '• Экспериментируйте с разными подходами';
 
-    await ctx.editMessageText(text, { parse_mode: 'Markdown' });
+    await safeEditMessage(ctx, text, { parse_mode: 'Markdown' });
   }
 }

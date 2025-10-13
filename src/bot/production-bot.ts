@@ -671,7 +671,8 @@ bot.on("callback_query", async (ctx) => {
 
     // 🎬 ГЕНЕРАЦИЯ ВИДЕО
     case 'generate_video':
-      await ctx.editMessageText(
+      await UXHelpers.safeEditMessage(
+        ctx,
         "🎬 <b>Генерация видео</b>\n\nВыберите нейросеть:",
         { 
           reply_markup: {

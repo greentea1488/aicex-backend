@@ -25,6 +25,7 @@ import { startMenu } from "../keyboards/startKeyboard";
 import { FreepikLoraService } from "../services/ai/FreepikLoraService";
 import { SessionManager } from "../services/SessionManager";
 import { prisma } from "../../utils/prismaClient";
+import { safeEditMessage } from "../utils/UXHelpers";
 
 export class FreepikHandler {
   private sessionManager = new SessionManager();
@@ -34,7 +35,7 @@ export class FreepikHandler {
   private userStates = new Map<string, any>();
 
   async showMainMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎨 Freepik + Lora AI Platform\n\nВыберите тип функциональности:",
       { reply_markup: freepikMainMenu }
     );
@@ -46,7 +47,7 @@ export class FreepikHandler {
       this.setUserState(userId, { action: 'text_to_image' });
     }
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🖼️ Генерация изображений из текста\n\nВыберите модель:",
       { reply_markup: freepikTextToImageMenu }
     );
@@ -58,7 +59,7 @@ export class FreepikHandler {
       this.setUserState(userId, { action: 'styled_images' });
     }
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎭 Генерация изображений с стилями\n\nВыберите стиль:",
       { reply_markup: freepikStyledImageMenu }
     );
@@ -70,7 +71,7 @@ export class FreepikHandler {
       this.setUserState(userId, { action: 'image_to_video' });
     }
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎬 Генерация видео из изображений\n\nВыберите категорию моделей:",
       { reply_markup: freepikVideoModelsMenu }
     );
@@ -82,7 +83,7 @@ export class FreepikHandler {
       this.setUserState(userId, { action: 'editing' });
     }
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "✏️ Редактирование изображений\n\nВыберите тип редактирования:",
       { reply_markup: freepikEditMenu }
     );
@@ -94,7 +95,7 @@ export class FreepikHandler {
       this.setUserState(userId, { action: 'filters' });
     }
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎨 AI Фильтры\n\nВыберите тип фильтра:",
       { reply_markup: freepikFiltersMenu }
     );
@@ -125,7 +126,7 @@ export class FreepikHandler {
       model_name: selectedModel.name
     });
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       `🎨 Выбрана модель: ${selectedModel.name}\n\n` +
       "Теперь отправьте текстовое описание изображения, которое хотите создать.\n\n" +
       "📝 Примеры промптов:\n" +
@@ -282,7 +283,7 @@ export class FreepikHandler {
       model_name: selectedModel.name
     });
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       `🎬 Выбрана модель: ${selectedModel.name}\n\n` +
       `📝 ${selectedModel.description}\n\n` +
       "Теперь отправьте описание видео, которое хотите создать.\n\n" +
@@ -558,42 +559,42 @@ export class FreepikHandler {
   // 🔧 НОВЫЕ РАСШИРЕННЫЕ МЕТОДЫ МЕНЮ
 
   async showGenerationSettings(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🔧 Настройки генерации\n\nВыберите параметр для настройки:",
       { reply_markup: freepikGenerationSettingsMenu }
     );
   }
 
   async showAspectRatioSettings(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "📐 Выбор соотношения сторон\n\nВыберите формат изображения:",
       { reply_markup: freepikAspectRatioMenu }
     );
   }
 
   async showPersonGenerationSettings(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "👥 Настройки генерации персонажей\n\nВыберите политику:",
       { reply_markup: freepikPersonGenerationMenu }
     );
   }
 
   async showSafetySettings(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🔐 Уровень безопасности контента\n\nВыберите уровень фильтрации:",
       { reply_markup: freepikSafetySettingsMenu }
     );
   }
 
   async showVideoDurationSettings(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "⏱️ Длительность видео\n\nВыберите продолжительность:",
       { reply_markup: freepikVideoDurationMenu }
     );
   }
 
   async showVideoParamsSettings(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎬 Расширенные параметры видео\n\nВыберите параметр:",
       { reply_markup: freepikVideoParamsMenu }
     );
@@ -626,7 +627,7 @@ export class FreepikHandler {
         }
       });
 
-      await ctx.editMessageText(
+      await safeEditMessage(ctx, 
         `📊 Статус ваших задач Freepik\n\n` +
         `🔄 Активные: ${activeTasks}\n` +
         `✅ Завершенные: ${completedTasks}\n` +
@@ -637,7 +638,7 @@ export class FreepikHandler {
 
     } catch (error) {
       console.error("Ошибка получения статуса задач:", error);
-      await ctx.editMessageText(
+      await safeEditMessage(ctx, 
         "❌ Ошибка получения статуса задач",
         { reply_markup: freepikTaskStatusMenu }
       );
@@ -689,42 +690,42 @@ export class FreepikHandler {
   // 🎬 Методы для навигации по видео моделям
 
   async showKlingNewMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🚀 Kling - Новые модели\n\nВыберите модель:",
       { reply_markup: freepikVideoKlingNewMenu }
     );
   }
 
   async showKlingClassicMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "⭐ Kling - Классические модели\n\nВыберите модель:",
       { reply_markup: freepikVideoKlingClassicMenu }
     );
   }
 
   async showPixVerseMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎯 PixVerse модели\n\nВыберите модель:",
       { reply_markup: freepikVideoPixVerseMenu }
     );
   }
 
   async showMinimaxMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎪 Minimax Hailuo модели\n\nВыберите качество:",
       { reply_markup: freepikVideoMinimaxMenu }
     );
   }
 
   async showSeedanceMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎭 Seedance модели\n\nВыберите версию и качество:",
       { reply_markup: freepikVideoSeedanceMenu }
     );
   }
 
   async showWanMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🌟 Wan v2.2 модели\n\nВыберите качество:",
       { reply_markup: freepikVideoWanMenu }
     );

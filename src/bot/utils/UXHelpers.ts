@@ -2,6 +2,41 @@ import { Context } from "grammy";
 import { prisma } from "../../utils/prismaClient";
 import { logger } from "../../utils/logger";
 
+/**
+ * 🛡️ Глобальная функция для безопасного редактирования сообщений
+ * Использовать везде вместо ctx.editMessageText()
+ */
+export async function safeEditMessage(
+  ctx: Context,
+  text: string,
+  options?: any
+): Promise<void> {
+  try {
+    await ctx.editMessageText(text, options);
+  } catch (error: any) {
+    logger.warn('editMessageText failed, using reply as fallback:', {
+      error: error.message,
+      userId: ctx.from?.id
+    });
+    
+    try {
+      await ctx.reply(text, options);
+    } catch (replyError: any) {
+      logger.error('Both editMessage and reply failed:', {
+        editError: error.message,
+        replyError: replyError.message,
+        userId: ctx.from?.id
+      });
+      
+      try {
+        await ctx.reply(text.replace(/<[^>]*>/g, ''));
+      } catch (finalError) {
+        logger.error('All message sending attempts failed:', finalError);
+      }
+    }
+  }
+}
+
 // 🎯 Улучшенные UX утилиты для бота
 
 export interface UserState {
@@ -195,18 +230,10 @@ export class UXHelpers {
       `⏱️ Осталось: ${timeLeft}\n\n` +
       `${progressData.message || 'Пожалуйста, подождите...'}`;
 
-    try {
-      await ctx.editMessageText(message, {
-        parse_mode: "HTML",
-        reply_markup: this.getStopButton()
-      });
-    } catch (error) {
-      // Если не можем редактировать, отправляем новое сообщение
-      await ctx.reply(message, {
-        parse_mode: "HTML",
-        reply_markup: this.getStopButton()
-      });
-    }
+    await this.safeEditMessage(ctx, message, {
+      parse_mode: "HTML",
+      reply_markup: this.getStopButton()
+    });
   }
 
   /**
@@ -318,17 +345,10 @@ export class UXHelpers {
       ]
     };
 
-    try {
-      await ctx.editMessageText(message, {
-        parse_mode: "HTML",
-        reply_markup: keyboard
-      });
-    } catch (editError) {
-      await ctx.reply(message, {
-        parse_mode: "HTML",
-        reply_markup: keyboard
-      });
-    }
+    await this.safeEditMessage(ctx, message, {
+      parse_mode: "HTML",
+      reply_markup: keyboard
+    });
   }
 
   /**
@@ -350,17 +370,10 @@ export class UXHelpers {
       ]
     };
 
-    try {
-      await ctx.editMessageText(message, {
-        parse_mode: "HTML",
-        reply_markup: keyboard
-      });
-    } catch (editError) {
-      await ctx.reply(message, {
-        parse_mode: "HTML",
-        reply_markup: keyboard
-      });
-    }
+    await this.safeEditMessage(ctx, message, {
+      parse_mode: "HTML",
+      reply_markup: keyboard
+    });
   }
 
   /**
@@ -378,10 +391,48 @@ export class UXHelpers {
       ]
     };
 
-    await ctx.editMessageText(message, {
+    await this.safeEditMessage(ctx, message, {
       parse_mode: "HTML",
       reply_markup: keyboard
     });
+  }
+
+  /**
+   * ✏️ Безопасное редактирование сообщения с fallback на reply
+   * Решает проблему когда editMessageText падает с ошибкой
+   */
+  static async safeEditMessage(
+    ctx: Context, 
+    text: string, 
+    options?: any
+  ): Promise<void> {
+    try {
+      await ctx.editMessageText(text, options);
+    } catch (error: any) {
+      // Логируем но не показываем пользователю
+      logger.warn('editMessageText failed, using reply as fallback:', {
+        error: error.message,
+        userId: ctx.from?.id
+      });
+      
+      // Fallback: отправляем новое сообщение
+      try {
+        await ctx.reply(text, options);
+      } catch (replyError: any) {
+        logger.error('Both editMessage and reply failed:', {
+          editError: error.message,
+          replyError: replyError.message,
+          userId: ctx.from?.id
+        });
+        
+        // Last resort: простое сообщение без форматирования
+        try {
+          await ctx.reply(text.replace(/<[^>]*>/g, ''));
+        } catch (finalError) {
+          logger.error('All message sending attempts failed:', finalError);
+        }
+      }
+    }
   }
 
   /**

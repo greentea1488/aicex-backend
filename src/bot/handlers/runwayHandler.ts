@@ -12,6 +12,7 @@ import {
   runwayImageConfigMenu,
   backToRunwayMain
 } from "../keyboards/runwayKeyboard";
+import { safeEditMessage } from "../utils/UXHelpers";
 
 interface UserState {
   action?: string;
@@ -42,7 +43,7 @@ export class RunwayHandler {
 
   // 🎬 ГЛАВНОЕ МЕНЮ RUNWAY
   async showMainMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎬 Runway - AI Creative Suite\n\nВыберите что хотите создать:",
       { reply_markup: runwayMainMenu }
     );
@@ -50,7 +51,7 @@ export class RunwayHandler {
 
   // 🎥 МЕНЮ ВИДЕО ГЕНЕРАЦИИ
   async showVideoModels(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎥 Runway Video Generation\n\nВыберите модель для генерации видео:",
       { reply_markup: runwayVideoModelsMenu }
     );
@@ -58,7 +59,7 @@ export class RunwayHandler {
 
   // 🖼️ МЕНЮ ИЗОБРАЖЕНИЙ
   async showImageModels(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🖼️ Runway Image Generation\n\nВыберите модель для генерации изображений:",
       { reply_markup: runwayImageModelsMenu }
     );
@@ -66,7 +67,7 @@ export class RunwayHandler {
 
   // ✏️ РЕДАКТИРОВАНИЕ
   async showEditingMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "✏️ Runway Editing Tools\n\nВыберите инструмент для редактирования:",
       { reply_markup: runwayEditingMenu }
     );
@@ -74,7 +75,7 @@ export class RunwayHandler {
 
   // 🎭 СПЕЦЭФФЕКТЫ
   async showEffectsMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎭 Runway Special Effects\n\nВыберите спецэффект:",
       { reply_markup: runwayEffectsMenu }
     );
@@ -82,7 +83,7 @@ export class RunwayHandler {
 
   // ℹ️ СПРАВКА
   async showHelpMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "ℹ️ Runway API - Справка\n\nВыберите раздел:",
       { reply_markup: runwayHelpMenu }
     );
@@ -132,7 +133,7 @@ export class RunwayHandler {
       model_name: selectedModel.name
     });
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       `🎬 ${selectedModel.name}\n\nНастройте параметры видео:`,
       { reply_markup: runwayVideoConfigMenu }
     );
@@ -170,7 +171,7 @@ export class RunwayHandler {
       model_name: selectedModel.name
     });
 
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       `🖼️ ${selectedModel.name}\n\nНастройте параметры изображения:`,
       { reply_markup: runwayImageConfigMenu }
     );
@@ -201,7 +202,7 @@ export class RunwayHandler {
 
     const state = this.getUserState(userId);
     
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       `🎬 ${state.model_name || 'Runway'} готова к работе!\n\nТеперь отправьте описание видео:`,
       { reply_markup: new InlineKeyboard().text("🔙 Изменить настройки", "runway_video_gen") }
     );
@@ -216,7 +217,7 @@ export class RunwayHandler {
 
     const state = this.getUserState(userId);
     
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       `🖼️ ${state.model_name || 'Runway'} готова к работе!\n\nТеперь отправьте описание изображения:`,
       { reply_markup: new InlineKeyboard().text("🔙 Изменить настройки", "runway_image_gen") }
     );
@@ -226,28 +227,28 @@ export class RunwayHandler {
 
   // 📚 СПРАВОЧНАЯ ИНФОРМАЦИЯ
   async showUsageHelp(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "📖 Как использовать Runway API\n\n1️⃣ Выберите тип контента\n2️⃣ Выберите модель\n3️⃣ Настройте параметры\n4️⃣ Отправьте описание\n5️⃣ Дождитесь результата",
       { reply_markup: backToRunwayMain }
     );
   }
 
   async showExamples(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "💡 Примеры промптов для Runway\n\n🎬 Видео:\n• Кот играет с мячиком\n• Волны разбиваются о скалы\n\n🖼️ Изображения:\n• Футуристический город\n• Портрет в стиле аниме",
       { reply_markup: backToRunwayMain }
     );
   }
 
   async showTips(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🎯 Лучшие практики Runway\n\n✅ Описывайте детально\n✅ Указывайте стиль\n❌ Избегайте общих описаний\n💰 Используйте Turbo для тестов",
       { reply_markup: backToRunwayMain }
     );
   }
 
   async showApiInfo(ctx: Context) {
-    await ctx.editMessageText(
+    await safeEditMessage(ctx, 
       "🔧 Настройки Runway API\n\n✅ API ключ валидный\n⚠️ Модели требуют активации\n💳 1 кредит = $0.01\n\n📞 Обратитесь к администратору",
       { reply_markup: backToRunwayMain }
     );

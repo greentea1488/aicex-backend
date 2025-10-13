@@ -111,7 +111,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
     const currentModel = (user?.gptSettings as any)?.model || "gpt-4o-mini";
 
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       `🧠 Выбор модели ChatGPT\n\nТекущая модель: ${this.getModelDisplayName(currentModel)}\n\nВыберите новую модель:`,
       { reply_markup: chatgptModelsMenu }
     );
@@ -119,7 +119,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
   // 🎨 МЕНЮ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ
   async showImageGenMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       "🖼️ Генерация изображений DALL-E\n\nВыберите модель:",
       { reply_markup: chatgptImageModelsMenu }
     );
@@ -132,7 +132,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
     this.setUserState(userId, { action: 'image_analyze' });
 
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       "📎 Анализ изображений GPT-4V\n\nТеперь отправьте изображение с описанием что нужно проанализировать:",
       { reply_markup: backToChatGPTMain }
     );
@@ -151,7 +151,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
     const settings = user?.gptSettings || {};
 
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       `⚙️ Настройки ChatGPT\n\n` +
       `🧠 Модель: ${this.getModelDisplayName((settings as any).model || "gpt-4o-mini")}\n` +
       `🌡️ Температура: ${(settings as any).temperature || 0.4}\n` +
@@ -235,7 +235,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
       await ctx.answerCallbackQuery(`✅ Модель изменена на ${selectedModel.name}`);
       
-      await ctx.editMessageText(
+      await this.safeEditMessage(ctx,
         `✅ Модель успешно изменена!\n\n` +
         `🧠 Выбрана: ${selectedModel.name}\n` +
         `📝 ${selectedModel.description}\n\n` +
@@ -279,7 +279,7 @@ export class ChatGPTHandler extends BaseAIHandler {
       model_name: selectedModel.name
     });
 
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       `🎨 ${selectedModel.name} готова!\n\nТеперь отправьте описание изображения которое хотите создать:`,
       { reply_markup: backToChatGPTMain }
     );
@@ -298,7 +298,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
     const modelName = this.getModelDisplayName(user?.gptSettings?.model || "gpt-4o-mini");
 
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       `💬 ChatGPT Текстовый чат\n\nМодель: ${modelName}\n\nТеперь отправьте любое сообщение для начала диалога:`,
       { reply_markup: backToChatGPTMain }
     );
@@ -372,7 +372,7 @@ export class ChatGPTHandler extends BaseAIHandler {
     const settings = user?.gptSettings || {};
     const model = (settings as any).model || "gpt-4o-mini";
 
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       `📊 Информация о модели\n\n` +
       `🧠 Текущая модель: ${this.getModelDisplayName(model)}\n` +
       `🌡️ Температура: ${(settings as any).temperature || 0.4}\n` +
@@ -385,7 +385,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
   // 📁 МЕНЮ ОБРАБОТКИ ФАЙЛОВ
   async showFileProcessingMenu(ctx: Context) {
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       "📁 Обработка файлов с ChatGPT\n\n" +
       "Выберите тип файла для обработки:\n\n" +
       "📄 Документы - анализ текстовых файлов (TXT, JSON, CSV, MD)\n" +
@@ -402,7 +402,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
     this.setUserState(userId, { action: 'document_analysis' });
 
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       "📄 Анализ документов\n\n" +
       "Отправьте мне документ (TXT, JSON, CSV, MD и др.) и я проанализирую его содержимое.\n\n" +
       "Вы можете добавить подпись к файлу с вопросом или инструкцией.",
@@ -419,7 +419,7 @@ export class ChatGPTHandler extends BaseAIHandler {
 
     this.setUserState(userId, { action: 'audio_transcription' });
 
-    await ctx.editMessageText(
+    await this.safeEditMessage(ctx,
       "🎤 Транскрипция аудио\n\n" +
       "Отправьте мне голосовое сообщение или аудио файл, и я преобразую его в текст.\n\n" +
       "Поддерживаемые форматы: MP3, WAV, OGG, M4A, OPUS\n" +
