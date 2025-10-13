@@ -788,14 +788,25 @@ bot.on("callback_query", async (ctx) => {
       break;
 
     case 'chat_gpt4':
-      logger.info(`🧠 ChatGPT-4 chat started for user ${userId}`);
+      logger.info(`🧠 ChatGPT-4 smart chat started for user ${userId}`);
       UXHelpers.setUserState(userId, {
         currentAction: 'chatting',
-        data: { service: 'gpt4' }
+        data: { 
+          service: 'gpt4', 
+          chatHistory: [],
+          fileContext: null 
+        }
       });
       await UXHelpers.safeEditMessage(
         ctx,
-        "🧠 <b>ChatGPT-4</b>\n\n💬 Теперь можете задавать любые вопросы!\n\n📝 Отправьте сообщение для начала диалога.\n\n🛑 Напишите \"стоп\" для завершения.",
+        "🧠 <b>ChatGPT-4 Умный Чат</b>\n\n" +
+        "💬 Можете:\n" +
+        "• Задавать любые вопросы\n" +
+        "• Отправлять документы для анализа\n" +
+        "• Записывать голосовые (будут транскрибированы)\n" +
+        "• Отправлять изображения для анализа\n\n" +
+        "✨ Контекст диалога всегда сохраняется!\n\n" +
+        "🛑 Напишите \"стоп\" для завершения.",
         {
           reply_markup: {
             inline_keyboard: [
@@ -805,6 +816,28 @@ bot.on("callback_query", async (ctx) => {
           parse_mode: "HTML"
         }
       );
+      break;
+
+    // Выполнить чат с сохраненным промптом (fix BUTTON_DATA_INVALID)
+    case 'quick_chat_gpt4_execute':
+      const state = UXHelpers.getUserState(userId);
+      if (state?.data?.pendingPrompt) {
+        logger.info(`🧠 Executing quick chat with saved prompt for user ${userId}`);
+        const prompt = state.data.pendingPrompt;
+        
+        // Запускаем чат с этим промптом
+        UXHelpers.setUserState(userId, {
+          currentAction: 'chatting',
+          data: { service: 'gpt4', chatHistory: [] }
+        });
+        
+        await UXHelpers.safeEditMessage(ctx,
+          "🧠 <b>ChatGPT-4</b>\n\n💬 Обрабатываю ваш запрос...",
+          { parse_mode: "HTML" }
+        );
+        
+        await handleChatGPT(ctx, prompt);
+      }
       break;
 
     // 📄 АНАЛИЗ ДОКУМЕНТОВ
@@ -1010,7 +1043,7 @@ bot.on("message:photo", async (ctx) => {
   }
 });
 
-// 📄 ОБРАБОТКА ДОКУМЕНТОВ
+// 📄 УМНАЯ ОБРАБОТКА ДОКУМЕНТОВ (работает в любом режиме чата)
 bot.on("message:document", async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
@@ -1018,59 +1051,62 @@ bot.on("message:document", async (ctx) => {
   logger.info(`📄 Document received from user ${userId}`);
   
   const userState = UXHelpers.getUserState(userId);
-  logger.info(`🔍 User state for document: ${userState ? JSON.stringify(userState) : 'none'}`);
+  logger.info(`🔍 User state: ${userState ? userState.currentAction : 'none'}`);
   
-  if (userState?.currentAction === 'chatgpt_document_analysis') {
-    logger.info(`✅ ChatGPT document analysis active, processing...`);
+  // Работает в режимах: chatting, chatting_with_file, chatgpt_document_analysis, или без сессии
+  const allowedActions = ['chatting', 'chatting_with_file', 'chatgpt_document_analysis', 'waiting_chat_message'];
+  const isInChatMode = userState && allowedActions.includes(userState.currentAction);
+  
+  if (isInChatMode || !userState) {
+    logger.info(`✅ Processing document in smart chat mode...`);
     try {
       const document = ctx.message.document;
       const fileName = document.file_name || 'document';
       const fileSize = document.file_size || 0;
       
-      logger.info(`📋 Document info: name=${fileName}, size=${fileSize} bytes, mime=${document.mime_type}`);
+      logger.info(`📋 Document: name=${fileName}, size=${fileSize}, mime=${document.mime_type}`);
       
-      // Проверка размера файла (макс 20 МБ)
+      // Проверка размера
       const maxSize = 20 * 1024 * 1024;
       if (fileSize > maxSize) {
-        logger.warn(`❌ Document too large: ${fileSize} > ${maxSize}`);
-        await ctx.reply("❌ Файл слишком большой. Максимальный размер: 20 МБ");
+        logger.warn(`❌ Document too large: ${fileSize}`);
+        await ctx.reply("❌ Файл слишком большой. Максимум: 20 МБ");
         return;
       }
 
-      await ctx.reply("📄 Обрабатываю документ...");
+      await ctx.reply("📄 Анализирую документ...");
 
-      // Скачиваем файл
-      logger.info(`📥 Downloading document...`);
+      // Скачиваем
       const { FileHandler } = await import("../utils/fileHandler");
       const fileHandler = new FileHandler();
       const { filePath } = await fileHandler.downloadFile(document.file_id);
-      logger.info(`✅ Document downloaded to: ${filePath}`);
+      logger.info(`✅ Downloaded: ${filePath}`);
 
       try {
-        // Извлекаем текст из файла
-        logger.info(`📝 Extracting text from document...`);
+        // Извлекаем текст
         const fileContent = await fileHandler.extractText(filePath, document.mime_type);
-        logger.info(`✅ Text extracted, length: ${fileContent.length} chars`);
+        logger.info(`✅ Extracted: ${fileContent.length} chars`);
         
-        // Ограничиваем размер контента
         const maxContentLength = 15000;
         const truncatedContent = fileContent.length > maxContentLength 
-          ? fileContent.substring(0, maxContentLength) + "\n\n[... текст обрезан ...]"
+          ? fileContent.substring(0, maxContentLength) + "\n\n[...обрезано...]"
           : fileContent;
 
-        const prompt = ctx.message.caption || "Проанализируй этот документ и дай краткое резюме";
-        logger.info(`📝 Analysis prompt: ${prompt}`);
-
-        // Анализируем файл с помощью ChatGPT
-        logger.info(`🤖 Calling ChatGPT for file analysis...`);
+        const userPrompt = ctx.message.caption || "Проанализируй этот документ и дай краткое резюме";
+        
+        // Получаем существующую историю или создаем новую
+        const existingHistory = userState?.data?.chatHistory || [];
+        
+        // Создаем сообщения с контекстом файла
         const messages: ChatMessage[] = [
           {
             role: "system",
-            content: "Ты - помощник, который анализирует файлы и отвечает на вопросы о них. Отвечай на русском языке."
+            content: `Ты - умный помощник с доступом к файлам. Отвечай на русском языке. ${existingHistory.length > 0 ? 'Продолжай диалог с учетом предыдущего контекста.' : ''}`
           },
+          ...existingHistory,
           {
             role: "user",
-            content: `У меня есть файл "${fileName}" со следующим содержимым:\n\n${truncatedContent}\n\n${prompt}`
+            content: `Файл "${fileName}":\n\n${truncatedContent}\n\nВопрос: ${userPrompt}`
           }
         ];
 
@@ -1081,25 +1117,52 @@ bot.on("message:document", async (ctx) => {
           return;
         }
 
+        logger.info(`🤖 Calling ChatGPT with file context...`);
         const result = await aiManager.chatWithAI(messages, 'gpt4', {
           telegramId: userId,
           currentTokens: user.tokens
         });
         
         if (result.success && result.data?.content) {
-          logger.info(`✅ ChatGPT analysis completed, length: ${result.data.content.length}`);
+          logger.info(`✅ Analysis completed: ${result.data.content.length} chars`);
           
           await ctx.reply(
-            `📄 <b>Анализ документа "${fileName}":</b>\n\n${result.data.content}`,
+            `📄 <b>Анализ "${fileName}":</b>\n\n${result.data.content}\n\n💬 Продолжайте задавать вопросы!`,
             { parse_mode: 'HTML' }
           );
+
+          // 💡 СОХРАНЯЕМ КОНТЕКСТ В ИСТОРИИ ЧАТА
+          const updatedHistory: ChatMessage[] = [
+            ...existingHistory,
+            {
+              role: "user",
+              content: `[Файл: ${fileName}] ${userPrompt}`
+            },
+            {
+              role: "assistant",
+              content: result.data.content
+            }
+          ];
+
+          // Обновляем состояние с сохраненным контекстом
+          UXHelpers.setUserState(userId, {
+            currentAction: 'chatting',
+            data: { 
+              service: 'gpt4',
+              chatHistory: updatedHistory,
+              lastFileName: fileName,
+              lastFileContent: truncatedContent.substring(0, 3000) // Сохраняем часть для контекста
+            }
+          });
+          
+          logger.info(`✅ Chat history updated with file context, messages: ${updatedHistory.length}`);
+
         } else {
-          await ctx.reply(`❌ Ошибка анализа файла: ${result.error || 'Неизвестная ошибка'}`);
+          await ctx.reply(`❌ Ошибка: ${result.error || 'Неизвестная ошибка'}`);
         }
 
-        // Очищаем файл
         fileHandler.cleanupFile(filePath);
-        logger.info(`🗑️ Document file cleaned up`);
+        logger.info(`🗑️ File cleaned up`);
 
       } catch (error: any) {
         fileHandler.cleanupFile(filePath);
@@ -1107,23 +1170,24 @@ bot.on("message:document", async (ctx) => {
       }
 
     } catch (error: any) {
-      logger.error("❌ Error processing document:", error);
-      await ctx.reply(`❌ Ошибка обработки документа: ${error.message}`);
+      logger.error("❌ Error:", error);
+      await ctx.reply(`❌ Ошибка: ${error.message}`);
     }
   } else {
-    logger.info(`ℹ️ Document received but no document analysis session active`);
+    logger.info(`ℹ️ Document received outside chat mode`);
     await ctx.reply(
-      "📄 <b>Получен документ</b>\n\n" +
-      "Чтобы проанализировать документ:\n" +
-      "1. Нажмите 💬 Быстрый чат\n" +
-      "2. Выберите 📄 Анализ документов\n" +
-      "3. Отправьте файл снова",
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💬 Быстрый чат', callback_data: 'quick_chat' }]] } }
+      "📄 <b>Документ получен!</b>\n\nНачните чат чтобы я мог его проанализировать:",
+      { 
+        parse_mode: 'HTML', 
+        reply_markup: { 
+          inline_keyboard: [[{ text: '🧠 ChatGPT-4', callback_data: 'chat_gpt4' }]] 
+        } 
+      }
     );
   }
 });
 
-// 🎤 ОБРАБОТКА АУДИО ФАЙЛОВ
+// 🎤 УМНАЯ ОБРАБОТКА АУДИО (работает в режиме чата)
 bot.on("message:audio", async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
@@ -1131,55 +1195,67 @@ bot.on("message:audio", async (ctx) => {
   logger.info(`🎤 Audio received from user ${userId}`);
   
   const userState = UXHelpers.getUserState(userId);
-  logger.info(`🔍 User state for audio: ${userState ? JSON.stringify(userState) : 'none'}`);
+  const allowedActions = ['chatting', 'chatting_with_file', 'chatgpt_audio_transcription', 'waiting_chat_message'];
+  const isInChatMode = userState && allowedActions.includes(userState.currentAction);
   
-  if (userState?.currentAction === 'chatgpt_audio_transcription') {
-    logger.info(`✅ ChatGPT audio transcription active, processing...`);
+  if (isInChatMode || !userState) {
+    logger.info(`✅ Transcribing audio in smart chat mode...`);
     try {
       const audio = ctx.message.audio;
       const fileName = audio.file_name || 'audio';
       const fileSize = audio.file_size || 0;
       
-      logger.info(`🎵 Audio info: name=${fileName}, size=${fileSize} bytes, mime=${audio.mime_type}`);
+      logger.info(`🎵 Audio: name=${fileName}, size=${fileSize}`);
       
-      // Проверка размера (макс 25 МБ)
       const maxSize = 25 * 1024 * 1024;
       if (fileSize > maxSize) {
-        logger.warn(`❌ Audio too large: ${fileSize} > ${maxSize}`);
-        await ctx.reply("❌ Файл слишком большой. Максимальный размер: 25 МБ");
+        await ctx.reply("❌ Файл слишком большой. Максимум: 25 МБ");
         return;
       }
 
-      await ctx.reply("🎤 Транскрибирую аудио через Whisper API...");
+      await ctx.reply("🎤 Транскрибирую аудио...");
 
-      // Скачиваем файл
-      logger.info(`📥 Downloading audio...`);
       const { FileHandler } = await import("../utils/fileHandler");
       const fileHandler = new FileHandler();
       const { filePath } = await fileHandler.downloadFile(audio.file_id);
-      logger.info(`✅ Audio downloaded to: ${filePath}`);
 
       try {
-        // Транскрибируем через OpenAI Whisper
-        logger.info(`🎙️ Calling Whisper API...`);
         const { OpenAIService } = await import("../services/ai/OpenAIService");
         const openaiService = new OpenAIService();
-        
         const result = await openaiService.transcribeAudio(filePath, 'ru');
         
         if (result.success && result.content) {
-          logger.info(`✅ Whisper transcription completed, length: ${result.content.length}`);
+          logger.info(`✅ Transcribed: ${result.content.length} chars`);
           
           await ctx.reply(
-            `🎤 <b>Транскрипция "${fileName}":</b>\n\n${result.content}`,
+            `🎤 <b>Транскрипция:</b>\n\n${result.content}\n\n💬 Продолжайте диалог!`,
             { parse_mode: 'HTML' }
           );
+
+          // Сохраняем транскрипцию в историю чата
+          const existingHistory = userState?.data?.chatHistory || [];
+          const updatedHistory: ChatMessage[] = [
+            ...existingHistory,
+            {
+              role: "user",
+              content: `[Аудио: ${fileName}] Транскрипция: ${result.content}`
+            }
+          ];
+
+          UXHelpers.setUserState(userId, {
+            currentAction: 'chatting',
+            data: { 
+              service: 'gpt4',
+              chatHistory: updatedHistory
+            }
+          });
+          
+          logger.info(`✅ Chat history updated with audio transcription`);
         } else {
-          await ctx.reply(`❌ Ошибка транскрипции: ${result.error}`);
+          await ctx.reply(`❌ Ошибка: ${result.error}`);
         }
 
         fileHandler.cleanupFile(filePath);
-        logger.info(`🗑️ Audio file cleaned up`);
 
       } catch (error: any) {
         fileHandler.cleanupFile(filePath);
@@ -1187,79 +1263,86 @@ bot.on("message:audio", async (ctx) => {
       }
 
     } catch (error: any) {
-      logger.error("❌ Error transcribing audio:", error);
-      await ctx.reply(`❌ Ошибка транскрипции: ${error.message}`);
+      logger.error("❌ Error:", error);
+      await ctx.reply(`❌ Ошибка: ${error.message}`);
     }
   } else {
-    logger.info(`ℹ️ Audio received but no transcription session active`);
     await ctx.reply(
-      "🎤 <b>Получен аудио файл</b>\n\n" +
-      "Чтобы транскрибировать аудио:\n" +
-      "1. Нажмите 💬 Быстрый чат\n" +
-      "2. Выберите 🎤 Транскрипция аудио\n" +
-      "3. Отправьте файл снова",
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💬 Быстрый чат', callback_data: 'quick_chat' }]] } }
+      "🎤 <b>Аудио получен!</b>\n\nНачните чат для транскрипции:",
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🧠 ChatGPT-4', callback_data: 'chat_gpt4' }]] } }
     );
   }
 });
 
-// 🎙️ ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ
+// 🎙️ УМНАЯ ОБРАБОТКА ГОЛОСОВЫХ (работает в режиме чата)
 bot.on("message:voice", async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
   
-  logger.info(`🎙️ Voice message received from user ${userId}`);
+  logger.info(`🎙️ Voice received from user ${userId}`);
   
   const userState = UXHelpers.getUserState(userId);
-  logger.info(`🔍 User state for voice: ${userState ? JSON.stringify(userState) : 'none'}`);
+  const allowedActions = ['chatting', 'chatting_with_file', 'chatgpt_audio_transcription', 'waiting_chat_message'];
+  const isInChatMode = userState && allowedActions.includes(userState.currentAction);
   
-  if (userState?.currentAction === 'chatgpt_audio_transcription') {
-    logger.info(`✅ ChatGPT voice transcription active, processing...`);
+  if (isInChatMode || !userState) {
+    logger.info(`✅ Transcribing voice in smart chat mode...`);
     try {
       const voice = ctx.message.voice;
       const fileSize = voice.file_size || 0;
       const duration = voice.duration || 0;
       
-      logger.info(`🎙️ Voice info: duration=${duration}s, size=${fileSize} bytes`);
+      logger.info(`🎙️ Voice: duration=${duration}s, size=${fileSize}`);
       
-      // Проверка размера
       const maxSize = 25 * 1024 * 1024;
       if (fileSize > maxSize) {
-        logger.warn(`❌ Voice too large: ${fileSize} > ${maxSize}`);
-        await ctx.reply("❌ Голосовое сообщение слишком большое. Максимум: 25 МБ");
+        await ctx.reply("❌ Голосовое слишком большое. Максимум: 25 МБ");
         return;
       }
 
-      await ctx.reply("🎙️ Транскрибирую голосовое сообщение...");
+      await ctx.reply("🎙️ Транскрибирую...");
 
-      // Скачиваем
-      logger.info(`📥 Downloading voice...`);
       const { FileHandler } = await import("../utils/fileHandler");
       const fileHandler = new FileHandler();
       const { filePath } = await fileHandler.downloadFile(voice.file_id);
-      logger.info(`✅ Voice downloaded to: ${filePath}`);
 
       try {
-        // Транскрибируем
-        logger.info(`🎙️ Calling Whisper API...`);
         const { OpenAIService } = await import("../services/ai/OpenAIService");
         const openaiService = new OpenAIService();
-        
         const result = await openaiService.transcribeAudio(filePath, 'ru');
         
         if (result.success && result.content) {
-          logger.info(`✅ Voice transcription completed, length: ${result.content.length}`);
+          logger.info(`✅ Transcribed: ${result.content.length} chars`);
           
           await ctx.reply(
-            `🎙️ <b>Транскрипция голосового сообщения:</b>\n\n${result.content}`,
+            `🎙️ <b>Транскрипция:</b>\n\n${result.content}\n\n💬 Продолжайте диалог!`,
             { parse_mode: 'HTML' }
           );
+
+          // Сохраняем в историю
+          const existingHistory = userState?.data?.chatHistory || [];
+          const updatedHistory: ChatMessage[] = [
+            ...existingHistory,
+            {
+              role: "user",
+              content: `[Голосовое сообщение] ${result.content}`
+            }
+          ];
+
+          UXHelpers.setUserState(userId, {
+            currentAction: 'chatting',
+            data: { 
+              service: 'gpt4',
+              chatHistory: updatedHistory
+            }
+          });
+          
+          logger.info(`✅ Chat history updated with voice`);
         } else {
-          await ctx.reply(`❌ Ошибка транскрипции: ${result.error}`);
+          await ctx.reply(`❌ Ошибка: ${result.error}`);
         }
 
         fileHandler.cleanupFile(filePath);
-        logger.info(`🗑️ Voice file cleaned up`);
 
       } catch (error: any) {
         fileHandler.cleanupFile(filePath);
@@ -1267,18 +1350,13 @@ bot.on("message:voice", async (ctx) => {
       }
 
     } catch (error: any) {
-      logger.error("❌ Error transcribing voice:", error);
-      await ctx.reply(`❌ Ошибка транскрипции: ${error.message}`);
+      logger.error("❌ Error:", error);
+      await ctx.reply(`❌ Ошибка: ${error.message}`);
     }
   } else {
-    logger.info(`ℹ️ Voice received but no transcription session active`);
     await ctx.reply(
-      "🎙️ <b>Получено голосовое сообщение</b>\n\n" +
-      "Чтобы транскрибировать:\n" +
-      "1. Нажмите 💬 Быстрый чат\n" +
-      "2. Выберите 🎤 Транскрипция аудио\n" +
-      "3. Запишите голосовое снова",
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💬 Быстрый чат', callback_data: 'quick_chat' }]] } }
+      "🎙️ <b>Голосовое получено!</b>\n\nНачните чат для транскрипции:",
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🧠 ChatGPT-4', callback_data: 'chat_gpt4' }]] } }
     );
   }
 });
@@ -1402,19 +1480,25 @@ async function handleQuickTextInput(ctx: any, userId: number, text: string) {
   }
   
   // По умолчанию предлагаем чат
-          await ctx.reply(
-            `💬 <b>AI Чат</b>\n\nПромпт: "${text}"\n\nВыберите модель:`,
-            {
-              parse_mode: "HTML",
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    { text: '🧠 ChatGPT-4', callback_data: `quick_chat_gpt_${text}` }
-                  ],
-                  [{ text: '📋 Все модели', callback_data: 'chat_ai' }]
-                ]
-              }
-            }
+  // Сохраняем промпт в состоянии вместо callback_data (fix для BUTTON_DATA_INVALID)
+  UXHelpers.setUserState(userId, {
+    currentAction: 'waiting_model_selection',
+    data: { pendingPrompt: text }
+  });
+  
+  await ctx.reply(
+    `💬 <b>AI Чат</b>\n\nПромпт: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"\n\nВыберите модель:`,
+    {
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🧠 ChatGPT-4', callback_data: 'quick_chat_gpt4_execute' }
+          ],
+          [{ text: '📋 Все модели', callback_data: 'chat_ai' }]
+        ]
+      }
+    }
           );
 }
 
@@ -1733,28 +1817,70 @@ async function handleChatGPT(ctx: any, message: string) {
   try {
     await ctx.reply("🧠 Думаю...");
     
-    // Получаем баланс пользователя
+    // Получаем состояние пользователя с историей чата
+    const userState = UXHelpers.getUserState(userId);
+    const existingHistory = userState?.data?.chatHistory || [];
+    
+    logger.info(`💬 Chat message from user ${userId}, history length: ${existingHistory.length}`);
+    
+    // Получаем баланс
     const userBalance = await aiManager.getUserBalance(userId);
     const userContext = { telegramId: userId, currentTokens: userBalance };
     
-    // Создаем сообщения для чата
+    // Добавляем системный промпт если это первое сообщение
+    const systemPrompt: ChatMessage = {
+      role: 'system',
+      content: userState?.data?.lastFileName 
+        ? `Ты - умный помощник. У пользователя есть файл "${userState.data.lastFileName}". Отвечай на вопросы с учетом контекста файла и предыдущих сообщений. Отвечай на русском.`
+        : 'Ты - умный помощник. Отвечай на вопросы с учетом всего предыдущего контекста диалога. Отвечай на русском языке.'
+    };
+    
+    // Создаем полную историю: system + предыдущие + новое сообщение
     const messages: ChatMessage[] = [
+      systemPrompt,
+      ...existingHistory,
       { role: 'user', content: message }
     ];
+    
+    logger.info(`📤 Sending to ChatGPT: ${messages.length} messages`);
     
     const result = await aiManager.chatWithAI(messages, 'gpt4', userContext);
     
     if (result.success && result.data?.content) {
+      logger.info(`✅ ChatGPT response received: ${result.data.content.length} chars`);
+      
       await ctx.reply(
-        `🧠 <b>ChatGPT-4:</b>\n\n${result.data.content}\n\n💰 Потрачено токенов: ${result.tokensUsed}\n\n💬 Продолжайте диалог или напишите "стоп" для завершения.`,
+        `🧠 <b>ChatGPT-4:</b>\n\n${result.data.content}\n\n💰 Токенов: ${result.tokensUsed}\n\n💬 Продолжайте диалог!`,
         { parse_mode: "HTML" }
       );
+
+      // 💡 ОБНОВЛЯЕМ ИСТОРИЮ ЧАТА
+      const updatedHistory: ChatMessage[] = [
+        ...existingHistory,
+        { role: 'user', content: message },
+        { role: 'assistant', content: result.data.content }
+      ];
+
+      // Ограничиваем историю последними 20 сообщениями
+      const limitedHistory = updatedHistory.slice(-20);
+
+      UXHelpers.setUserState(userId, {
+        currentAction: 'chatting',
+        data: {
+          ...userState?.data,
+          service: 'gpt4',
+          chatHistory: limitedHistory
+        }
+      });
+
+      logger.info(`✅ Chat history saved: ${limitedHistory.length} messages`);
+      
     } else {
       await ctx.reply(`❌ Ошибка ChatGPT: ${result.error}`);
     }
     
   } catch (error) {
-    console.error("❌ ChatGPT error:", error);
+    logger.error("❌ ChatGPT error:", error);
     await ctx.reply("❌ Ошибка обращения к ChatGPT. Попробуйте еще раз.");
   }
 }
@@ -1802,18 +1928,19 @@ async function handleQuickChat(ctx: any, userId: number) {
   try {
     UXHelpers.updateUserPath(userId, 'quick_chat');
     
-    const message = `💬 <b>AI Чат</b>\n\n` +
-      `Выберите действие:\n\n` +
-      `💡 <b>Подсказка:</b> Можете сразу отправить сообщение или файл`;
+    const message = `💬 <b>Умный AI Чат</b>\n\n` +
+      `Выберите ChatGPT-4 для начала:\n\n` +
+      `✨ <b>Возможности:</b>\n` +
+      `• Обычный диалог с сохранением контекста\n` +
+      `• Анализ документов (просто отправьте файл)\n` +
+      `• Транскрипция аудио/голосовых\n` +
+      `• Анализ изображений\n\n` +
+      `💡 Все работает автоматически в одном чате!`;
     
     const keyboard = {
       inline_keyboard: [
         [
-          { text: '🧠 ChatGPT-4', callback_data: 'chat_gpt4' }
-        ],
-        [
-          { text: '📄 Анализ документов', callback_data: 'chatgpt_analyze_document' },
-          { text: '🎤 Транскрипция аудио', callback_data: 'chatgpt_transcribe_audio' }
+          { text: '🧠 ChatGPT-4 (Умный чат)', callback_data: 'chat_gpt4' }
         ],
         [{ text: '⬅️ Назад', callback_data: 'back_to_main' }]
       ]
@@ -1827,7 +1954,7 @@ async function handleQuickChat(ctx: any, userId: number) {
     // Устанавливаем состояние ожидания сообщения
     UXHelpers.setUserState(userId, {
       currentAction: 'waiting_chat_message',
-      data: { service: 'gpt4' }
+      data: { service: 'gpt4', chatHistory: [] }
     });
     
   } catch (error) {
