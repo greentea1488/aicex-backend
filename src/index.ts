@@ -168,7 +168,7 @@ app.get("/", (req: Request, res: Response) => {
       admin: "/api/admin/*",
       webhooks: "/api/webhooks/*"
     },
-    documentation: "https://github.com/greentea1488/AICEX_ai_bot",
+    documentation: "https://github.com/greentea1488/aicex-backend",
     telegram_bot: process.env.BOT_TOKEN ? "configured" : "not_configured",
     database: process.env.DATABASE_URL ? "configured" : "not_configured"
   });
