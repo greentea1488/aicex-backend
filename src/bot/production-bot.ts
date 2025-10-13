@@ -620,10 +620,14 @@ bot.on("callback_query", async (ctx) => {
       const [, , service, model] = data.split('_');
       const userState = UXHelpers.getUserState(userId);
       
+      logger.info(`🔄 Regenerate callback: service=${service}, model=${model}`);
+      logger.info(`🔍 User state: ${JSON.stringify(userState)}`);
+      
       if (userState?.data?.lastPrompt) {
-        logger.info(`🔄 Regenerating image with saved prompt: "${userState.data.lastPrompt}"`);
+        logger.info(`✅ Found saved prompt: "${userState.data.lastPrompt}"`);
         await handleImageGeneration(ctx, userState.data.lastPrompt, service, { model });
       } else {
+        logger.warn(`❌ No saved prompt found for user ${userId}`);
         await UXHelpers.safeEditMessage(ctx,
           "❌ Не удалось найти предыдущий промпт. Выберите действие:",
           {
@@ -1695,6 +1699,19 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
   const userId = ctx.from?.id;
   const startTime = Date.now();
   
+  // 💡 СОХРАНЯЕМ СОСТОЯНИЕ СРАЗУ для кнопки "Еще одно"
+  const model = data?.model || 'default';
+  UXHelpers.setUserState(userId, {
+    currentAction: 'generating_image',
+    data: { 
+      lastPrompt: prompt,
+      lastService: service,
+      lastModel: model
+    }
+  });
+  
+  logger.info(`💾 Saved state for regeneration: prompt="${prompt}", service="${service}", model="${model}"`);
+  
   try {
     // Создаем задачу в очереди
     const task = stateManager.createTask(userId, 'image', service, prompt, data);
@@ -1810,8 +1827,7 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
       
       const modelText = data?.model ? ` (${data.model})` : '';
       
-      // Сохраняем данные для кнопки "Еще одно"
-      const model = data?.model || 'default';
+      // Обновляем состояние после успешной генерации
       UXHelpers.setUserState(userId, {
         currentAction: 'image_generated',
         data: { 
