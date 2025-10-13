@@ -788,11 +788,13 @@ bot.on("callback_query", async (ctx) => {
       break;
 
     case 'chat_gpt4':
+      logger.info(`🧠 ChatGPT-4 chat started for user ${userId}`);
       UXHelpers.setUserState(userId, {
         currentAction: 'chatting',
         data: { service: 'gpt4' }
       });
-      await ctx.editMessageText(
+      await UXHelpers.safeEditMessage(
+        ctx,
         "🧠 <b>ChatGPT-4</b>\n\n💬 Теперь можете задавать любые вопросы!\n\n📝 Отправьте сообщение для начала диалога.\n\n🛑 Напишите \"стоп\" для завершения.",
         {
           reply_markup: {
@@ -805,6 +807,57 @@ bot.on("callback_query", async (ctx) => {
       );
       break;
 
+    // 📄 АНАЛИЗ ДОКУМЕНТОВ
+    case 'chatgpt_analyze_document':
+      logger.info(`📄 Document analysis callback for user ${userId}`);
+      UXHelpers.setUserState(userId, {
+        currentAction: 'chatgpt_document_analysis',
+        currentPath: ['quick_chat', 'document'],
+        data: { service: 'chatgpt' }
+      });
+      await UXHelpers.safeEditMessage(
+        ctx,
+        "📄 <b>Анализ документов</b>\n\n" +
+        "Отправьте мне документ (TXT, JSON, CSV, MD и др.) и я проанализирую его.\n\n" +
+        "💡 Можете добавить подпись к файлу с вопросом.\n\n" +
+        "📋 Поддерживаемые форматы: TXT, JSON, CSV, Markdown, HTML, XML",
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '⬅️ Назад', callback_data: 'quick_chat' }]
+            ]
+          },
+          parse_mode: "HTML"
+        }
+      );
+      logger.info(`✅ Document analysis session created for user ${userId}`);
+      break;
+
+    // 🎤 ТРАНСКРИПЦИЯ АУДИО
+    case 'chatgpt_transcribe_audio':
+      logger.info(`🎤 Audio transcription callback for user ${userId}`);
+      UXHelpers.setUserState(userId, {
+        currentAction: 'chatgpt_audio_transcription',
+        currentPath: ['quick_chat', 'audio'],
+        data: { service: 'chatgpt' }
+      });
+      await UXHelpers.safeEditMessage(
+        ctx,
+        "🎤 <b>Транскрипция аудио</b>\n\n" +
+        "Отправьте голосовое сообщение или аудио файл, и я преобразую его в текст через Whisper API.\n\n" +
+        "💡 Поддерживаемые форматы: MP3, WAV, OGG, M4A, OPUS\n" +
+        "📏 Максимальный размер: 25 МБ",
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '⬅️ Назад', callback_data: 'quick_chat' }]
+            ]
+          },
+          parse_mode: "HTML"
+        }
+      );
+      logger.info(`✅ Audio transcription session created for user ${userId}`);
+      break;
 
     // 🔙 НАВИГАЦИЯ
     case 'back_to_main':
@@ -953,6 +1006,279 @@ bot.on("message:photo", async (ctx) => {
         },
         parse_mode: "HTML"
       }
+    );
+  }
+});
+
+// 📄 ОБРАБОТКА ДОКУМЕНТОВ
+bot.on("message:document", async (ctx) => {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
+  logger.info(`📄 Document received from user ${userId}`);
+  
+  const userState = UXHelpers.getUserState(userId);
+  logger.info(`🔍 User state for document: ${userState ? JSON.stringify(userState) : 'none'}`);
+  
+  if (userState?.currentAction === 'chatgpt_document_analysis') {
+    logger.info(`✅ ChatGPT document analysis active, processing...`);
+    try {
+      const document = ctx.message.document;
+      const fileName = document.file_name || 'document';
+      const fileSize = document.file_size || 0;
+      
+      logger.info(`📋 Document info: name=${fileName}, size=${fileSize} bytes, mime=${document.mime_type}`);
+      
+      // Проверка размера файла (макс 20 МБ)
+      const maxSize = 20 * 1024 * 1024;
+      if (fileSize > maxSize) {
+        logger.warn(`❌ Document too large: ${fileSize} > ${maxSize}`);
+        await ctx.reply("❌ Файл слишком большой. Максимальный размер: 20 МБ");
+        return;
+      }
+
+      await ctx.reply("📄 Обрабатываю документ...");
+
+      // Скачиваем файл
+      logger.info(`📥 Downloading document...`);
+      const { FileHandler } = await import("../utils/fileHandler");
+      const fileHandler = new FileHandler();
+      const { filePath } = await fileHandler.downloadFile(document.file_id);
+      logger.info(`✅ Document downloaded to: ${filePath}`);
+
+      try {
+        // Извлекаем текст из файла
+        logger.info(`📝 Extracting text from document...`);
+        const fileContent = await fileHandler.extractText(filePath, document.mime_type);
+        logger.info(`✅ Text extracted, length: ${fileContent.length} chars`);
+        
+        // Ограничиваем размер контента
+        const maxContentLength = 15000;
+        const truncatedContent = fileContent.length > maxContentLength 
+          ? fileContent.substring(0, maxContentLength) + "\n\n[... текст обрезан ...]"
+          : fileContent;
+
+        const prompt = ctx.message.caption || "Проанализируй этот документ и дай краткое резюме";
+        logger.info(`📝 Analysis prompt: ${prompt}`);
+
+        // Анализируем файл с помощью ChatGPT
+        logger.info(`🤖 Calling ChatGPT for file analysis...`);
+        const messages: ChatMessage[] = [
+          {
+            role: "system",
+            content: "Ты - помощник, который анализирует файлы и отвечает на вопросы о них. Отвечай на русском языке."
+          },
+          {
+            role: "user",
+            content: `У меня есть файл "${fileName}" со следующим содержимым:\n\n${truncatedContent}\n\n${prompt}`
+          }
+        ];
+
+        const user = await prisma.user.findUnique({ where: { telegramId: userId } });
+        if (!user) {
+          await ctx.reply("❌ Пользователь не найден");
+          fileHandler.cleanupFile(filePath);
+          return;
+        }
+
+        const result = await aiManager.chatWithAI(messages, 'gpt4', {
+          telegramId: userId,
+          currentTokens: user.tokens
+        });
+        
+        if (result.success && result.data?.content) {
+          logger.info(`✅ ChatGPT analysis completed, length: ${result.data.content.length}`);
+          
+          await ctx.reply(
+            `📄 <b>Анализ документа "${fileName}":</b>\n\n${result.data.content}`,
+            { parse_mode: 'HTML' }
+          );
+        } else {
+          await ctx.reply(`❌ Ошибка анализа файла: ${result.error || 'Неизвестная ошибка'}`);
+        }
+
+        // Очищаем файл
+        fileHandler.cleanupFile(filePath);
+        logger.info(`🗑️ Document file cleaned up`);
+
+      } catch (error: any) {
+        fileHandler.cleanupFile(filePath);
+        throw error;
+      }
+
+    } catch (error: any) {
+      logger.error("❌ Error processing document:", error);
+      await ctx.reply(`❌ Ошибка обработки документа: ${error.message}`);
+    }
+  } else {
+    logger.info(`ℹ️ Document received but no document analysis session active`);
+    await ctx.reply(
+      "📄 <b>Получен документ</b>\n\n" +
+      "Чтобы проанализировать документ:\n" +
+      "1. Нажмите 💬 Быстрый чат\n" +
+      "2. Выберите 📄 Анализ документов\n" +
+      "3. Отправьте файл снова",
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💬 Быстрый чат', callback_data: 'quick_chat' }]] } }
+    );
+  }
+});
+
+// 🎤 ОБРАБОТКА АУДИО ФАЙЛОВ
+bot.on("message:audio", async (ctx) => {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
+  logger.info(`🎤 Audio received from user ${userId}`);
+  
+  const userState = UXHelpers.getUserState(userId);
+  logger.info(`🔍 User state for audio: ${userState ? JSON.stringify(userState) : 'none'}`);
+  
+  if (userState?.currentAction === 'chatgpt_audio_transcription') {
+    logger.info(`✅ ChatGPT audio transcription active, processing...`);
+    try {
+      const audio = ctx.message.audio;
+      const fileName = audio.file_name || 'audio';
+      const fileSize = audio.file_size || 0;
+      
+      logger.info(`🎵 Audio info: name=${fileName}, size=${fileSize} bytes, mime=${audio.mime_type}`);
+      
+      // Проверка размера (макс 25 МБ)
+      const maxSize = 25 * 1024 * 1024;
+      if (fileSize > maxSize) {
+        logger.warn(`❌ Audio too large: ${fileSize} > ${maxSize}`);
+        await ctx.reply("❌ Файл слишком большой. Максимальный размер: 25 МБ");
+        return;
+      }
+
+      await ctx.reply("🎤 Транскрибирую аудио через Whisper API...");
+
+      // Скачиваем файл
+      logger.info(`📥 Downloading audio...`);
+      const { FileHandler } = await import("../utils/fileHandler");
+      const fileHandler = new FileHandler();
+      const { filePath } = await fileHandler.downloadFile(audio.file_id);
+      logger.info(`✅ Audio downloaded to: ${filePath}`);
+
+      try {
+        // Транскрибируем через OpenAI Whisper
+        logger.info(`🎙️ Calling Whisper API...`);
+        const { OpenAIService } = await import("../services/ai/OpenAIService");
+        const openaiService = new OpenAIService();
+        
+        const result = await openaiService.transcribeAudio(filePath, 'ru');
+        
+        if (result.success && result.content) {
+          logger.info(`✅ Whisper transcription completed, length: ${result.content.length}`);
+          
+          await ctx.reply(
+            `🎤 <b>Транскрипция "${fileName}":</b>\n\n${result.content}`,
+            { parse_mode: 'HTML' }
+          );
+        } else {
+          await ctx.reply(`❌ Ошибка транскрипции: ${result.error}`);
+        }
+
+        fileHandler.cleanupFile(filePath);
+        logger.info(`🗑️ Audio file cleaned up`);
+
+      } catch (error: any) {
+        fileHandler.cleanupFile(filePath);
+        throw error;
+      }
+
+    } catch (error: any) {
+      logger.error("❌ Error transcribing audio:", error);
+      await ctx.reply(`❌ Ошибка транскрипции: ${error.message}`);
+    }
+  } else {
+    logger.info(`ℹ️ Audio received but no transcription session active`);
+    await ctx.reply(
+      "🎤 <b>Получен аудио файл</b>\n\n" +
+      "Чтобы транскрибировать аудио:\n" +
+      "1. Нажмите 💬 Быстрый чат\n" +
+      "2. Выберите 🎤 Транскрипция аудио\n" +
+      "3. Отправьте файл снова",
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💬 Быстрый чат', callback_data: 'quick_chat' }]] } }
+    );
+  }
+});
+
+// 🎙️ ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ
+bot.on("message:voice", async (ctx) => {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
+  logger.info(`🎙️ Voice message received from user ${userId}`);
+  
+  const userState = UXHelpers.getUserState(userId);
+  logger.info(`🔍 User state for voice: ${userState ? JSON.stringify(userState) : 'none'}`);
+  
+  if (userState?.currentAction === 'chatgpt_audio_transcription') {
+    logger.info(`✅ ChatGPT voice transcription active, processing...`);
+    try {
+      const voice = ctx.message.voice;
+      const fileSize = voice.file_size || 0;
+      const duration = voice.duration || 0;
+      
+      logger.info(`🎙️ Voice info: duration=${duration}s, size=${fileSize} bytes`);
+      
+      // Проверка размера
+      const maxSize = 25 * 1024 * 1024;
+      if (fileSize > maxSize) {
+        logger.warn(`❌ Voice too large: ${fileSize} > ${maxSize}`);
+        await ctx.reply("❌ Голосовое сообщение слишком большое. Максимум: 25 МБ");
+        return;
+      }
+
+      await ctx.reply("🎙️ Транскрибирую голосовое сообщение...");
+
+      // Скачиваем
+      logger.info(`📥 Downloading voice...`);
+      const { FileHandler } = await import("../utils/fileHandler");
+      const fileHandler = new FileHandler();
+      const { filePath } = await fileHandler.downloadFile(voice.file_id);
+      logger.info(`✅ Voice downloaded to: ${filePath}`);
+
+      try {
+        // Транскрибируем
+        logger.info(`🎙️ Calling Whisper API...`);
+        const { OpenAIService } = await import("../services/ai/OpenAIService");
+        const openaiService = new OpenAIService();
+        
+        const result = await openaiService.transcribeAudio(filePath, 'ru');
+        
+        if (result.success && result.content) {
+          logger.info(`✅ Voice transcription completed, length: ${result.content.length}`);
+          
+          await ctx.reply(
+            `🎙️ <b>Транскрипция голосового сообщения:</b>\n\n${result.content}`,
+            { parse_mode: 'HTML' }
+          );
+        } else {
+          await ctx.reply(`❌ Ошибка транскрипции: ${result.error}`);
+        }
+
+        fileHandler.cleanupFile(filePath);
+        logger.info(`🗑️ Voice file cleaned up`);
+
+      } catch (error: any) {
+        fileHandler.cleanupFile(filePath);
+        throw error;
+      }
+
+    } catch (error: any) {
+      logger.error("❌ Error transcribing voice:", error);
+      await ctx.reply(`❌ Ошибка транскрипции: ${error.message}`);
+    }
+  } else {
+    logger.info(`ℹ️ Voice received but no transcription session active`);
+    await ctx.reply(
+      "🎙️ <b>Получено голосовое сообщение</b>\n\n" +
+      "Чтобы транскрибировать:\n" +
+      "1. Нажмите 💬 Быстрый чат\n" +
+      "2. Выберите 🎤 Транскрипция аудио\n" +
+      "3. Запишите голосовое снова",
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💬 Быстрый чат', callback_data: 'quick_chat' }]] } }
     );
   }
 });
@@ -1477,19 +1803,23 @@ async function handleQuickChat(ctx: any, userId: number) {
     UXHelpers.updateUserPath(userId, 'quick_chat');
     
     const message = `💬 <b>AI Чат</b>\n\n` +
-      `Выберите модель или сразу отправьте сообщение для начала диалога:\n\n` +
-      `💡 <b>Пример:</b> "Расскажи анекдот"`;
+      `Выберите действие:\n\n` +
+      `💡 <b>Подсказка:</b> Можете сразу отправить сообщение или файл`;
     
     const keyboard = {
       inline_keyboard: [
         [
           { text: '🧠 ChatGPT-4', callback_data: 'chat_gpt4' }
         ],
+        [
+          { text: '📄 Анализ документов', callback_data: 'chatgpt_analyze_document' },
+          { text: '🎤 Транскрипция аудио', callback_data: 'chatgpt_transcribe_audio' }
+        ],
         [{ text: '⬅️ Назад', callback_data: 'back_to_main' }]
       ]
     };
     
-    await ctx.editMessageText(message, {
+    await UXHelpers.safeEditMessage(ctx, message, {
       parse_mode: "HTML",
       reply_markup: keyboard
     });
