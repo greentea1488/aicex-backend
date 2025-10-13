@@ -615,6 +615,62 @@ bot.on("callback_query", async (ctx) => {
         await handleMidjourneyQuick(ctx, userId);
         break;
 
+    // 🔄 РЕГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ (кнопка "Еще одно")
+    case (data.startsWith('regenerate_image_') ? data : null): {
+      const [, , service, model] = data.split('_');
+      const userState = UXHelpers.getUserState(userId);
+      
+      if (userState?.data?.lastPrompt) {
+        logger.info(`🔄 Regenerating image with saved prompt: "${userState.data.lastPrompt}"`);
+        await handleImageGeneration(ctx, userState.data.lastPrompt, service, { model });
+      } else {
+        await UXHelpers.safeEditMessage(ctx,
+          "❌ Не удалось найти предыдущий промпт. Выберите действие:",
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🎨 Генерация изображений', callback_data: 'generate_image' }],
+                [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+              ]
+            },
+            parse_mode: "HTML"
+          }
+        );
+      }
+      break;
+    }
+
+    // 🔄 ПОВТОРНАЯ ГЕНЕРАЦИЯ (кнопка "Попробовать снова")
+    case (data.startsWith('retry_generation_') ? data : null): {
+      const [, , , retryService, retryModel, retryTaskType] = data.split('_');
+      const retryUserState = UXHelpers.getUserState(userId);
+      
+      if (retryUserState?.data?.lastPrompt) {
+        logger.info(`🔄 Retrying generation with saved prompt: "${retryUserState.data.lastPrompt}"`);
+        
+        if (retryTaskType === 'video') {
+          await handleVideoGeneration(ctx, retryUserState.data.lastPrompt, retryService, { model: retryModel });
+        } else {
+          await handleImageGeneration(ctx, retryUserState.data.lastPrompt, retryService, { model: retryModel });
+        }
+      } else {
+        await UXHelpers.safeEditMessage(ctx,
+          "❌ Не удалось найти предыдущий промпт. Выберите действие:",
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🎨 Генерация изображений', callback_data: 'generate_image' }],
+                [{ text: '🎬 Генерация видео', callback_data: 'generate_video' }],
+                [{ text: '🏠 Главная', callback_data: 'back_to_main' }]
+              ]
+            },
+            parse_mode: "HTML"
+          }
+        );
+      }
+      break;
+    }
+
     // 🎨 ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ
     case 'generate_image':
       await ctx.editMessageText(
@@ -1754,6 +1810,17 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
       
       const modelText = data?.model ? ` (${data.model})` : '';
       
+      // Сохраняем данные для кнопки "Еще одно"
+      const model = data?.model || 'default';
+      UXHelpers.setUserState(userId, {
+        currentAction: 'image_generated',
+        data: { 
+          lastPrompt: prompt,
+          lastService: service,
+          lastModel: model
+        }
+      });
+
       // ВАЖНО: Отправляем НОВОЕ сообщение с изображением
       // Это гарантирует уведомление даже если пользователь ушел в другое меню
       await bot.api.sendPhoto(ctx.chat.id, imageUrl, {
@@ -1762,7 +1829,7 @@ async function handleImageGeneration(ctx: any, prompt: string, service: string, 
         reply_markup: {
           inline_keyboard: [
             [
-              { text: '🔄 Еще одно', callback_data: 'quick_image' },
+              { text: '🔄 Еще одно', callback_data: `regenerate_image_${service}_${model}` },
               { text: '📊 Статистика', callback_data: 'stats' }
             ],
             ...getNavigationButtons()
@@ -2930,6 +2997,7 @@ async function monitorTaskProgress(
   service: string,
   model: string,
   prompt: string,
+  userId: number,
   checkStatusFn: () => Promise<any>,
   onComplete: (result: any) => Promise<void>
 ) {
@@ -2972,6 +3040,17 @@ async function monitorTaskProgress(
       if (status.data?.status === 'failed') {
         clearInterval(interval);
         
+        // Сохраняем данные для кнопки "Попробовать снова"
+        UXHelpers.setUserState(userId, {
+          currentAction: 'generation_failed',
+          data: { 
+            lastPrompt: prompt,
+            lastService: service,
+            lastModel: model,
+            taskType: taskType
+          }
+        });
+
         await bot.api.editMessageText(
           chatId,
           messageId,
@@ -2980,7 +3059,7 @@ async function monitorTaskProgress(
             parse_mode: "HTML",
             reply_markup: {
               inline_keyboard: [
-                [{ text: '🔄 Попробовать снова', callback_data: taskType === 'video' ? 'photo_to_video_menu' : 'quick_image' }],
+                [{ text: '🔄 Попробовать снова', callback_data: `retry_generation_${service}_${model}_${taskType}` }],
                 ...getNavigationButtons()
               ]
             }
@@ -3051,6 +3130,7 @@ async function monitorVideoProgress(ctx: any, messageId: number, taskId: string,
     'freepik',
     model,
     prompt,
+    userId,
     () => freepikService.checkTaskStatus(taskId, 'video', model),
     async (status) => {
       const videoUrl = status.data.videos[0].url;
