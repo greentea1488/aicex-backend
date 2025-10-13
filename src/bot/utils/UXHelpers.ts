@@ -131,7 +131,7 @@ export class UXHelpers {
           { text: '📊 Статистика', callback_data: 'stats' }
         ],
         [
-          { text: '👤 Профиль', web_app: { url: process.env.FRONTEND_URL || 'http://localhost:3000' } }
+          { text: '👤 Профиль (купить подписку)', web_app: { url: process.env.FRONTEND_URL || 'http://localhost:3000' } }
         ]
       ]
     };
