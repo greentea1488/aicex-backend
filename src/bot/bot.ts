@@ -179,6 +179,180 @@ bot.on("message:photo", async ctx => {
   }
 });
 
+// 📄 ОБРАБОТКА ДОКУМЕНТОВ ДЛЯ CHATGPT
+bot.on("message:document", async ctx => {
+  const userId = ctx.from?.id.toString();
+  if (!userId) return;
+
+  const session = sessionManager.getSession(userId);
+  if (session && session.aiProvider === 'chatgpt_document') {
+    try {
+      const document = ctx.message.document;
+      const fileName = document.file_name || 'document';
+      const fileSize = document.file_size || 0;
+      
+      // Проверка размера файла (макс 20 МБ)
+      const maxSize = 20 * 1024 * 1024;
+      if (fileSize > maxSize) {
+        await ctx.reply("❌ Файл слишком большой. Максимальный размер: 20 МБ");
+        return;
+      }
+
+      await ctx.reply("📄 Обрабатываю документ...");
+
+      // Скачиваем файл
+      const { FileHandler } = await import("../utils/fileHandler");
+      const fileHandler = new FileHandler();
+      const { filePath, buffer } = await fileHandler.downloadFile(document.file_id);
+
+      try {
+        // Извлекаем текст из файла
+        const fileContent = await fileHandler.extractText(filePath, document.mime_type);
+        
+        // Ограничиваем размер контента (макс 15000 символов)
+        const maxContentLength = 15000;
+        const truncatedContent = fileContent.length > maxContentLength 
+          ? fileContent.substring(0, maxContentLength) + "\n\n[... текст обрезан ...]"
+          : fileContent;
+
+        const prompt = ctx.message.caption || "Проанализируй этот документ и дай краткое резюме";
+
+        // Валидация промпта
+        const validation = securityService.validatePrompt(prompt);
+        if (!validation.valid) {
+          await ctx.reply(`❌ ${validation.error}`);
+          fileHandler.cleanupFile(filePath);
+          return;
+        }
+
+        // Анализируем файл с помощью ChatGPT
+        const chatgptService = new (await import("./services/ai/ChatGPTService")).ChatGPTService();
+        const result = await chatgptService.analyzeFile(truncatedContent, fileName, prompt, userId);
+
+        await ctx.reply(
+          `📄 **Анализ документа "${fileName}":**\n\n${result.content}`,
+          { parse_mode: 'Markdown' }
+        );
+
+        // Очищаем временный файл
+        fileHandler.cleanupFile(filePath);
+
+      } catch (error: any) {
+        fileHandler.cleanupFile(filePath);
+        throw error;
+      }
+
+    } catch (error: any) {
+      logger.error("Ошибка обработки документа:", error);
+      await ctx.reply(`❌ Ошибка обработки документа: ${error.message}`);
+    }
+    return;
+  }
+});
+
+// 🎤 ОБРАБОТКА АУДИО ФАЙЛОВ ДЛЯ CHATGPT
+bot.on("message:audio", async ctx => {
+  const userId = ctx.from?.id.toString();
+  if (!userId) return;
+
+  const session = sessionManager.getSession(userId);
+  if (session && session.aiProvider === 'chatgpt_audio') {
+    try {
+      const audio = ctx.message.audio;
+      const fileName = audio.file_name || 'audio';
+      const fileSize = audio.file_size || 0;
+      
+      // Проверка размера файла (макс 25 МБ для Whisper)
+      const maxSize = 25 * 1024 * 1024;
+      if (fileSize > maxSize) {
+        await ctx.reply("❌ Файл слишком большой. Максимальный размер для аудио: 25 МБ");
+        return;
+      }
+
+      await ctx.reply("🎤 Транскрибирую аудио...");
+
+      // Скачиваем файл
+      const { FileHandler } = await import("../utils/fileHandler");
+      const fileHandler = new FileHandler();
+      const { filePath } = await fileHandler.downloadFile(audio.file_id);
+
+      try {
+        // Транскрибируем аудио с помощью Whisper
+        const chatgptService = new (await import("./services/ai/ChatGPTService")).ChatGPTService();
+        const result = await chatgptService.transcribeAudio(filePath);
+
+        await ctx.reply(
+          `🎤 **Транскрипция аудио "${fileName}":**\n\n${result.content}`,
+          { parse_mode: 'Markdown' }
+        );
+
+        // Очищаем временный файл
+        fileHandler.cleanupFile(filePath);
+
+      } catch (error: any) {
+        fileHandler.cleanupFile(filePath);
+        throw error;
+      }
+
+    } catch (error: any) {
+      logger.error("Ошибка транскрипции аудио:", error);
+      await ctx.reply(`❌ Ошибка транскрипции аудио: ${error.message}`);
+    }
+    return;
+  }
+});
+
+// 🎙️ ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ ДЛЯ CHATGPT
+bot.on("message:voice", async ctx => {
+  const userId = ctx.from?.id.toString();
+  if (!userId) return;
+
+  const session = sessionManager.getSession(userId);
+  if (session && session.aiProvider === 'chatgpt_audio') {
+    try {
+      const voice = ctx.message.voice;
+      const fileSize = voice.file_size || 0;
+      
+      // Проверка размера файла (макс 25 МБ для Whisper)
+      const maxSize = 25 * 1024 * 1024;
+      if (fileSize > maxSize) {
+        await ctx.reply("❌ Голосовое сообщение слишком большое. Максимальный размер: 25 МБ");
+        return;
+      }
+
+      await ctx.reply("🎙️ Транскрибирую голосовое сообщение...");
+
+      // Скачиваем файл
+      const { FileHandler } = await import("../utils/fileHandler");
+      const fileHandler = new FileHandler();
+      const { filePath } = await fileHandler.downloadFile(voice.file_id);
+
+      try {
+        // Транскрибируем голосовое сообщение с помощью Whisper
+        const chatgptService = new (await import("./services/ai/ChatGPTService")).ChatGPTService();
+        const result = await chatgptService.transcribeAudio(filePath);
+
+        await ctx.reply(
+          `🎙️ **Транскрипция голосового сообщения:**\n\n${result.content}`,
+          { parse_mode: 'Markdown' }
+        );
+
+        // Очищаем временный файл
+        fileHandler.cleanupFile(filePath);
+
+      } catch (error: any) {
+        fileHandler.cleanupFile(filePath);
+        throw error;
+      }
+
+    } catch (error: any) {
+      logger.error("Ошибка транскрипции голосового сообщения:", error);
+      await ctx.reply(`❌ Ошибка транскрипции голосового сообщения: ${error.message}`);
+    }
+    return;
+  }
+});
+
 // 💬 ОБРАБОТКА ТЕКСТОВЫХ СООБЩЕНИЙ
 bot.on("message:text", async ctx => {
   const userId = ctx.from?.id.toString();
@@ -359,6 +533,18 @@ setInterval(() => {
   aiHandler.cleanupSessions();
   securityService.cleanupRateLimiter();
 }, 30 * 60 * 1000);
+
+// 🗑️ Очистка старых временных файлов каждые 6 часов
+setInterval(async () => {
+  try {
+    const { FileHandler } = await import("../utils/fileHandler");
+    const fileHandler = new FileHandler();
+    fileHandler.cleanupOldFiles(24); // Удаляем файлы старше 24 часов
+    logger.info("Old temporary files cleaned up");
+  } catch (error) {
+    logger.error("Error cleaning up old files:", error);
+  }
+}, 6 * 60 * 60 * 1000);
 
 // 📊 Функция запуска бота
 export async function startBot() {

@@ -9,6 +9,7 @@ import {
   chatgptImageModelsMenu,
   chatgptImageSettingsMenu,
   chatgptSettingsMenu,
+  chatgptFileProcessingMenu,
   backToChatGPTMain
 } from "../keyboards/chatgptKeyboard";
 import { prisma } from "../../utils/prismaClient";
@@ -76,10 +77,19 @@ export class ChatGPTHandler extends BaseAIHandler {
           await this.showImageGenMenu(ctx);
           break;
         case 'image_analyze':
-          await ctx.reply("🚧 Анализ изображений в разработке");
+          await this.showImageAnalyzeMenu(ctx);
+          break;
+        case 'file_processing':
+          await this.showFileProcessingMenu(ctx);
+          break;
+        case 'file_document':
+          await this.startDocumentAnalysis(ctx);
+          break;
+        case 'file_audio':
+          await this.startAudioTranscription(ctx);
           break;
         case 'model_settings':
-          await ctx.reply("🚧 Настройки модели в разработке");
+          await this.showModelsMenu(ctx);
           break;
         default:
           this.logger.warn(`Unknown ChatGPT callback action: ${action}`);
@@ -371,5 +381,52 @@ export class ChatGPTHandler extends BaseAIHandler {
       `📏 Макс. токены ограничивают длину ответа`,
       { reply_markup: backToChatGPTMain }
     );
+  }
+
+  // 📁 МЕНЮ ОБРАБОТКИ ФАЙЛОВ
+  async showFileProcessingMenu(ctx: Context) {
+    await ctx.editMessageText(
+      "📁 Обработка файлов с ChatGPT\n\n" +
+      "Выберите тип файла для обработки:\n\n" +
+      "📄 Документы - анализ текстовых файлов (TXT, JSON, CSV, MD)\n" +
+      "🎤 Аудио - транскрипция голосовых сообщений и аудио\n" +
+      "📎 Изображения - анализ изображений с помощью GPT-4 Vision",
+      { reply_markup: chatgptFileProcessingMenu }
+    );
+  }
+
+  // 📄 НАЧАТЬ АНАЛИЗ ДОКУМЕНТОВ
+  async startDocumentAnalysis(ctx: Context) {
+    const userId = ctx.from?.id.toString();
+    if (!userId) return;
+
+    this.setUserState(userId, { action: 'document_analysis' });
+
+    await ctx.editMessageText(
+      "📄 Анализ документов\n\n" +
+      "Отправьте мне документ (TXT, JSON, CSV, MD и др.) и я проанализирую его содержимое.\n\n" +
+      "Вы можете добавить подпись к файлу с вопросом или инструкцией.",
+      { reply_markup: backToChatGPTMain }
+    );
+
+    this.sessionManager.createSession(userId, 'chatgpt_document');
+  }
+
+  // 🎤 НАЧАТЬ ТРАНСКРИПЦИЮ АУДИО
+  async startAudioTranscription(ctx: Context) {
+    const userId = ctx.from?.id.toString();
+    if (!userId) return;
+
+    this.setUserState(userId, { action: 'audio_transcription' });
+
+    await ctx.editMessageText(
+      "🎤 Транскрипция аудио\n\n" +
+      "Отправьте мне голосовое сообщение или аудио файл, и я преобразую его в текст.\n\n" +
+      "Поддерживаемые форматы: MP3, WAV, OGG, M4A, OPUS\n" +
+      "Максимальный размер: 25 МБ",
+      { reply_markup: backToChatGPTMain }
+    );
+
+    this.sessionManager.createSession(userId, 'chatgpt_audio');
   }
 }

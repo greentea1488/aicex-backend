@@ -68,3 +68,13 @@ export const chatgptInfoMenu = new InlineKeyboard()
   .text("📖 Справка", "chatgpt_info_help")
   .row()
   .text("🔙 Назад к ChatGPT", "chatgpt_back_to_main");
+
+// 📁 МЕНЮ ОБРАБОТКИ ФАЙЛОВ
+export const chatgptFileProcessingMenu = new InlineKeyboard()
+  .text("📄 Анализ документов", "chatgpt_file_document")
+  .row()
+  .text("🎤 Транскрипция аудио", "chatgpt_file_audio")
+  .row()
+  .text("📎 Анализ изображений", "chatgpt_image_analyze")
+  .row()
+  .text("🔙 Назад к ChatGPT", "chatgpt_back_to_main");

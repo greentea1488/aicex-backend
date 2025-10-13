@@ -128,4 +128,78 @@ export class ChatGPTService extends BaseAIService {
       throw new Error(`Ошибка анализа изображения: ${error.message || "Неизвестная ошибка"}`);
     }
   }
+
+  // 🎤 Транскрипция аудио через Whisper
+  async transcribeAudio(filePath: string, language: string = 'ru'): Promise<AIResponse> {
+    try {
+      const fs = await import('fs');
+      const fileStream = fs.createReadStream(filePath);
+
+      const transcription = await this.client.audio.transcriptions.create({
+        file: fileStream,
+        model: "whisper-1",
+        language: language,
+        response_format: "text"
+      });
+
+      return {
+        content: transcription as string,
+        usage: {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+        },
+      };
+
+    } catch (error: any) {
+      console.error("Whisper Transcription Error:", error);
+      throw new Error(`Ошибка транскрипции аудио: ${error.message || "Неизвестная ошибка"}`);
+    }
+  }
+
+  // 📄 Анализ файла с контекстом
+  async analyzeFile(fileContent: string, fileName: string, prompt: string, userId: string): Promise<AIResponse> {
+    try {
+      // Get user preferences from database
+      const user = await prisma.user.findUnique({
+        where: { telegramId: parseInt(userId) },
+      });
+
+      const messages: AIMessage[] = [
+        {
+          role: "system",
+          content: "Ты - помощник, который анализирует файлы и отвечает на вопросы о них. Отвечай на русском языке."
+        },
+        {
+          role: "user",
+          content: `У меня есть файл "${fileName}" со следующим содержимым:\n\n${fileContent}\n\n${prompt}`
+        }
+      ];
+
+      const completion = await this.client.chat.completions.create({
+        model: user?.gptSettings?.model || "gpt-4o-mini",
+        messages: messages,
+        temperature: 0.4,
+        max_tokens: 2000,
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("No response content received from OpenAI");
+      }
+
+      return {
+        content,
+        usage: {
+          promptTokens: completion.usage?.prompt_tokens || 0,
+          completionTokens: completion.usage?.completion_tokens || 0,
+          totalTokens: completion.usage?.total_tokens || 0,
+        },
+      };
+
+    } catch (error: any) {
+      console.error("File Analysis Error:", error);
+      throw new Error(`Ошибка анализа файла: ${error.message || "Неизвестная ошибка"}`);
+    }
+  }
 }

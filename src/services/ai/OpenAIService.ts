@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { logger } from '../../utils/logger';
+import * as fs from 'fs';
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -395,6 +396,138 @@ export class OpenAIService {
     } catch (error) {
       logger.error('Error getting OpenAI models:', error);
       return ['gpt-3.5-turbo', 'gpt-4'];
+    }
+  }
+
+  /**
+   * Транскрипция аудио с помощью Whisper API
+   */
+  async transcribeAudio(filePath: string, language?: string): Promise<ChatResponse> {
+    try {
+      logger.info('Whisper transcription request:', { filePath, language });
+
+      // Проверяем существование файла
+      if (!fs.existsSync(filePath)) {
+        return {
+          success: false,
+          error: 'Файл не найден'
+        };
+      }
+
+      // Создаем поток для чтения файла
+      const fileStream = fs.createReadStream(filePath);
+
+      const transcription = await this.client.audio.transcriptions.create({
+        file: fileStream,
+        model: 'whisper-1',
+        language: language || 'ru',
+        response_format: 'text'
+      });
+
+      logger.info('Whisper transcription completed:', {
+        textLength: transcription?.length || 0
+      });
+
+      return {
+        success: true,
+        content: transcription as string
+      };
+
+    } catch (error: any) {
+      logger.error('Whisper transcription error:', error.message);
+      
+      return {
+        success: false,
+        error: this.parseError(error)
+      };
+    }
+  }
+
+  /**
+   * Перевод аудио в текст с последующим анализом через ChatGPT
+   */
+  async transcribeAndAnalyze(
+    filePath: string, 
+    prompt: string = 'Проанализируй этот текст и дай краткое резюме',
+    language?: string
+  ): Promise<ChatResponse> {
+    try {
+      // Сначала транскрибируем аудио
+      const transcriptionResult = await this.transcribeAudio(filePath, language);
+      
+      if (!transcriptionResult.success || !transcriptionResult.content) {
+        return transcriptionResult;
+      }
+
+      logger.info('Analyzing transcribed text with ChatGPT');
+
+      // Теперь анализируем текст с помощью ChatGPT
+      const messages: ChatMessage[] = [
+        {
+          role: 'system',
+          content: 'Ты - помощник, который анализирует транскрипции аудио. Отвечай на русском языке.'
+        },
+        {
+          role: 'user',
+          content: `${prompt}\n\nТранскрипция:\n${transcriptionResult.content}`
+        }
+      ];
+
+      const analysisResult = await this.chat(messages, 'gpt-4o');
+
+      if (analysisResult.success) {
+        // Возвращаем комбинированный результат
+        return {
+          success: true,
+          content: `📝 **Транскрипция:**\n${transcriptionResult.content}\n\n🤖 **Анализ:**\n${analysisResult.content}`,
+          usage: analysisResult.usage
+        };
+      }
+
+      return analysisResult;
+
+    } catch (error: any) {
+      logger.error('Transcribe and analyze error:', error.message);
+      
+      return {
+        success: false,
+        error: this.parseError(error)
+      };
+    }
+  }
+
+  /**
+   * Чат с контекстом файла
+   */
+  async chatWithFile(
+    fileContent: string, 
+    userPrompt: string, 
+    fileName?: string,
+    model: string = 'gpt-4o'
+  ): Promise<ChatResponse> {
+    try {
+      logger.info('Chat with file:', { fileName, promptLength: userPrompt.length });
+
+      const messages: ChatMessage[] = [
+        {
+          role: 'system',
+          content: 'Ты - помощник, который анализирует файлы и отвечает на вопросы о них. Отвечай на русском языке.'
+        },
+        {
+          role: 'user',
+          content: `У меня есть файл${fileName ? ` "${fileName}"` : ''} со следующим содержимым:\n\n${fileContent}\n\n${userPrompt}`
+        }
+      ];
+
+      return await this.chat(messages, model);
+
+    } catch (error: any) {
+      logger.error('Chat with file error:', error.message);
+      
+      return {
+        success: false,
+        error: this.parseError(error)
+      };
     }
   }
 }
