@@ -77,6 +77,8 @@ app.use(cors({
   origin: [
     'https://aicexonefrontend-production.up.railway.app',
     'http://localhost:5173', // для разработки
+    'http://localhost:5174', // альтернативный порт
+    'http://localhost:5175', // альтернативный порт
     process.env.FRONTEND_URL
   ].filter((url): url is string => Boolean(url)),
   credentials: true
