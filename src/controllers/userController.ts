@@ -390,9 +390,11 @@ export const getUserStats = async (req: Request, res: Response) => {
       subscription: user.subscription,
       memberSince: user.createdAt,
       dialogsCount,
+      totalGenerations: dialogsCount, // Добавляем алиас для совместимости с фронтом
       totalSpent: totalPayments._sum.amount || 0,
       totalTokensEarned: tokenStats._sum.amount || 0,
       referralsCount,
+      referrals: referralsCount, // Добавляем алиас для совместимости с фронтом
     });
   } catch (error) {
     console.error("Error fetching user stats:", error);

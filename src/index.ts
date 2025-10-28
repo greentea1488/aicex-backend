@@ -40,6 +40,7 @@ console.log("✅ apiRoutes loaded");
 import adminRoutes from "./routes/admin";
 console.log("✅ adminRoutes loaded");
 import adminPanelRoutes from "./routes/adminRoutes";
+import makeAdminRoutes from "./routes/makeAdmin";
 console.log("✅ adminPanelRoutes loaded");
 import webhookRoutes from "./routes/webhooks";
 console.log("✅ webhookRoutes loaded");
@@ -76,6 +77,8 @@ app.use(cors({
   origin: [
     'https://aicexonefrontend-production.up.railway.app',
     'http://localhost:5173', // для разработки
+    'http://localhost:5174', // альтернативный порт
+    'http://localhost:5175', // альтернативный порт
     process.env.FRONTEND_URL
   ].filter((url): url is string => Boolean(url)),
   credentials: true
@@ -142,7 +145,8 @@ try {
   app.use("/api/user", globalLimiter.middleware(), userRoutes);
   app.use("/api", globalLimiter.middleware(), apiRoutes);
   app.use("/api/admin", globalLimiter.middleware(), adminRoutes);
-  app.use("/api/admin-panel", globalLimiter.middleware(), adminPanelRoutes); // Новая админ-панель
+  app.use("/api/admin-panel", globalLimiter.middleware(), adminPanelRoutes);
+app.use("/api/make-admin", makeAdminRoutes); // Новая админ-панель
   
   logger.info("✅ All routes loaded with rate limiting");
 } catch (error) {
