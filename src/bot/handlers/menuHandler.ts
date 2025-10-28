@@ -60,7 +60,7 @@ export class MenuHandler {
         [
           { 
             text: '🌐 Веб-версия', 
-            web_app: { url: process.env.FRONTEND_URL + '/app' }
+            web_app: { url: (process.env.FRONTEND_URL || 'https://aicexonefrontend-production.up.railway.app') + '/app' }
           }
         ]
       ]
