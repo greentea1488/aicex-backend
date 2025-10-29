@@ -407,7 +407,8 @@ export const getUserStats = async (req: Request, res: Response) => {
 export const getUserAvatar = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
-    console.log('🎨 getUserAvatar called for userId:', userId);
+    console.log('🎨 ========== GET USER AVATAR START ==========');
+    console.log('🎨 userId:', userId);
 
     if (!userId) {
       console.error('❌ Unauthorized: no userId');
@@ -423,26 +424,29 @@ export const getUserAvatar = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      console.error('❌ User not found:', userId);
+      console.error('❌ User not found for userId:', userId);
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log('👤 User found. telegramId:', user.telegramId, 'existing avatar:', user.avatar ? 'YES' : 'NO');
+    console.log('👤 User found - telegramId:', user.telegramId);
+    console.log('👤 Current avatar in DB:', user.avatar || 'NULL');
 
     // Если аватарка уже есть в базе - возвращаем её
     if (user.avatar) {
-      console.log('✅ Returning cached avatar');
+      console.log('✅ Returning cached avatar from DB');
+      console.log('🎨 ========== GET USER AVATAR END (CACHED) ==========');
       return res.json({ avatar: user.avatar });
     }
 
     // Пытаемся получить аватарку из Telegram
+    console.log('🔄 No cached avatar, fetching from Telegram...');
     try {
-      console.log('🔄 Fetching avatar from Telegram Bot API...');
       const BOT_TOKEN = process.env.BOT_TOKEN;
       if (!BOT_TOKEN) {
-        console.error('❌ BOT_TOKEN not found in env');
+        console.error('❌ BOT_TOKEN not found in environment');
         throw new Error("BOT_TOKEN not found");
       }
+      console.log('✅ BOT_TOKEN found');
 
       console.log('📡 Calling getUserProfilePhotos for telegramId:', user.telegramId);
       const profilePhotosResponse = await axios.get(
@@ -460,13 +464,18 @@ export const getUserAvatar = async (req: Request, res: Response) => {
       const photos = profilePhotosResponse.data?.result?.photos;
       if (!photos || photos.length === 0) {
         console.log('⚠️ No profile photos found for user');
+        console.log('🎨 ========== GET USER AVATAR END (NO PHOTOS) ==========');
         return res.json({ avatar: null });
       }
 
+      console.log('📸 Found', photos.length, 'photo(s)');
+      console.log('📸 Photo sizes:', photos[0].length);
+
       // Берем самое большое фото
       const largestPhoto = photos[0][photos[0].length - 1];
-      console.log('🖼️ Getting file for photo:', largestPhoto.file_id);
-      
+      console.log('🖼️ Largest photo file_id:', largestPhoto.file_id);
+
+      console.log('📡 Calling getFile for file_id:', largestPhoto.file_id);
       const fileResponse = await axios.get(
         `https://api.telegram.org/bot${BOT_TOKEN}/getFile`,
         {
@@ -481,6 +490,7 @@ export const getUserAvatar = async (req: Request, res: Response) => {
       const filePath = fileResponse.data?.result?.file_path;
       if (!filePath) {
         console.log('⚠️ No file path in response');
+        console.log('🎨 ========== GET USER AVATAR END (NO FILE PATH) ==========');
         return res.json({ avatar: null });
       }
 
@@ -488,20 +498,27 @@ export const getUserAvatar = async (req: Request, res: Response) => {
       console.log('✅ Avatar URL constructed:', avatarUrl);
 
       // Сохраняем аватарку в базу
+      console.log('💾 Saving avatar to database...');
       await prisma.user.update({
         where: { id: userId },
         data: { avatar: avatarUrl },
       });
-      console.log('💾 Avatar saved to database');
+      console.log('✅ Avatar saved to database');
 
+      console.log('🎨 ========== GET USER AVATAR END (SUCCESS) ==========');
       res.json({ avatar: avatarUrl });
     } catch (telegramError) {
-      console.error("❌ Error fetching avatar from Telegram:", telegramError);
-      console.error("Error details:", (telegramError as any)?.response?.data);
+      console.error('❌ ========== TELEGRAM API ERROR ==========');
+      console.error('Error fetching avatar from Telegram:', telegramError);
+      console.error('Error details:', (telegramError as any)?.response?.data);
+      console.error('Error status:', (telegramError as any)?.response?.status);
+      console.error('❌ ==========================================');
       res.json({ avatar: null });
     }
   } catch (error) {
+    console.error('❌ ========== GENERAL ERROR ==========');
     console.error("Error fetching user avatar:", error);
+    console.error('❌ ===================================');
     res.status(500).json({ error: "Internal server error" });
   }
 };
