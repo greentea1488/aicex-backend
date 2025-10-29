@@ -39,13 +39,19 @@ export const authUser = async (req: Request, res: Response) => {
       language_code?: string;
     };
 
+    console.log('🎨 ========== AUTH USER DATA ==========');
+    console.log('🎨 userData:', JSON.stringify(userData, null, 2));
+    console.log('🎨 photo_url:', userData.photo_url || 'NULL');
+    console.log('🎨 ======================================');
+
     // Проверяем пользователя в БД (по telegramId)
     let user = await prisma.user.findUnique({
       where: { telegramId: userData.id },
     });
 
-    // Если пользователь существует, но у него нет аватарки - обновляем
-    if (user && !user.avatar && userData.photo_url) {
+    // Если пользователь существует И есть photo_url - ВСЕГДА обновляем аватарку
+    if (user && userData.photo_url) {
+      console.log('🎨 Updating avatar for existing user:', userData.photo_url);
       user = await prisma.user.update({
         where: { id: user.id },
         data: { avatar: userData.photo_url }

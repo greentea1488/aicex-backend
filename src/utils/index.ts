@@ -55,7 +55,10 @@ export function parseInitData(initData: string): { [key: string]: any } {
 
   parsedData.forEach((value, key) => {
     if (key === "user") {
-      data[key] = JSON.parse(value);
+      const parsedUser = JSON.parse(value);
+      console.log('🎨 RAW USER FROM initData:', value);
+      console.log('🎨 PARSED USER:', JSON.stringify(parsedUser, null, 2));
+      data[key] = parsedUser;
     } else {
       data[key] = value;
     }
