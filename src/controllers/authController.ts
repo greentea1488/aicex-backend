@@ -44,6 +44,15 @@ export const authUser = async (req: Request, res: Response) => {
       where: { telegramId: userData.id },
     });
 
+    // Если пользователь существует, но у него нет аватарки - обновляем
+    if (user && !user.avatar && userData.photo_url) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { avatar: userData.photo_url }
+      });
+      logger.info(`✅ Avatar updated for user ${user.telegramId}`);
+    }
+
     // Если нет — создаём
     if (!user) {
       let referralUserId: string | null = null;
@@ -74,12 +83,13 @@ export const authUser = async (req: Request, res: Response) => {
           username: userData.username || `user_${userData.id}`,
           firstName: userData.first_name || null,
           lastName: userData.last_name || null,
+          avatar: userData.photo_url || null,
           referral: referralUserId,
-          tokens: 1000, // Starting tokens
+          tokens: 100, // Starting tokens
           friendsReferred: 0,
           runwaySettings: {},
           midjourneySettings: {},
-              gptSettings: { model: "gpt-4.1-mini" }, // Set correct default model
+          gptSettings: { model: "gpt-4.1-mini" }, // Set correct default model
           appSettings: {},
         },
       });

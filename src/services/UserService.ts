@@ -31,6 +31,7 @@ export class UserService {
             username: telegramUserData.username || `user_${telegramUserData.id}`,
             firstName: telegramUserData.first_name || '',
             lastName: telegramUserData.last_name || '',
+            avatar: telegramUserData.photo_url || null,
             tokens: this.DEFAULT_STARTING_TOKENS,
             subscription: null
           }
@@ -83,6 +84,7 @@ export class UserService {
           username: true,
           firstName: true,
           lastName: true,
+          avatar: true,
           tokens: true,
           subscription: true,
           createdAt: true,
