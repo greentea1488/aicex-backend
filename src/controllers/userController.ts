@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../utils/prismaClient";
+import axios from "axios";
 
 // Get user profile
 export const getUserProfile = async (req: Request, res: Response) => {
@@ -398,6 +399,89 @@ export const getUserStats = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching user stats:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get user avatar from Telegram
+export const getUserAvatar = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        telegramId: true,
+        avatar: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Если аватарка уже есть в базе - возвращаем её
+    if (user.avatar) {
+      return res.json({ avatar: user.avatar });
+    }
+
+    // Пытаемся получить аватарку из Telegram
+    try {
+      const BOT_TOKEN = process.env.BOT_TOKEN;
+      if (!BOT_TOKEN) {
+        throw new Error("BOT_TOKEN not found");
+      }
+
+      const profilePhotosResponse = await axios.get(
+        `https://api.telegram.org/bot${BOT_TOKEN}/getUserProfilePhotos`,
+        {
+          params: {
+            user_id: user.telegramId,
+            limit: 1,
+          },
+        }
+      );
+
+      const photos = profilePhotosResponse.data?.result?.photos;
+      if (!photos || photos.length === 0) {
+        return res.json({ avatar: null });
+      }
+
+      // Берем самое большое фото
+      const largestPhoto = photos[0][photos[0].length - 1];
+      const fileResponse = await axios.get(
+        `https://api.telegram.org/bot${BOT_TOKEN}/getFile`,
+        {
+          params: {
+            file_id: largestPhoto.file_id,
+          },
+        }
+      );
+
+      const filePath = fileResponse.data?.result?.file_path;
+      if (!filePath) {
+        return res.json({ avatar: null });
+      }
+
+      const avatarUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+
+      // Сохраняем аватарку в базу
+      await prisma.user.update({
+        where: { id: userId },
+        data: { avatar: avatarUrl },
+      });
+
+      res.json({ avatar: avatarUrl });
+    } catch (telegramError) {
+      console.error("Error fetching avatar from Telegram:", telegramError);
+      res.json({ avatar: null });
+    }
+  } catch (error) {
+    console.error("Error fetching user avatar:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

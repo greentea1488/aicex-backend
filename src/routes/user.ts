@@ -10,7 +10,8 @@ import {
   getReferralStats, 
   getUserReferrals,
   updateUserProfile,
-  getUserStats
+  getUserStats,
+  getUserAvatar
 } from "../controllers/userController";
 
 const router = Router();
@@ -22,6 +23,7 @@ router.use(jwtMiddleware);
 router.get("/profile", getUserProfile);
 router.put("/profile", updateUserProfile);
 router.put("/settings", updateUserSettings);
+router.get("/avatar", getUserAvatar);
 
 // User tokens and subscription
 router.get("/tokens", getUserTokens);
