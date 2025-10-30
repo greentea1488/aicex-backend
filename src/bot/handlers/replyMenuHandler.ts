@@ -236,7 +236,7 @@ export class ReplyMenuHandler {
     await ctx.reply(
       "💰 <b>Ваш баланс</b>\n\n" +
       `💎 Токенов: ${tokens}\n` +
-      `📊 Всего потрачено: ${stats?.totalSpent || 0}\n` +
+      `📊 Всего потрачено: ${stats?.tokensSpent || 0}\n` +
       `🎨 Всего генераций: ${stats?.totalGenerations || 0}\n\n` +
       "Выберите действие:",
       {
@@ -537,9 +537,9 @@ export class ReplyMenuHandler {
     await ctx.reply(
       "📈 <b>Ваша статистика</b>\n\n" +
       `🎨 Всего генераций: ${stats?.totalGenerations || 0}\n` +
-      `💰 Потрачено токенов: ${stats?.totalSpent || 0}\n` +
-      `💬 Сообщений в чатах: ${stats?.chatMessages || 0}\n` +
-      `📅 Дней с нами: ${stats?.daysActive || 0}`,
+      `💰 Потрачено токенов: ${stats?.tokensSpent || 0}\n` +
+      `⚡ Текущий баланс: ${stats?.currentBalance || 0}\n` +
+      `🎯 Любимый сервис: ${stats?.favoriteService || "Не определен"}`,
       {
         reply_markup: replyKeyboards.profileKeyboard,
         parse_mode: "HTML"
