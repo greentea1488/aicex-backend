@@ -10,6 +10,8 @@ import { TaskQueue } from "./utils/TaskQueue";
 import { MidjourneyAPIService } from "../services/MidjourneyAPIService";
 import { ReferralService } from "../services/ReferralService";
 import { UserService } from "../services/UserService";
+import { ReplyMenuHandler } from "./handlers/replyMenuHandler";
+import * as replyKeyboards from "./keyboards/replyKeyboard";
 import axios from "axios";
 
 const bot = new Bot(process.env.BOT_TOKEN!);
@@ -403,7 +405,7 @@ bot.command("start", async (ctx) => {
     welcomeMessage += `Выберите действие:`;
 
     await ctx.reply(welcomeMessage, {
-      reply_markup: getMainMenu(userId),
+      reply_markup: replyKeyboards.mainMenuKeyboard,
       parse_mode: "HTML"
     });
 
@@ -432,7 +434,7 @@ bot.command("menu", async (ctx) => {
     await ctx.reply(
       "📋 <b>Главное меню</b>\n\nВыберите действие:",
       {
-        reply_markup: getMainMenu(userId),
+        reply_markup: replyKeyboards.mainMenuKeyboard,
         parse_mode: "HTML"
       }
     );
@@ -1544,28 +1546,28 @@ bot.on("message:text", async (ctx) => {
   console.log("📝 Text message:", text, "from:", userId);
   
   try {
-    // Получаем состояние пользователя
-    const userState = UXHelpers.getUserState(userId);
-  
-  if (!userState) {
-    // Пользователь не в активном состоянии
-    await ctx.reply(
-        `🤖 Для начала работы используйте /start или выберите действие из меню.\n\n${UXHelpers.getBreadcrumb(['main'])}`,
-        { reply_markup: getMainMenu(userId) }
-    );
-    return;
-  }
+    // ========================================
+    // ПРИОРИТЕТ 1: КОМАНДЫ REPLY KEYBOARD МЕНЮ
+    // ========================================
+    const wasHandled = await ReplyMenuHandler.handleMenuCommand(ctx, text);
+    if (wasHandled) {
+      return; // Команда меню обработана, выходим
+    }
 
-  // Команда "стоп" - выход из любого режима
-  if (text.toLowerCase() === 'стоп' || text.toLowerCase() === 'stop') {
+    // ========================================
+    // ПРИОРИТЕТ 2: СПЕЦИАЛЬНЫЕ КОМАНДЫ
+    // ========================================
+    
+    // Команда "стоп" - выход из любого режима
+    if (text.toLowerCase() === 'стоп' || text.toLowerCase() === 'stop') {
       UXHelpers.clearUserState(userId);
       stateManager.endSession(userId.toString());
-    await ctx.reply(
-      "✅ Диалог завершен.\n\nВыберите новое действие:",
-        { reply_markup: getMainMenu(userId) }
-    );
-    return;
-  }
+      await ctx.reply(
+        "✅ Диалог завершен.\n\nВыберите новое действие:",
+        { reply_markup: replyKeyboards.mainMenuKeyboard }
+      );
+      return;
+    }
 
     // Команда "помощь" - показать помощь
     if (text.toLowerCase() === 'помощь' || text.toLowerCase() === 'help') {
@@ -1576,8 +1578,22 @@ bot.on("message:text", async (ctx) => {
     // Команда "статистика" - показать статистику
     if (text.toLowerCase() === 'статистика' || text.toLowerCase() === 'stats') {
       await handleStats(ctx, userId);
-    return;
-  }
+      return;
+    }
+
+    // ========================================
+    // ПРИОРИТЕТ 3: ОБРАБОТКА СОСТОЯНИЙ
+    // ========================================
+    const userState = UXHelpers.getUserState(userId);
+  
+    if (!userState) {
+      // Пользователь не в активном состоянии и не нажал кнопку меню
+      await ctx.reply(
+        `🤖 Используйте кнопки меню ниже или команду /start`,
+        { reply_markup: replyKeyboards.mainMenuKeyboard }
+      );
+      return;
+    }
 
   // Обработка по состояниям
     switch (userState.currentAction) {
@@ -2540,20 +2556,11 @@ async function handleBackToMain(ctx: any, userId: number) {
     
     const message = `🏠 <b>Главное меню</b>\n\nВыберите действие:`;
     
-    // Пытаемся отредактировать, если это текстовое сообщение
-    // Иначе отправляем новое
-    try {
-      await ctx.editMessageText(message, {
-        parse_mode: "HTML",
-        reply_markup: getMainMenu(userId)
-      });
-    } catch (e) {
-      // Если не удалось отредактировать (например, это фото), отправляем новое сообщение
-      await ctx.reply(message, {
-        parse_mode: "HTML",
-        reply_markup: getMainMenu(userId)
-      });
-    }
+    // Отправляем новое сообщение с Reply Keyboard
+    await ctx.reply(message, {
+      parse_mode: "HTML",
+      reply_markup: replyKeyboards.mainMenuKeyboard
+    });
     
   } catch (error) {
     // Даже при ошибке пытаемся вернуть в главное меню
@@ -2562,7 +2569,7 @@ async function handleBackToMain(ctx: any, userId: number) {
         "🏠 <b>Главное меню</b>\n\nВыберите действие:",
         { 
           parse_mode: "HTML",
-          reply_markup: getMainMenu(userId) 
+          reply_markup: replyKeyboards.mainMenuKeyboard
         }
       );
     } catch (fallbackError) {
@@ -2710,7 +2717,7 @@ async function handleRunwayPhoto(ctx: any) {
     console.error('❌ Error handling Runway photo:', error);
     await ctx.reply(
       "❌ Ошибка при обработке изображения. Попробуйте еще раз.",
-      { reply_markup: getMainMenu(ctx.from?.id) }
+      { reply_markup: replyKeyboards.mainMenuKeyboard }
     );
   }
 }
